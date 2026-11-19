@@ -17,13 +17,16 @@ export interface AppConfig {
 }
 
 export function getConfig(): AppConfig {
+  const isVercel = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+  const defaultBase = isVercel ? path.join('/tmp', 'inkora') : process.cwd();
+
   const dataDir = process.env.INKORA_DATA_DIR
     ? path.resolve(process.env.INKORA_DATA_DIR)
-    : path.resolve(process.cwd(), 'data');
+    : path.join(defaultBase, 'data');
 
   const storageDir = process.env.INKORA_STORAGE_DIR
     ? path.resolve(process.env.INKORA_STORAGE_DIR)
-    : path.resolve(process.cwd(), 'storage');
+    : path.join(defaultBase, 'storage');
 
   const uploadsDir = path.join(storageDir, 'uploads');
   const avatarsDir = path.join(storageDir, 'avatars');

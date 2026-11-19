@@ -20,7 +20,10 @@ export interface AppInstance {
   config: AppConfig;
 }
 
-export function createApp(config: AppConfig, options?: { seedDemo?: boolean; staticDir?: string }): AppInstance {
+export function createApp(
+  config: AppConfig,
+  options?: { seedDemo?: boolean; staticDir?: string; serveStatic?: boolean }
+): AppInstance {
   const db = createDatabase(config);
   if (options?.seedDemo !== false) {
     ensureDemoUser(db);
@@ -28,6 +31,7 @@ export function createApp(config: AppConfig, options?: { seedDemo?: boolean; sta
 
   const app = express();
   app.disable('x-powered-by');
+  app.set('trust proxy', 1);
   app.use(cookieParser());
   app.use(express.json({ limit: '15mb' }));
   app.use(express.urlencoded({ extended: true, limit: '15mb' }));
@@ -50,9 +54,11 @@ export function createApp(config: AppConfig, options?: { seedDemo?: boolean; sta
   app.use('/api/files', createFilesRouter(db, config, requireAuth));
   app.use('/api/study', createStudyRouter(db, requireAuth));
 
-  // Production static SPA serving if built client exists
+  // Production static SPA serving if built client exists (disabled on Vercel Edge CDN)
+  const shouldServeStatic =
+    options?.serveStatic ?? !Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
   const staticDir = options?.staticDir || path.resolve(process.cwd(), 'dist', 'client');
-  if (fs.existsSync(staticDir)) {
+  if (shouldServeStatic && fs.existsSync(staticDir)) {
     app.use(express.static(staticDir));
     app.get('*', (req, res, next) => {
       if (req.path.startsWith('/api/')) {
