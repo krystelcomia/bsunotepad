@@ -1,0 +1,310 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --ink-bg: #f5f3ee;
+    --ink-surface: #ffffff;
+    --ink-surface-muted: #f0ede5;
+    --ink-border: #e5dfd3;
+    --ink-text: #161925;
+    --ink-text-muted: #5e6577;
+    --ink-accent: #4338ca;
+  }
+
+  .dark {
+    --ink-bg: #0b0f17;
+    --ink-surface: #131a26;
+    --ink-surface-muted: #1b2434;
+    --ink-border: #263247;
+    --ink-text: #f1f5f9;
+    --ink-text-muted: #94a3b8;
+    --ink-accent: #818cf8;
+  }
+
+  body {
+    background-color: var(--ink-bg);
+    color: var(--ink-text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  }
+}
+
+/* Realistic Paper Templates */
+.paper-plain {
+  background-color: #ffffff;
+}
+.paper-cream {
+  background-color: #fffdf7;
+}
+.paper-lined {
+  background-color: #fffef9;
+  background-image:
+    linear-gradient(90deg, transparent 62px, rgba(244, 63, 94, 0.28) 62px, rgba(244, 63, 94, 0.28) 63.5px, transparent 63.5px),
+    repeating-linear-gradient(to bottom, transparent 0px, transparent 31px, rgba(99, 102, 241, 0.14) 31px, rgba(99, 102, 241, 0.14) 32px);
+  background-position: 0 24px;
+}
+.paper-wide_ruled {
+  background-color: #fffef9;
+  background-image:
+    linear-gradient(90deg, transparent 62px, rgba(244, 63, 94, 0.28) 62px, rgba(244, 63, 94, 0.28) 63.5px, transparent 63.5px),
+    repeating-linear-gradient(to bottom, transparent 0px, transparent 39px, rgba(99, 102, 241, 0.16) 39px, rgba(99, 102, 241, 0.16) 40px);
+  background-position: 0 24px;
+}
+.paper-grid {
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.18) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.paper-dot {
+  background-color: #fffef9;
+  background-image: radial-gradient(rgba(100, 116, 139, 0.34) 1.15px, transparent 1.15px);
+  background-size: 20px 20px;
+}
+.paper-cornell {
+  background-color: #fffef9;
+  background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 31px, rgba(99, 102, 241, 0.1) 31px, rgba(99, 102, 241, 0.1) 32px);
+}
+.paper-dark_board {
+  background-color: #16202a;
+  color: #f1f5f9 !important;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Dark theme adaptive paper when paperTone === 'adaptive' */
+.dark .paper-adaptive.paper-plain,
+.dark .paper-adaptive.paper-cream {
+  background-color: #151d2c;
+  color: #e2e8f0;
+}
+.dark .paper-adaptive.paper-lined,
+.dark .paper-adaptive.paper-wide_ruled,
+.dark .paper-adaptive.paper-cornell {
+  background-color: #151d2c;
+  color: #e2e8f0;
+  background-image:
+    linear-gradient(90deg, transparent 62px, rgba(244, 63, 94, 0.25) 62px, rgba(244, 63, 94, 0.25) 63.5px, transparent 63.5px),
+    repeating-linear-gradient(to bottom, transparent 0px, transparent 31px, rgba(129, 140, 248, 0.14) 31px, rgba(129, 140, 248, 0.14) 32px);
+}
+.dark .paper-adaptive.paper-grid {
+  background-color: #151d2c;
+  color: #e2e8f0;
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+}
+.dark .paper-adaptive.paper-dot {
+  background-color: #151d2c;
+  color: #e2e8f0;
+  background-image: radial-gradient(rgba(148, 163, 184, 0.25) 1.15px, transparent 1.15px);
+}
+
+/* TipTap Document Prose Styles */
+.inkora-prose .ProseMirror {
+  outline: none;
+  min-height: 520px;
+  line-height: 1.72;
+  font-size: 15.5px;
+}
+
+.inkora-prose .ProseMirror > * + * {
+  margin-top: 0.65em;
+}
+
+.inkora-prose .ProseMirror h1 {
+  font-size: 1.95rem;
+  font-weight: 800;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  margin-top: 0.4em;
+  margin-bottom: 0.4em;
+}
+
+.inkora-prose .ProseMirror h2 {
+  font-size: 1.38rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 1.15em;
+  margin-bottom: 0.35em;
+}
+
+.inkora-prose .ProseMirror h3 {
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-top: 0.9em;
+}
+
+.inkora-prose .ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+
+.inkora-prose .ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+}
+
+.inkora-prose .ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.25rem;
+}
+
+.inkora-prose .ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0.35rem 0;
+}
+
+.inkora-prose .ProseMirror ul[data-type="taskList"] li > label {
+  margin-top: 0.28rem;
+  user-select: none;
+}
+
+.inkora-prose .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #4f46e5;
+  cursor: pointer;
+}
+
+.inkora-prose .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  opacity: 0.62;
+}
+
+.inkora-prose .ProseMirror blockquote {
+  border-left: 3.5px solid #4f46e5;
+  background: rgba(79, 70, 229, 0.06);
+  padding: 0.65rem 1rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+  margin: 0.9rem 0;
+}
+
+.inkora-prose .ProseMirror pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.86rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: 0.65rem;
+  overflow-x: auto;
+  line-height: 1.55;
+}
+
+.inkora-prose .ProseMirror code {
+  background: rgba(99, 102, 241, 0.12);
+  color: #4338ca;
+  padding: 0.12em 0.36em;
+  border-radius: 0.3rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88em;
+}
+
+.dark .paper-adaptive .ProseMirror code,
+.paper-dark_board .ProseMirror code {
+  background: rgba(129, 140, 248, 0.18);
+  color: #a5b4fc;
+}
+
+.inkora-prose .ProseMirror pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.inkora-prose .ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1rem 0;
+  overflow: hidden;
+  border-radius: 0.45rem;
+}
+
+.inkora-prose .ProseMirror table td,
+.inkora-prose .ProseMirror table th {
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  padding: 0.5rem 0.7rem;
+  vertical-align: top;
+  position: relative;
+  min-width: 60px;
+}
+
+.inkora-prose .ProseMirror table th {
+  background: rgba(99, 102, 241, 0.09);
+  font-weight: 700;
+  text-align: left;
+}
+
+.inkora-prose .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.inkora-prose .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #94a3b8;
+  pointer-events: none;
+  height: 0;
+}
+
+.inkora-prose .ProseMirror a {
+  color: #4f46e5;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.inkora-prose .ProseMirror hr {
+  border: none;
+  border-top: 2px solid rgba(148, 163, 184, 0.35);
+  margin: 1.5rem 0;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.55);
+}
+
+/* Print / Export PDF Styling */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
