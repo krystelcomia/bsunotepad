@@ -291,30 +291,30 @@ const WorkspaceShell: React.FC = () => {
       openNoteStudio(res.note.id);
       refreshWorkspace();
     } catch (err) {
-      notify('error', err instanceof Error ? err.message : 'Could not create note');
+      notify('error', err instanceof Error ? err.message : 'Hindi nagawang gawin ang tala.');
     }
   };
 
   const viewHeaderInfo = useMemo(() => {
-    if (activeNav.kind !== 'notes') return { title: 'Notes', subtitle: '' };
-    if (activeNav.filter === 'starred') return { title: 'Starred Notes', subtitle: 'Your pinned & favorite study sheets' };
-    if (activeNav.filter === 'trash') return { title: 'Trash', subtitle: 'Restore deleted pages or erase them permanently' };
+    if (activeNav.kind !== 'notes') return { title: 'Mga Tala', subtitle: '' };
+    if (activeNav.filter === 'starred') return { title: 'Mga May Bituing Tala', subtitle: 'Ang iyong mga naka-pin at paboritong tala sa pag-aaral' };
+    if (activeNav.filter === 'trash') return { title: 'Basurahan', subtitle: 'Ibalik ang mga naburang pahina o burahin nang permanente' };
     if (activeNav.folderId) {
       const f = summary?.folders.find((x) => x.id === activeNav.folderId);
-      return { title: f ? `Folder: ${f.name}` : 'Folder Notes', subtitle: 'Organized notes inside this folder' };
+      return { title: f ? `Folder: ${f.name}` : 'Mga Tala sa Folder', subtitle: 'Nakaayos na mga tala sa loob ng folder na ito' };
     }
     if (activeNav.notebookId) {
       const nb = summary?.notebooks.find((n) => n.id === activeNav.notebookId);
-      return { title: nb?.title || 'Notebook', subtitle: nb?.description || '' };
+      return { title: nb?.title || 'Kuwaderno', subtitle: nb?.description || '' };
     }
     if (activeNav.subjectId) {
       const sub = summary?.subjects.find((s) => s.id === activeNav.subjectId);
       return {
-        title: sub ? `${sub.code ? `${sub.code} — ` : ''}${sub.name}` : 'Course Notes',
+        title: sub ? `${sub.code ? `${sub.code} — ` : ''}${sub.name}` : 'Mga Tala sa Asignatura',
         subtitle: [sub?.instructor, sub?.semester].filter(Boolean).join(' · '),
       };
     }
-    return { title: 'All Academic Notes', subtitle: 'Documents, Cornell notebooks, and sketchpads' };
+    return { title: 'Lahat ng Akademikong Tala', subtitle: 'Mga dokumento, kuwadernong Cornell, at guhit-kamay' };
   }, [activeNav, summary]);
 
   if (shareToken) {
@@ -336,8 +336,8 @@ const WorkspaceShell: React.FC = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F4FB] dark:bg-[#0B0914] text-sm text-violet-600 dark:text-violet-300">
-        Loading INKORA Workspace...
+      <div className="min-h-screen flex items-center justify-center bg-[#F4F8FF] dark:bg-[#071021] text-sm text-blue-700 dark:text-sky-300">
+        Nilo-load ang Workspace ng INKORA...
       </div>
     );
   }
@@ -372,7 +372,7 @@ const WorkspaceShell: React.FC = () => {
   const notebooks = summary?.notebooks || [];
 
   return (
-    <div className="h-screen flex overflow-hidden bg-[#F6F4FB] dark:bg-[#0B0914]">
+    <div className="h-screen flex overflow-hidden bg-[#F4F8FF] dark:bg-[#071021]">
       <Sidebar
         openMobile={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
@@ -395,26 +395,26 @@ const WorkspaceShell: React.FC = () => {
 
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Global Top Header (hidden in print) */}
-        <header className="no-print h-14 px-4 border-b border-violet-200/70 dark:border-violet-900/50 bg-white/90 dark:bg-[#141024]/95 backdrop-blur-xs flex items-center justify-between gap-3 shrink-0">
+        <header className="no-print h-14 px-4 border-b border-blue-200/70 dark:border-blue-900/50 bg-white/95 dark:bg-[#0D1930]/95 backdrop-blur-xs flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 rounded-xl text-slate-600 dark:text-violet-200 hover:bg-violet-50 dark:hover:bg-violet-950"
-              aria-label="Open menu"
+              className="lg:hidden p-2 rounded-xl text-slate-600 dark:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950"
+              aria-label="Buksan ang menu"
             >
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Quick Cross-Page Navigation Tabs */}
-            <nav className="hidden md:flex items-center gap-1 p-1 rounded-xl bg-violet-50/70 dark:bg-[#1C1633] border border-violet-200/60 dark:border-violet-800/50">
+            {/* Mabilisang Nabigasyon sa Mga Pahina */}
+            <nav className="hidden md:flex items-center gap-1 p-1 rounded-xl bg-blue-50/80 dark:bg-[#132340] border border-blue-200/60 dark:border-blue-800/50">
               <button
                 type="button"
                 onClick={() => navigateTo({ kind: 'dashboard' }, null)}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   !activeNoteId && activeNav.kind === 'dashboard'
-                    ? 'bg-white dark:bg-slate-900 text-violet-700 dark:text-violet-300 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-violet-700'
+                    ? 'bg-white dark:bg-slate-900 text-blue-700 dark:text-sky-300 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-blue-700'
                 }`}
               >
                 <Home className="w-3.5 h-3.5" /> Dashboard
@@ -424,38 +424,38 @@ const WorkspaceShell: React.FC = () => {
                 onClick={() => navigateTo({ kind: 'notes', filter: 'all' }, null)}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   !activeNoteId && activeNav.kind === 'notes'
-                    ? 'bg-white dark:bg-slate-900 text-violet-700 dark:text-violet-300 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-violet-700'
+                    ? 'bg-white dark:bg-slate-900 text-blue-700 dark:text-sky-300 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-blue-700'
                 }`}
               >
-                <FileText className="w-3.5 h-3.5" /> Notes
+                <FileText className="w-3.5 h-3.5" /> Mga Tala
               </button>
               <button
                 type="button"
                 onClick={() => navigateTo({ kind: 'files' }, null)}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   !activeNoteId && activeNav.kind === 'files'
-                    ? 'bg-white dark:bg-slate-900 text-violet-700 dark:text-violet-300 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-violet-700'
+                    ? 'bg-white dark:bg-slate-900 text-blue-700 dark:text-sky-300 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-blue-700'
                 }`}
               >
-                <FolderOpen className="w-3.5 h-3.5" /> File Vault
+                <FolderOpen className="w-3.5 h-3.5" /> Baul ng File
               </button>
               <button
                 type="button"
                 onClick={() => navigateTo({ kind: 'study' }, null)}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   !activeNoteId && activeNav.kind === 'study'
-                    ? 'bg-white dark:bg-slate-900 text-violet-700 dark:text-violet-300 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-violet-700'
+                    ? 'bg-white dark:bg-slate-900 text-blue-700 dark:text-sky-300 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-blue-700'
                 }`}
               >
-                <GraduationCap className="w-3.5 h-3.5" /> Study Hub
+                <GraduationCap className="w-3.5 h-3.5" /> Sentro ng Pag-aaral
               </button>
             </nav>
 
-            <div className="md:hidden text-xs font-semibold text-slate-600 dark:text-violet-200/80 truncate">
-              {activeNoteId ? 'Note Studio' : activeNav.kind === 'dashboard' ? 'Student Dashboard' : viewHeaderInfo.title}
+            <div className="md:hidden text-xs font-semibold text-slate-600 dark:text-blue-200/80 truncate">
+              {activeNoteId ? 'Studio ng Tala' : activeNav.kind === 'dashboard' ? 'Dashboard ng Mag-aaral' : viewHeaderInfo.title}
             </div>
           </div>
 
@@ -463,9 +463,9 @@ const WorkspaceShell: React.FC = () => {
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-violet-200 dark:border-violet-800/60 bg-violet-50/50 dark:bg-[#1C1633] text-xs text-slate-500 dark:text-violet-200/75 hover:border-violet-400 cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/50 dark:bg-[#132340] text-xs text-slate-500 dark:text-blue-200/75 hover:border-blue-400 cursor-pointer"
             >
-              <Search className="w-3.5 h-3.5 text-violet-600" /> Search
+              <Search className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" /> Maghanap
             </button>
 
             <PomodoroWidget
@@ -477,28 +477,28 @@ const WorkspaceShell: React.FC = () => {
             <button
               type="button"
               onClick={toggleTheme}
-              className="p-2 rounded-xl border border-violet-200 dark:border-violet-800/60 bg-white dark:bg-[#1C1633] text-slate-600 dark:text-violet-200 hover:bg-violet-50 dark:hover:bg-violet-900/40 cursor-pointer"
-              title="Toggle light/dark mode"
+              className="p-2 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-white dark:bg-[#132340] text-slate-600 dark:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/40 cursor-pointer"
+              title="Lumipat ng maliwanag/madilim na tema"
             >
-              {resolved === 'dark' ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4" />}
+              {resolved === 'dark' ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-blue-700" />}
             </button>
 
             <button
               type="button"
               onClick={() => setAccountOpen(true)}
-              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-violet-200 dark:border-violet-800/60 bg-white dark:bg-[#1C1633] text-xs font-semibold text-slate-700 dark:text-violet-100 hover:border-violet-400 cursor-pointer"
-              title="Account Settings"
+              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-white dark:bg-[#132340] text-xs font-semibold text-slate-700 dark:text-blue-100 hover:border-blue-400 cursor-pointer"
+              title="Mga Setting ng Account"
             >
-              <UserIcon className="w-3.5 h-3.5 text-violet-600" />
+              <UserIcon className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
               <span className="max-w-[90px] truncate">{user.full_name.split(' ')[0]}</span>
             </button>
 
             <button
               type="button"
               onClick={() => logout()}
-              className="p-2 rounded-xl border border-violet-200 dark:border-violet-800/60 bg-white dark:bg-[#1C1633] text-slate-500 hover:text-rose-600 hover:border-rose-300 transition cursor-pointer"
-              title="Sign Out"
-              aria-label="Sign Out"
+              className="p-2 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-white dark:bg-[#132340] text-slate-500 hover:text-rose-600 hover:border-rose-300 transition cursor-pointer"
+              title="Mag-sign Out"
+              aria-label="Mag-sign Out"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -564,7 +564,7 @@ const WorkspaceShell: React.FC = () => {
           />
         ) : (
           <div className="flex-1 flex items-center justify-center text-sm text-slate-400">
-            Loading workspace...
+            Nilo-load ang workspace...
           </div>
         )}
       </div>

@@ -126,15 +126,16 @@ export function rotateRefreshSession(
     if (row?.session_id) {
       db.prepare('DELETE FROM sessions WHERE id = ?').run(row.session_id);
     }
-    return { ok: false, status: 401, error: 'Refresh session expired. Please sign in again.' };
+    return { ok: false, status: 401, error: 'Nag-expire na ang refresh session. Mangyaring mag-sign in muli.' };
   }
 
   if (row.status !== 'active') {
     db.prepare('DELETE FROM sessions WHERE user_id = ?').run(row.id);
+    const statusLabel = row.status === 'suspended' ? 'suspendido' : row.status === 'deactivated' ? 'hindi aktibo (deactivated)' : row.status;
     return {
       ok: false,
       status: 403,
-      error: `Your account is ${row.status}.${row.status_reason ? ` Reason: ${row.status_reason}` : ''}`,
+      error: `Ang iyong account ay ${statusLabel}.${row.status_reason ? ` Dahilan: ${row.status_reason}` : ''}`,
       accountStatus: row.status,
     };
   }
@@ -144,7 +145,7 @@ export function rotateRefreshSession(
     return {
       ok: false,
       status: 403,
-      error: 'Please verify your Gmail address before accessing your workspace.',
+      error: 'Mangyaring beripikahin muna ang iyong Gmail address bago buksan ang iyong workspace.',
       emailVerificationRequired: true,
     };
   }
@@ -191,7 +192,7 @@ export function createAuthMiddleware(db: DatabaseSync, config: AppConfig) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     const rawToken = extractTokenFromRequest(req, config);
     if (!rawToken) {
-      res.status(401).json({ error: 'Authentication required' });
+      res.status(401).json({ error: 'Kinakailangan ang pagpapatunay (authentication).' });
       return;
     }
 
@@ -207,12 +208,12 @@ export function createAuthMiddleware(db: DatabaseSync, config: AppConfig) {
 
     if (!row) {
       clearSessionCookies(res, config);
-      res.status(401).json({ error: 'Invalid or expired session' });
+      res.status(401).json({ error: 'Hindi wasto o nag-expire na ang session.' });
       return;
     }
 
     if (new Date(row.expires_at).getTime() <= Date.now()) {
-      res.status(401).json({ error: 'Session expired', sessionExpired: true });
+      res.status(401).json({ error: 'Nag-expire na ang session.', sessionExpired: true });
       return;
     }
 
@@ -222,8 +223,8 @@ export function createAuthMiddleware(db: DatabaseSync, config: AppConfig) {
       res.status(403).json({
         error:
           row.status === 'suspended'
-            ? `Your account has been suspended.${row.status_reason ? ` Reason: ${row.status_reason}` : ''}`
-            : `Your account is currently deactivated.${row.status_reason ? ` Reason: ${row.status_reason}` : ''}`,
+            ? `Sinuspinde ang iyong account.${row.status_reason ? ` Dahilan: ${row.status_reason}` : ''}`
+            : `Kasalukuyang naka-deactivate ang iyong account.${row.status_reason ? ` Dahilan: ${row.status_reason}` : ''}`,
         accountStatus: row.status,
       });
       return;
@@ -232,7 +233,7 @@ export function createAuthMiddleware(db: DatabaseSync, config: AppConfig) {
     if (row.role === 'student' && row.email_verified !== 1) {
       clearSessionCookies(res, config);
       res.status(403).json({
-        error: 'Gmail verification required before accessing the student workspace.',
+        error: 'Kinakailangan ang pagberipika ng Gmail bago pumasok sa workspace ng mag-aaral.',
         emailVerificationRequired: true,
       });
       return;
@@ -251,15 +252,15 @@ export function createAuthMiddleware(db: DatabaseSync, config: AppConfig) {
 export function requireRole(allowedRole: UserRole) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      res.status(401).json({ error: 'Authentication required' });
+      res.status(401).json({ error: 'Kinakailangan ang pagpapatunay (authentication).' });
       return;
     }
     if (req.user.role !== allowedRole) {
       res.status(403).json({
         error:
           allowedRole === 'admin'
-            ? 'Administrator privileges required.'
-            : 'This workspace resource is restricted to student accounts.',
+            ? 'Kinakailangan ang mga pribilehiyo ng Administrator.'
+            : 'Ang bahaging ito ng workspace ay nakalaan lamang sa mga account ng mag-aaral.',
       });
       return;
     }

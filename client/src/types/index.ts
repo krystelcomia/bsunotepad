@@ -15,7 +15,7 @@ export interface User {
   bio: string;
   avatar_file: string | null;
   theme_preference: 'system' | 'light' | 'dark';
-  workspace_accent: 'purple' | 'lavender' | 'blue';
+  workspace_accent: 'blue' | 'sky' | 'navy' | 'purple' | 'lavender';
   storage_quota_bytes: number;
   is_demo: number;
   last_login_at: string | null;

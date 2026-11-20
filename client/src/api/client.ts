@@ -105,7 +105,7 @@ async function request<T>(url: string, options?: RequestInit, allowRetry = true)
   }
 
   if (!res.ok) {
-    let message = `Request failed (${res.status})`;
+    let message = `Nabigo ang kahilingan (${res.status})`;
     let extra:
       | {
           accountStatus?: AccountStatus;

@@ -39,8 +39,8 @@ export function createDatabase(config: AppConfig): DatabaseSync {
       academic_year TEXT NOT NULL DEFAULT '',
       bio TEXT NOT NULL DEFAULT '',
       avatar_file TEXT DEFAULT NULL,
-      theme_preference TEXT NOT NULL DEFAULT 'system',
-      workspace_accent TEXT NOT NULL DEFAULT 'purple',
+      theme_preference TEXT NOT NULL DEFAULT 'light',
+      workspace_accent TEXT NOT NULL DEFAULT 'blue',
       storage_quota_bytes INTEGER NOT NULL DEFAULT 262144000,
       is_demo INTEGER NOT NULL DEFAULT 0,
       last_login_at TEXT DEFAULT NULL,
@@ -90,7 +90,7 @@ export function createDatabase(config: AppConfig): DatabaseSync {
       user_id TEXT NOT NULL,
       parent_id TEXT DEFAULT NULL,
       name TEXT NOT NULL,
-      color TEXT NOT NULL DEFAULT '#6D28D9',
+      color TEXT NOT NULL DEFAULT '#2563EB',
       icon TEXT NOT NULL DEFAULT 'Folder',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
@@ -107,7 +107,7 @@ export function createDatabase(config: AppConfig): DatabaseSync {
       name TEXT NOT NULL,
       instructor TEXT NOT NULL DEFAULT '',
       semester TEXT NOT NULL DEFAULT '',
-      color TEXT NOT NULL DEFAULT '#6D28D9',
+      color TEXT NOT NULL DEFAULT '#1D4ED8',
       icon TEXT NOT NULL DEFAULT 'BookOpen',
       sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
@@ -123,8 +123,8 @@ export function createDatabase(config: AppConfig): DatabaseSync {
       subject_id TEXT DEFAULT NULL,
       title TEXT NOT NULL,
       description TEXT NOT NULL DEFAULT '',
-      cover_color TEXT NOT NULL DEFAULT '#4C1D95',
-      accent_color TEXT NOT NULL DEFAULT '#A78BFA',
+      cover_color TEXT NOT NULL DEFAULT '#1E3A8A',
+      accent_color TEXT NOT NULL DEFAULT '#60A5FA',
       icon TEXT NOT NULL DEFAULT 'NotebookPen',
       default_paper_style TEXT NOT NULL DEFAULT 'lined',
       is_pinned INTEGER NOT NULL DEFAULT 0,
@@ -143,9 +143,9 @@ export function createDatabase(config: AppConfig): DatabaseSync {
       folder_id TEXT DEFAULT NULL,
       notebook_id TEXT DEFAULT NULL,
       subject_id TEXT DEFAULT NULL,
-      title TEXT NOT NULL DEFAULT 'Untitled Note',
+      title TEXT NOT NULL DEFAULT 'Walang Pamagat na Tala',
       description TEXT NOT NULL DEFAULT '',
-      category TEXT NOT NULL DEFAULT 'General',
+      category TEXT NOT NULL DEFAULT 'Pangkalahatan',
       mode TEXT NOT NULL DEFAULT 'document',
       paper_style TEXT NOT NULL DEFAULT 'plain',
       paper_bg_color TEXT NOT NULL DEFAULT '',
@@ -305,7 +305,7 @@ export function createDatabase(config: AppConfig): DatabaseSync {
   ensureColumn(db, 'users', 'role', "TEXT NOT NULL DEFAULT 'student'");
   ensureColumn(db, 'users', 'status', "TEXT NOT NULL DEFAULT 'active'");
   ensureColumn(db, 'users', 'status_reason', "TEXT NOT NULL DEFAULT ''");
-  ensureColumn(db, 'users', 'workspace_accent', "TEXT NOT NULL DEFAULT 'purple'");
+  ensureColumn(db, 'users', 'workspace_accent', "TEXT NOT NULL DEFAULT 'blue'");
   ensureColumn(db, 'users', 'last_login_at', 'TEXT DEFAULT NULL');
   ensureColumn(db, 'users', 'login_count', 'INTEGER NOT NULL DEFAULT 0');
   ensureColumn(db, 'sessions', 'refresh_token_hash', 'TEXT');
@@ -313,7 +313,7 @@ export function createDatabase(config: AppConfig): DatabaseSync {
   ensureColumn(db, 'notes', 'folder_id', 'TEXT DEFAULT NULL');
   ensureColumn(db, 'notes', 'last_opened_at', 'TEXT DEFAULT NULL');
   ensureColumn(db, 'notes', 'description', "TEXT NOT NULL DEFAULT ''");
-  ensureColumn(db, 'notes', 'category', "TEXT NOT NULL DEFAULT 'General'");
+  ensureColumn(db, 'notes', 'category', "TEXT NOT NULL DEFAULT 'Pangkalahatan'");
   ensureColumn(db, 'notes', 'paper_bg_color', "TEXT NOT NULL DEFAULT ''");
   db.exec('CREATE INDEX IF NOT EXISTS idx_notes_folder ON notes(folder_id)');
 

@@ -62,11 +62,11 @@ export function createFilesRouter(
   router.post('/upload', (req: AuthenticatedRequest, res) => {
     upload.single('file')(req, res, (err) => {
       if (err) {
-        res.status(400).json({ error: err.message || 'File upload failed' });
+        res.status(400).json({ error: err.message || 'Nabigo ang pag-upload ng file.' });
         return;
       }
       if (!req.file) {
-        res.status(400).json({ error: 'No file selected for upload.' });
+        res.status(400).json({ error: 'Walang napiling file para i-upload.' });
         return;
       }
 
@@ -79,7 +79,7 @@ export function createFilesRouter(
       if (currentUsed + req.file.size > req.user!.storage_quota_bytes) {
         fs.rmSync(req.file.path, { force: true });
         res.status(413).json({
-          error: 'Storage quota exceeded. Please delete unused files before uploading more.',
+          error: 'Lumampas na sa nakalaang espasyo ng storage. Mangyaring magbura ng mga hindi ginagamit na file bago mag-upload muli.',
         });
         return;
       }
@@ -146,7 +146,7 @@ export function createFilesRouter(
       .get(req.params.id, req.user!.id) as Record<string, unknown> | undefined;
 
     if (!existing) {
-      res.status(404).json({ error: 'File not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang file.' });
       return;
     }
 
@@ -195,13 +195,13 @@ export function createFilesRouter(
       | undefined;
 
     if (!record) {
-      res.status(404).json({ error: 'File not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang file.' });
       return;
     }
 
     const fullPath = path.join(config.uploadsDir, record.user_id, path.basename(record.stored_name));
     if (!fs.existsSync(fullPath)) {
-      res.status(404).json({ error: 'Stored file missing on disk' });
+      res.status(404).json({ error: 'Nawawala ang naka-save na file sa disk.' });
       return;
     }
 
@@ -222,7 +222,7 @@ export function createFilesRouter(
       | undefined;
 
     if (!record) {
-      res.status(404).json({ error: 'File not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang file.' });
       return;
     }
 

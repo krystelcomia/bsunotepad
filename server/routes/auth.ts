@@ -78,10 +78,10 @@ function verifyEmailTokenRecord(
       | undefined;
 
     if (!row || row.used_at) {
-      return { ok: false, status: 400, error: 'Verification link is invalid or has already been used.' };
+      return { ok: false, status: 400, error: 'Hindi wasto o nagamit na ang link ng pag-verify.' };
     }
     if (new Date(row.expires_at).getTime() <= Date.now()) {
-      return { ok: false, status: 400, error: 'Verification link has expired. Please request a new one.' };
+      return { ok: false, status: 400, error: 'Nag-expire na ang link ng pag-verify. Humiling ng bago.' };
     }
     return { ok: true, recordId: row.id, userId: row.user_id, email: row.email };
   }
@@ -89,7 +89,7 @@ function verifyEmailTokenRecord(
   const email = normalizeGmail(params.email || '');
   const otp = String(params.otp || '').trim();
   if (!isValidGmailAddress(email) || !/^\d{6}$/.test(otp)) {
-    return { ok: false, status: 400, error: 'Please enter a valid @gmail.com address and 6-digit code.' };
+    return { ok: false, status: 400, error: 'Maglagay ng wastong @gmail.com address at 6-digit na code.' };
   }
 
   const row = db
@@ -112,23 +112,23 @@ function verifyEmailTokenRecord(
     | undefined;
 
   if (!row) {
-    return { ok: false, status: 400, error: 'No active code found for this Gmail. Please request a new code.' };
+    return { ok: false, status: 400, error: 'Walang aktibong code para sa Gmail na ito. Humiling ng bagong code.' };
   }
 
   if (new Date(row.expires_at).getTime() <= Date.now()) {
     db.prepare('UPDATE email_tokens SET used_at = ? WHERE id = ?').run(nowIso, row.id);
-    return { ok: false, status: 400, error: 'This 6-digit code has expired. Please request a new one.' };
+    return { ok: false, status: 400, error: 'Nag-expire na ang 6-digit na code. Humiling ng bago.' };
   }
 
   if (row.attempts >= 5) {
     db.prepare('UPDATE email_tokens SET used_at = ? WHERE id = ?').run(nowIso, row.id);
-    return { ok: false, status: 429, error: 'Too many incorrect code attempts. Please request a new code.' };
+    return { ok: false, status: 429, error: 'Masyadong maraming maling pagsubok. Humiling ng bagong code.' };
   }
 
   const candidateHash = hashToken(`${row.user_id}:${params.purpose}:${otp}`);
   if (candidateHash !== row.otp_hash) {
     db.prepare('UPDATE email_tokens SET attempts = attempts + 1 WHERE id = ?').run(row.id);
-    return { ok: false, status: 400, error: 'Incorrect verification code. Please check and try again.' };
+    return { ok: false, status: 400, error: 'Maling verification code. Pakisuri at subukang muli.' };
   }
 
   return { ok: true, recordId: row.id, userId: row.user_id, email: row.email };
@@ -147,7 +147,7 @@ export function createAuthRouter(
     if (contentType.includes('multipart/form-data')) {
       avatarUpload.single('avatar')(req, res, (err) => {
         if (err) {
-          res.status(400).json({ error: err.message || 'Invalid profile picture upload.' });
+          res.status(400).json({ error: err.message || 'Hindi wasto ang pag-upload ng larawan sa profile.' });
           return;
         }
         next();
@@ -175,14 +175,14 @@ export function createAuthRouter(
 
       if (fullName.length < 2) {
         cleanupUploadedAvatar();
-        res.status(400).json({ error: 'Please enter your full name (at least 2 characters).' });
+        res.status(400).json({ error: 'Ilagay ang iyong buong pangalan (hindi bababa sa 2 karakter).' });
         return;
       }
 
       if (!isValidGmailAddress(email)) {
         cleanupUploadedAvatar();
         res.status(400).json({
-          error: 'Only valid Gmail addresses ending in @gmail.com are accepted for registration.',
+          error: 'Mga wastong Gmail address lamang na nagtatapos sa @gmail.com ang tinatanggap sa pagrehistro.',
         });
         return;
       }
@@ -196,7 +196,7 @@ export function createAuthRouter(
 
       if (password !== confirmPassword) {
         cleanupUploadedAvatar();
-        res.status(400).json({ error: 'Password and Confirm Password do not match.' });
+        res.status(400).json({ error: 'Hindi tugma ang Password at Kumpirmasyon ng Password.' });
         return;
       }
 
@@ -204,7 +204,7 @@ export function createAuthRouter(
       if (existing) {
         cleanupUploadedAvatar();
         res.status(409).json({
-          error: 'This Gmail address is already registered. Each Gmail address can only register one account.',
+          error: 'Nakarehistro na ang Gmail address na ito. Isang account lamang ang maaari bawat Gmail.',
         });
         return;
       }
@@ -229,7 +229,7 @@ export function createAuthRouter(
           id, email, email_verified, password_hash, role, status, status_reason, full_name,
           university, major, academic_year, bio, avatar_file, theme_preference, workspace_accent,
           storage_quota_bytes, is_demo, last_login_at, login_count, created_at, updated_at
-        ) VALUES (?, ?, 0, ?, 'student', 'active', '', ?, ?, ?, ?, '', ?, 'system', 'purple', ?, 0, NULL, 0, ?, ?)`
+        ) VALUES (?, ?, 0, ?, 'student', 'active', '', ?, ?, ?, ?, '', ?, 'light', 'blue', ?, 0, NULL, 0, ?, ?)`
       ).run(
         userId,
         email,
@@ -261,14 +261,14 @@ export function createAuthRouter(
         deliveryMode: delivery.deliveryMode,
         previewOtp: delivery.previewOtp,
         previewLink: delivery.previewLink,
-        message: 'Account created! Please verify your Gmail address before accessing your student workspace.',
+        message: 'Nagawa na ang account! Paki-verify muna ang iyong Gmail address bago pumasok sa workspace.',
       });
     } catch (err) {
       cleanupUploadedAvatar();
-      const message = err instanceof Error ? err.message : 'Registration failed';
+      const message = err instanceof Error ? err.message : 'Nabigo ang pagrehistro';
       if (message.includes('UNIQUE constraint')) {
         res.status(409).json({
-          error: 'This Gmail address is already registered. Each Gmail address can only register one account.',
+          error: 'Nakarehistro na ang Gmail address na ito. Isang account lamang bawat Gmail address.',
         });
         return;
       }
@@ -294,13 +294,13 @@ export function createAuthRouter(
       .get(check.userId) as { id: string; status: string; status_reason: string } | undefined;
 
     if (!userRow) {
-      res.status(404).json({ error: 'Account not found.' });
+      res.status(404).json({ error: 'Hindi nahanap ang account.' });
       return;
     }
 
     if (userRow.status !== 'active') {
       res.status(403).json({
-        error: `This account is ${userRow.status}.${userRow.status_reason ? ` Reason: ${userRow.status_reason}` : ''}`,
+        error: `Ang account na ito ay ${userRow.status}.${userRow.status_reason ? ` Dahilan: ${userRow.status_reason}` : ''}`,
       });
       return;
     }
@@ -327,7 +327,7 @@ export function createAuthRouter(
   router.post('/resend-verification', async (req, res) => {
     const email = normalizeGmail(String(req.body?.email || ''));
     if (!isValidGmailAddress(email)) {
-      res.status(400).json({ error: 'Please provide a valid @gmail.com address.' });
+      res.status(400).json({ error: 'Maglagay ng wastong @gmail.com address.' });
       return;
     }
 
@@ -336,17 +336,17 @@ export function createAuthRouter(
       .get(email) as { id: string; full_name: string; email_verified: number; status: string } | undefined;
 
     if (!row) {
-      res.status(404).json({ error: 'No account found for that Gmail address.' });
+      res.status(404).json({ error: 'Walang nahanap na account para sa Gmail address na iyan.' });
       return;
     }
 
     if (row.email_verified === 1) {
-      res.status(400).json({ error: 'This Gmail address is already verified. You can sign in.' });
+      res.status(400).json({ error: 'Na-verify na ang Gmail address na ito. Maaari ka nang mag-sign in.' });
       return;
     }
 
     if (row.status !== 'active') {
-      res.status(403).json({ error: `This account is currently ${row.status}.` });
+      res.status(403).json({ error: `Ang account na ito ay kasalukuyang ${row.status}.` });
       return;
     }
 
@@ -373,12 +373,12 @@ export function createAuthRouter(
     const password = String(req.body?.password || '');
 
     if (!email || !password) {
-      res.status(400).json({ error: 'Gmail address and password are required.' });
+      res.status(400).json({ error: 'Kinakailangan ang Gmail address at password.' });
       return;
     }
 
     if (!isValidGmailAddress(email)) {
-      res.status(400).json({ error: 'Please sign in using a valid @gmail.com address.' });
+      res.status(400).json({ error: 'Mag-sign in gamit ang wastong @gmail.com address.' });
       return;
     }
 
@@ -396,7 +396,7 @@ export function createAuthRouter(
       | undefined;
 
     if (!row || !verifyPassword(password, row.password_hash)) {
-      res.status(401).json({ error: 'Invalid Gmail address or password.' });
+      res.status(401).json({ error: 'Mali ang Gmail address o password.' });
       return;
     }
 
@@ -404,8 +404,8 @@ export function createAuthRouter(
       res.status(403).json({
         error:
           row.status === 'suspended'
-            ? `This account has been suspended.${row.status_reason ? ` Reason: ${row.status_reason}` : ''}`
-            : `This account is currently deactivated.${row.status_reason ? ` Reason: ${row.status_reason}` : ''}`,
+            ? `Ang account na ito ay suspendido.${row.status_reason ? ` Dahilan: ${row.status_reason}` : ''}`
+            : `Ang account na ito ay kasalukuyang naka-deactivate.${row.status_reason ? ` Dahilan: ${row.status_reason}` : ''}`,
         accountStatus: row.status,
         statusReason: row.status_reason,
       });
@@ -414,7 +414,7 @@ export function createAuthRouter(
 
     if (row.role === 'student' && row.email_verified !== 1) {
       res.status(403).json({
-        error: 'Your Gmail address is not verified yet. Please verify your email before accessing the student workspace.',
+        error: 'Hindi pa na-verify ang iyong Gmail address. I-verify muna ang email bago pumasok sa workspace.',
         emailVerificationRequired: true,
         email,
       });
@@ -445,7 +445,7 @@ export function createAuthRouter(
     const rawRefresh = req.cookies?.[config.refreshCookieName];
     if (typeof rawRefresh !== 'string' || !rawRefresh) {
       clearSessionCookies(res, config);
-      res.status(401).json({ error: 'No refresh session found.' });
+      res.status(401).json({ error: 'Walang nahanap na refresh session.' });
       return;
     }
 
@@ -467,7 +467,7 @@ export function createAuthRouter(
   router.post('/forgot-password', async (req, res) => {
     const email = normalizeGmail(String(req.body?.email || ''));
     if (!isValidGmailAddress(email)) {
-      res.status(400).json({ error: 'Please enter a valid @gmail.com address.' });
+      res.status(400).json({ error: 'Maglagay ng wastong @gmail.com address.' });
       return;
     }
 
@@ -476,13 +476,13 @@ export function createAuthRouter(
       .get(email) as { id: string; full_name: string; email_verified: number; status: string } | undefined;
 
     if (!row) {
-      res.status(404).json({ error: 'No account found with that Gmail address.' });
+      res.status(404).json({ error: 'Walang nahanap na account na may ganitong Gmail address.' });
       return;
     }
 
     if (row.email_verified !== 1) {
       res.status(403).json({
-        error: 'Only verified Gmail accounts can reset their password. Please verify your Gmail address first.',
+        error: 'Mga na-verify na Gmail account lamang ang maaaring mag-reset ng password. I-verify muna ang Gmail.',
         emailVerificationRequired: true,
       });
       return;
@@ -490,7 +490,7 @@ export function createAuthRouter(
 
     if (row.status !== 'active') {
       res.status(403).json({
-        error: `Password reset is unavailable while this account is ${row.status}. Please submit an account review request.`,
+        error: `Hindi maaaring mag-reset ng password habang ang account ay ${row.status}. Magpadala ng apela.`,
       });
       return;
     }
@@ -524,7 +524,7 @@ export function createAuthRouter(
     }
 
     if (newPassword !== confirmPassword) {
-      res.status(400).json({ error: 'New password and confirmation do not match.' });
+      res.status(400).json({ error: 'Hindi tugma ang bagong password at kumpirmasyon.' });
       return;
     }
 
@@ -545,12 +545,12 @@ export function createAuthRouter(
       .get(check.userId) as { id: string; email_verified: number; status: string } | undefined;
 
     if (!userRow || userRow.email_verified !== 1) {
-      res.status(403).json({ error: 'Only verified Gmail accounts can reset passwords.' });
+      res.status(403).json({ error: 'Mga na-verify na Gmail account lamang ang maaaring mag-reset ng password.' });
       return;
     }
 
     if (userRow.status !== 'active') {
-      res.status(403).json({ error: `Account is currently ${userRow.status}.` });
+      res.status(403).json({ error: `Ang account ay kasalukuyang ${userRow.status}.` });
       return;
     }
 
@@ -567,7 +567,7 @@ export function createAuthRouter(
     db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userRow.id);
     clearSessionCookies(res, config);
 
-    res.json({ ok: true, message: 'Password reset successful. Please sign in with your new password.' });
+    res.json({ ok: true, message: 'Matagumpay ang pag-reset ng password. Mag-sign in gamit ang bagong password.' });
   });
 
   // Demo Student Workspace preview login (verified demo student only; never admin)
@@ -599,7 +599,7 @@ export function createAuthRouter(
 
     if (Number(adminCountRow.c) > 0) {
       res.status(403).json({
-        error: 'Administrator account already exists. Additional admins can only be created by an authorized administrator.',
+        error: 'Mayroon nang administrator account. Ang mga karagdagang admin ay maaari lamang gawin ng awtorisadong administrator.',
       });
       return;
     }
@@ -607,11 +607,11 @@ export function createAuthRouter(
     const expectedSecret = process.env.INKORA_ADMIN_SETUP_SECRET || '';
     const providedSecret = String(req.body?.setup_secret || '');
     if (!expectedSecret || providedSecret.length !== expectedSecret.length) {
-      res.status(403).json({ error: 'Valid initial setup secret is required to initialize the admin account.' });
+      res.status(403).json({ error: 'Kinakailangan ang wastong lihim na susi ng paunang pag-setup upang masimulan ang admin account.' });
       return;
     }
     if (!crypto.timingSafeEqual(Buffer.from(providedSecret), Buffer.from(expectedSecret))) {
-      res.status(403).json({ error: 'Invalid setup secret.' });
+      res.status(403).json({ error: 'Hindi wasto ang lihim na susi ng pag-setup.' });
       return;
     }
 
@@ -621,11 +621,11 @@ export function createAuthRouter(
     const confirmPassword = String(req.body?.confirm_password ?? '');
 
     if (!isValidGmailAddress(email)) {
-      res.status(400).json({ error: 'Admin account must use a valid @gmail.com address.' });
+      res.status(400).json({ error: 'Dapat gumamit ang admin account ng wastong @gmail.com address.' });
       return;
     }
     if (fullName.length < 2) {
-      res.status(400).json({ error: 'Full name is required.' });
+      res.status(400).json({ error: 'Kinakailangan ang buong pangalan.' });
       return;
     }
     const pwErr = validatePasswordStrength(password);
@@ -634,13 +634,13 @@ export function createAuthRouter(
       return;
     }
     if (password !== confirmPassword) {
-      res.status(400).json({ error: 'Passwords do not match.' });
+      res.status(400).json({ error: 'Hindi magkatugma ang mga password.' });
       return;
     }
 
     const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(email);
     if (existing) {
-      res.status(409).json({ error: 'This Gmail address is already registered.' });
+      res.status(409).json({ error: 'Nakarehistro na ang Gmail address na ito.' });
       return;
     }
 
@@ -651,7 +651,7 @@ export function createAuthRouter(
         id, email, email_verified, password_hash, role, status, status_reason, full_name,
         university, major, academic_year, bio, theme_preference, workspace_accent,
         storage_quota_bytes, is_demo, last_login_at, login_count, created_at, updated_at
-      ) VALUES (?, ?, 1, ?, 'admin', 'active', '', ?, 'INKORA Administration', 'System Admin', 'Staff', '', 'light', 'purple', ?, 0, ?, 1, ?, ?)`
+      ) VALUES (?, ?, 1, ?, 'admin', 'active', '', ?, 'INKORA Administration', 'Tagapangasiwa ng Sistema', 'Kawani', '', 'light', 'blue', ?, 0, ?, 1, ?, ?)`
     ).run(adminId, email, hashPassword(password), fullName, config.defaultStorageQuotaBytes, now, now, now);
 
     const tokens = createSessionForUser(
@@ -670,11 +670,11 @@ export function createAuthRouter(
   router.post('/appeal', (req, res) => {
     const email = normalizeGmail(String(req.body?.email || ''));
     const password = String(req.body?.password || '');
-    const subject = String(req.body?.subject || '').trim() || 'Account Status Review Request';
+    const subject = String(req.body?.subject || '').trim() || 'Kahilingan sa Pagsusuri ng Account';
     const message = String(req.body?.message || '').trim();
 
     if (!isValidGmailAddress(email) || !password || message.length < 5) {
-      res.status(400).json({ error: 'Valid Gmail credentials and a brief explanation message are required.' });
+      res.status(400).json({ error: 'Kinakailangan ang wastong kredensyal ng Gmail at maikling paliwanag.' });
       return;
     }
 
@@ -683,7 +683,7 @@ export function createAuthRouter(
       .get(email) as { id: string; password_hash: string } | undefined;
 
     if (!row || !verifyPassword(password, row.password_hash)) {
-      res.status(401).json({ error: 'Credentials could not be verified.' });
+      res.status(401).json({ error: 'Hindi maberipika ang mga kredensyal.' });
       return;
     }
 

@@ -28,7 +28,7 @@ export function createFoldersRouter(
   router.post('/', (req: AuthenticatedRequest, res) => {
     const name = String(req.body?.name || '').trim();
     if (!name) {
-      res.status(400).json({ error: 'Folder name is required.' });
+      res.status(400).json({ error: 'Kinakailangan ang pangalan ng folder.' });
       return;
     }
 
@@ -42,7 +42,7 @@ export function createFoldersRouter(
 
     const id = generateId();
     const now = new Date().toISOString();
-    const color = String(req.body?.color || '#6D28D9').trim().slice(0, 20);
+    const color = String(req.body?.color || '#2563EB').trim().slice(0, 20);
     const icon = String(req.body?.icon || 'Folder').trim().slice(0, 40);
 
     db.prepare(
@@ -62,13 +62,13 @@ export function createFoldersRouter(
       .get(req.params.id, req.user!.id) as Record<string, unknown> | undefined;
 
     if (!existing) {
-      res.status(404).json({ error: 'Folder not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang folder.' });
       return;
     }
 
     const name = req.body?.name !== undefined ? String(req.body.name).trim() : String(existing.name);
     if (!name) {
-      res.status(400).json({ error: 'Folder name cannot be empty.' });
+      res.status(400).json({ error: 'Hindi maaaring walang laman ang pangalan ng folder.' });
       return;
     }
 
@@ -97,7 +97,7 @@ export function createFoldersRouter(
       .prepare('DELETE FROM folders WHERE id = ? AND user_id = ?')
       .run(req.params.id, req.user!.id);
     if (info.changes === 0) {
-      res.status(404).json({ error: 'Folder not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang folder.' });
       return;
     }
     res.json({ ok: true });

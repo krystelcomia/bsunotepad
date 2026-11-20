@@ -40,12 +40,12 @@ export type CanvasTool =
 
 const PALETTE = [
   '#0F172A',
-  '#4F46E5',
+  '#1D4ED8',
+  '#2563EB',
   '#0284C7',
   '#059669',
   '#D97706',
   '#E11D48',
-  '#7C3AED',
   '#FDE047',
   '#FFFFFF',
 ];
@@ -167,7 +167,7 @@ function drawShape(ctx: CanvasRenderingContext2D, shape: DrawingShape, selected 
 
   if (selected) {
     ctx.setLineDash([5, 4]);
-    ctx.strokeStyle = '#4F46E5';
+    ctx.strokeStyle = '#2563EB';
     ctx.lineWidth = 1.5;
     ctx.strokeRect(
       Math.min(x1, x2) - 6,
@@ -232,7 +232,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, bg: string, w: number, h:
       }
     }
   } else if (bg === 'lined') {
-    ctx.strokeStyle = 'rgba(99, 102, 241, 0.18)';
+    ctx.strokeStyle = 'rgba(37, 99, 235, 0.2)';
     ctx.lineWidth = 1;
     for (let y = 40; y < h; y += 32) {
       ctx.beginPath();
@@ -240,7 +240,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, bg: string, w: number, h:
       ctx.lineTo(w, y);
       ctx.stroke();
     }
-    ctx.strokeStyle = 'rgba(244, 63, 94, 0.32)';
+    ctx.strokeStyle = 'rgba(14, 165, 233, 0.35)';
     ctx.beginPath();
     ctx.moveTo(64, 0);
     ctx.lineTo(64, h);
@@ -789,30 +789,30 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   };
 
   const toolButtons: Array<{ id: CanvasTool; label: string; icon: React.ReactNode }> = [
-    { id: 'select', label: 'Select & Move', icon: <MousePointer2 className="w-4 h-4" /> },
-    { id: 'pen', label: 'Ink Pen', icon: <PenTool className="w-4 h-4" /> },
-    { id: 'calligraphy', label: 'Fountain Nib', icon: <Feather className="w-4 h-4" /> },
-    { id: 'pencil', label: 'Pencil', icon: <Pencil className="w-4 h-4" /> },
+    { id: 'select', label: 'Piliin at Ilipat', icon: <MousePointer2 className="w-4 h-4" /> },
+    { id: 'pen', label: 'Panulat na Tinta', icon: <PenTool className="w-4 h-4" /> },
+    { id: 'calligraphy', label: 'Fountain Pen', icon: <Feather className="w-4 h-4" /> },
+    { id: 'pencil', label: 'Lapis', icon: <Pencil className="w-4 h-4" /> },
     { id: 'highlighter', label: 'Highlighter', icon: <Highlighter className="w-4 h-4" /> },
-    { id: 'eraser', label: 'Eraser', icon: <Eraser className="w-4 h-4" /> },
-    { id: 'line', label: 'Line', icon: <Minus className="w-4 h-4" /> },
-    { id: 'arrow', label: 'Arrow', icon: <ArrowUpRight className="w-4 h-4" /> },
-    { id: 'rect', label: 'Rectangle', icon: <Square className="w-4 h-4" /> },
-    { id: 'circle', label: 'Circle / Oval', icon: <Circle className="w-4 h-4" /> },
-    { id: 'triangle', label: 'Triangle', icon: <Triangle className="w-4 h-4" /> },
-    { id: 'text', label: 'Text Label', icon: <Type className="w-4 h-4" /> },
+    { id: 'eraser', label: 'Pambura', icon: <Eraser className="w-4 h-4" /> },
+    { id: 'line', label: 'Linya', icon: <Minus className="w-4 h-4" /> },
+    { id: 'arrow', label: 'Palaso', icon: <ArrowUpRight className="w-4 h-4" /> },
+    { id: 'rect', label: 'Parihaba', icon: <Square className="w-4 h-4" /> },
+    { id: 'circle', label: 'Bilog / Biluhaba', icon: <Circle className="w-4 h-4" /> },
+    { id: 'triangle', label: 'Tatsulok', icon: <Triangle className="w-4 h-4" /> },
+    { id: 'text', label: 'Teksto / Label', icon: <Type className="w-4 h-4" /> },
   ];
 
   return (
     <div className="flex flex-col h-full">
       {!readOnly && (
         <div
-          className={`flex flex-wrap items-center gap-2 px-3 py-2 border-b border-stone-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs ${
+          className={`flex flex-wrap items-center gap-2 px-3 py-2 border-b border-blue-200/80 dark:border-blue-900/60 bg-white/95 dark:bg-[#0D1930]/95 backdrop-blur-xs ${
             compactToolbar ? 'text-xs' : ''
           }`}
         >
-          {/* Tools */}
-          <div className="flex flex-wrap items-center gap-0.5 p-1 rounded-xl bg-stone-100 dark:bg-slate-800">
+          {/* Mga Kagamitan sa Pagguhit */}
+          <div className="flex flex-wrap items-center gap-0.5 p-1 rounded-xl bg-blue-50/80 dark:bg-[#132340]">
             {toolButtons.map((tb) => (
               <button
                 key={tb.id}
@@ -821,8 +821,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 title={tb.label}
                 className={`p-1.5 rounded-lg transition cursor-pointer ${
                   tool === tb.id
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'
+                    ? 'bg-blue-700 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-blue-950'
                 }`}
               >
                 {tb.icon}
@@ -830,9 +830,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             ))}
           </div>
 
-          <div className="h-6 w-px bg-stone-200 dark:bg-slate-700 hidden sm:block" />
+          <div className="h-6 w-px bg-blue-100 dark:bg-blue-900 hidden sm:block" />
 
-          {/* Colors */}
+          {/* Mga Kulay */}
           <div className="flex items-center gap-1">
             {PALETTE.map((c) => (
               <button
@@ -841,11 +841,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 onClick={() => setColor(c)}
                 className={`w-5 h-5 rounded-full border transition cursor-pointer ${
                   color.toLowerCase() === c.toLowerCase()
-                    ? 'ring-2 ring-indigo-500 ring-offset-1 scale-110'
-                    : 'border-stone-300 dark:border-slate-600'
+                    ? 'ring-2 ring-blue-600 ring-offset-1 scale-110'
+                    : 'border-blue-200 dark:border-blue-700'
                 }`}
                 style={{ backgroundColor: c }}
-                title={`Color ${c}`}
+                title={`Kulay ${c}`}
               />
             ))}
             <input
@@ -853,16 +853,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               value={color}
               onChange={(e) => setColor(e.target.value)}
               className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0"
-              title="Custom color"
+              title="Sariling kulay"
             />
           </div>
 
-          <div className="h-6 w-px bg-stone-200 dark:bg-slate-700 hidden sm:block" />
+          <div className="h-6 w-px bg-blue-100 dark:bg-blue-900 hidden sm:block" />
 
-          {/* Size & Opacity */}
+          {/* Laki at Linaw */}
           <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
             <label className="flex items-center gap-1.5">
-              <span className="text-[11px] font-medium">Size</span>
+              <span className="text-[11px] font-medium">Laki</span>
               <input
                 type="range"
                 min={1}
@@ -870,12 +870,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 step={0.5}
                 value={strokeWidth}
                 onChange={(e) => setStrokeWidth(Number(e.target.value))}
-                className="w-16 accent-indigo-600"
+                className="w-16 accent-blue-600"
               />
               <span className="font-mono text-[11px] w-5">{strokeWidth}</span>
             </label>
             <label className="hidden md:flex items-center gap-1.5">
-              <span className="text-[11px] font-medium">Alpha</span>
+              <span className="text-[11px] font-medium">Linaw</span>
               <input
                 type="range"
                 min={0.2}
@@ -883,37 +883,37 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 step={0.05}
                 value={opacity}
                 onChange={(e) => setOpacity(Number(e.target.value))}
-                className="w-14 accent-indigo-600"
+                className="w-14 accent-blue-600"
               />
             </label>
           </div>
 
-          {/* Paper background (unless overlayMode) */}
+          {/* Background ng Papel (maliban sa overlayMode) */}
           {!overlayMode && (
             <select
               value={value.background}
               onChange={(e) => commitChange({ ...value, background: e.target.value })}
-              className="text-xs px-2 py-1.5 rounded-lg border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
-              title="Canvas Paper Background"
+              className="text-xs px-2 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-white dark:bg-[#132340] text-slate-700 dark:text-slate-200"
+              title="Estilo ng Papel sa Guhitan"
             >
-              <option value="plain">Plain Paper</option>
-              <option value="grid">Graph Grid</option>
-              <option value="dot">Dot Grid</option>
-              <option value="lined">Ruled Paper</option>
-              <option value="dark_board">Chalkboard</option>
+              <option value="plain">Blankong Papel</option>
+              <option value="grid">Grid</option>
+              <option value="dot">May Tuldok</option>
+              <option value="lined">Linyadong Papel</option>
+              <option value="dark_board">Madilim na Pisara</option>
             </select>
           )}
 
-          {/* Actions */}
+          {/* Mga Aksyon */}
           <div className="flex items-center gap-1 ml-auto">
             <button
               type="button"
               onClick={() => setSnapGrid((s) => !s)}
-              title="Snap shapes to 12px grid"
+              title="I-snap ang mga hugis sa 12px grid"
               className={`p-1.5 rounded-lg border text-xs cursor-pointer ${
                 snapGrid
-                  ? 'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950/60 dark:border-indigo-700 dark:text-indigo-300'
-                  : 'border-stone-200 dark:border-slate-700 text-slate-500 hover:bg-stone-100 dark:hover:bg-slate-800'
+                  ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-950/60 dark:border-blue-700 dark:text-sky-300'
+                  : 'border-blue-200 dark:border-blue-800 text-slate-500 hover:bg-blue-50 dark:hover:bg-blue-950/60'
               }`}
             >
               <Grid className="w-4 h-4" />
@@ -923,8 +923,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               type="button"
               onClick={handleUndo}
               disabled={history.length === 0}
-              title="Undo"
-              className="p-1.5 rounded-lg border border-stone-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer"
+              title="I-undo"
+              className="p-1.5 rounded-lg border border-blue-200 dark:border-blue-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer"
             >
               <Undo2 className="w-4 h-4" />
             </button>
@@ -932,8 +932,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               type="button"
               onClick={handleRedo}
               disabled={redoStack.length === 0}
-              title="Redo"
-              className="p-1.5 rounded-lg border border-stone-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer"
+              title="I-redo"
+              className="p-1.5 rounded-lg border border-blue-200 dark:border-blue-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer"
             >
               <Redo2 className="w-4 h-4" />
             </button>
@@ -943,8 +943,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 <button
                   type="button"
                   onClick={() => setZoom((z) => Math.max(0.5, Number((z - 0.15).toFixed(2))))}
-                  title="Zoom out"
-                  className="p-1.5 rounded-lg border border-stone-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800"
+                  title="Paliitin"
+                  className="p-1.5 rounded-lg border border-blue-200 dark:border-blue-800 text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer"
                 >
                   <ZoomOut className="w-4 h-4" />
                 </button>
@@ -954,8 +954,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 <button
                   type="button"
                   onClick={() => setZoom((z) => Math.min(2, Number((z + 0.15).toFixed(2))))}
-                  title="Zoom in"
-                  className="p-1.5 rounded-lg border border-stone-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800"
+                  title="Palakihin"
+                  className="p-1.5 rounded-lg border border-blue-200 dark:border-blue-800 text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer"
                 >
                   <ZoomIn className="w-4 h-4" />
                 </button>
@@ -974,8 +974,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 <button
                   type="button"
                   onClick={() => imageInputRef.current?.click()}
-                  title="Place image on canvas"
-                  className="p-1.5 rounded-lg border border-stone-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800"
+                  title="Maglagay ng larawan sa guhitan"
+                  className="p-1.5 rounded-lg border border-blue-200 dark:border-blue-800 text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer"
                 >
                   <ImageIcon className="w-4 h-4" />
                 </button>
@@ -985,8 +985,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             <button
               type="button"
               onClick={exportPng}
-              title="Export PNG"
-              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-stone-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer"
+              title="I-export na PNG"
+              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" /> PNG
             </button>
@@ -994,8 +994,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               <button
                 type="button"
                 onClick={exportSvg}
-                title="Export Vector SVG"
-                className="hidden sm:inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-stone-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer"
+                title="I-export na Vector SVG"
+                className="hidden sm:inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer"
               >
                 SVG
               </button>
@@ -1005,10 +1005,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               <button
                 type="button"
                 onClick={handleEmbedIntoDoc}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs cursor-pointer"
-                title="Embed this drawing inside the Document editor"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold shadow-xs cursor-pointer"
+                title="Ilakip ang guhit na ito sa loob ng dokumento"
               >
-                <FilePlus2 className="w-3.5 h-3.5" /> Embed
+                <FilePlus2 className="w-3.5 h-3.5" /> Ilakip
               </button>
             )}
 
@@ -1017,12 +1017,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               onClick={() => {
                 if (
                   value.strokes.length + value.shapes.length + value.texts.length === 0 ||
-                  window.confirm('Clear all ink and shapes on this canvas?')
+                  window.confirm('Burahin ang lahat ng tinta at hugis sa canvas na ito?')
                 ) {
                   commitChange({ ...value, strokes: [], shapes: [], texts: [], images: [] });
                 }
               }}
-              title="Clear canvas"
+              title="Burahin ang guhitan"
               className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
@@ -1031,15 +1031,15 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         </div>
       )}
 
-      {/* Canvas Viewport */}
+      {/* Tanawan ng Guhitan */}
       <div
         className={`relative flex-1 overflow-auto flex justify-center items-start ${
-          overlayMode ? 'bg-transparent p-0' : 'bg-[#EAE6DC] dark:bg-[#0B0F17] p-4 sm:p-6'
+          overlayMode ? 'bg-transparent p-0' : 'bg-[#EFF6FF] dark:bg-[#071021] p-4 sm:p-6'
         }`}
       >
         <div
           className={`relative ${
-            overlayMode ? 'w-full h-full' : 'rounded-xl shadow-xl border border-stone-300/70 dark:border-slate-700 overflow-hidden'
+            overlayMode ? 'w-full h-full' : 'rounded-xl shadow-xl border border-blue-200/80 dark:border-blue-800 overflow-hidden'
           }`}
           style={
             overlayMode
@@ -1072,7 +1072,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
           {textInputPos && (
             <div
-              className="absolute z-20 flex items-center gap-1 bg-white dark:bg-slate-900 border border-indigo-400 rounded-lg shadow-lg p-1"
+              className="absolute z-20 flex items-center gap-1 bg-white dark:bg-[#0D1930] border border-blue-400 rounded-lg shadow-lg p-1"
               style={{
                 left: `${(textInputPos.x / canvasWidth) * 100}%`,
                 top: `${(textInputPos.y / canvasHeight) * 100}%`,
@@ -1087,15 +1087,15 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                   if (e.key === 'Enter') commitText();
                   if (e.key === 'Escape') setTextInputPos(null);
                 }}
-                placeholder="Type label..."
+                placeholder="Mag-type ng label..."
                 className="px-2 py-1 text-xs bg-transparent focus:outline-none text-slate-900 dark:text-white min-w-[140px]"
               />
               <button
                 type="button"
                 onClick={commitText}
-                className="px-2 py-1 text-xs font-semibold bg-indigo-600 text-white rounded-md"
+                className="px-2 py-1 text-xs font-semibold bg-blue-700 text-white rounded-md cursor-pointer"
               >
-                Add
+                Idagdag
               </button>
             </div>
           )}

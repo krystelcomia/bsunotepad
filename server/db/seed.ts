@@ -30,16 +30,16 @@ export function ensureAdminUser(db: DatabaseSync): string {
       id, email, email_verified, password_hash, role, status, status_reason, full_name, university,
       major, academic_year, bio, theme_preference, workspace_accent, is_demo,
       last_login_at, login_count, created_at, updated_at
-    ) VALUES (?, ?, 1, ?, 'admin', 'active', '', ?, ?, ?, ?, ?, 'light', 'purple', 0, ?, 0, ?, ?)`
+    ) VALUES (?, ?, 1, ?, 'admin', 'active', '', ?, ?, ?, ?, ?, 'light', 'blue', 0, ?, 0, ?, ?)`
   ).run(
     adminId,
     ADMIN_EMAIL,
     passwordHash,
-    'INKORA Administrator',
-    'INKORA Platform Operations',
-    'System Administration',
-    'Staff',
-    'Platform administrator overseeing student account health, access control, and account concerns.',
+    'Tagapangasiwa ng INKORA',
+    'Operasyon ng Platform ng INKORA',
+    'Pangangasiwa ng Sistema',
+    'Kawani',
+    'Tagapangasiwa ng platform na sumusubaybay sa kalagayan ng mga account ng mag-aaral, kontrol sa access, at mga alalahanin.',
     null,
     now,
     now
@@ -68,16 +68,16 @@ export function ensureDemoUser(db: DatabaseSync): string {
       id, email, email_verified, password_hash, role, status, status_reason, full_name, university,
       major, academic_year, bio, theme_preference, workspace_accent, is_demo,
       last_login_at, login_count, created_at, updated_at
-    ) VALUES (?, ?, 1, ?, 'student', 'active', '', ?, ?, ?, ?, ?, 'light', 'purple', 1, ?, 4, ?, ?)`
+    ) VALUES (?, ?, 1, ?, 'student', 'active', '', ?, ?, ?, ?, ?, 'light', 'blue', 1, ?, 4, ?, ?)`
   ).run(
     userId,
     DEMO_EMAIL,
     passwordHash,
     'Alex Rivera',
     'Bridgewater State University',
-    'Computer Science & Bioinformatics',
-    'Junior (Year 3)',
-    'Honors student organizing lecture notes, lab reports, and algorithm sketches in INKORA.',
+    'Agham Pangkompyuter at Bioinformatika',
+    'Ikatlong Taon (Junior)',
+    'Mag-aaral na nag-aayos ng mga tala sa klase, ulat sa laboratoryo, at mga guhit ng algoritmo sa INKORA.',
     isoOffset(-1),
     isoOffset(-240),
     now
@@ -92,9 +92,9 @@ export function ensureDemoUser(db: DatabaseSync): string {
     `INSERT INTO folders (id, user_id, parent_id, name, color, icon, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   );
-  insertFolder.run(folderFallId, userId, null, 'Fall 2026 Lectures', '#6D28D9', 'Folder', now, now);
-  insertFolder.run(folderLabsId, userId, null, 'Lab Reports & Diagrams', '#3B82F6', 'Folder', now, now);
-  insertFolder.run(folderExamsId, userId, null, 'Midterm Prep', '#8B5CF6', 'Folder', now, now);
+  insertFolder.run(folderFallId, userId, null, 'Mga Lektura sa Taglagas 2026', '#1D4ED8', 'Folder', now, now);
+  insertFolder.run(folderLabsId, userId, null, 'Mga Ulat sa Lab at Dayagram', '#2563EB', 'Folder', now, now);
+  insertFolder.run(folderExamsId, userId, null, 'Paghahanda sa Midterm', '#0284C7', 'Folder', now, now);
 
   const csId = generateId();
   const bioId = generateId();
@@ -105,9 +105,9 @@ export function ensureDemoUser(db: DatabaseSync): string {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
-  insertSubject.run(csId, userId, 'CS 301', 'Algorithms & Data Structures', 'Dr. Elena Vance', 'Fall 2026', '#6D28D9', 'Cpu', 1, now, now);
-  insertSubject.run(bioId, userId, 'BIO 204', 'Cellular & Molecular Biology', 'Prof. Marcus Thorne', 'Fall 2026', '#2563EB', 'Microscope', 2, now, now);
-  insertSubject.run(histId, userId, 'HIST 210', 'History of Scientific Thought', 'Dr. Claire Bennett', 'Fall 2026', '#8B5CF6', 'Landmark', 3, now, now);
+  insertSubject.run(csId, userId, 'CS 301', 'Mga Algoritmo at Estruktura ng Datos', 'Dr. Elena Vance', 'Unang Semestre 2026', '#1D4ED8', 'Cpu', 1, now, now);
+  insertSubject.run(bioId, userId, 'BIO 204', 'Biyolohiyang Selular at Molekular', 'Prof. Marcus Thorne', 'Unang Semestre 2026', '#2563EB', 'Microscope', 2, now, now);
+  insertSubject.run(histId, userId, 'HIST 210', 'Kasaysayan ng Kaisipang Siyentipiko', 'Dr. Claire Bennett', 'Unang Semestre 2026', '#0284C7', 'Landmark', 3, now, now);
 
   const csNbId = generateId();
   const bioNbId = generateId();
@@ -118,9 +118,9 @@ export function ensureDemoUser(db: DatabaseSync): string {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
-  insertNb.run(csNbId, userId, csId, 'Algorithms Lecture Compendium', 'Cornell notes, complexity proofs, and graph diagrams', '#4C1D95', '#A78BFA', 'Code2', 'cornell', 1, now, now);
-  insertNb.run(bioNbId, userId, bioId, 'Cell Bio Lab & Diagrams', 'Formal lab reports, enzyme assays, and organelle sketches', '#1E40AF', '#60A5FA', 'FlaskConical', 'lined', 1, now, now);
-  insertNb.run(histNbId, userId, histId, 'Scientific Revolutions Essays', 'Draft essays, primary source quotes, and midterm review', '#5B21B6', '#C4B5FD', 'ScrollText', 'plain', 0, now, now);
+  insertNb.run(csNbId, userId, csId, 'Kompendyo sa Lektura ng Algoritmo', 'Mga talang Cornell, patunay ng kompleksidad, at dayagram ng grapo', '#1E3A8A', '#60A5FA', 'Code2', 'cornell', 1, now, now);
+  insertNb.run(bioNbId, userId, bioId, 'Lab at Dayagram sa Selula', 'Pormal na ulat sa lab, pagsusuri ng ensaym, at mga guhit ng organel', '#1E40AF', '#93C5FD', 'FlaskConical', 'lined', 1, now, now);
+  insertNb.run(histNbId, userId, histId, 'Mga Sanaysay sa Rebolusyong Siyentipiko', 'Mga burador ng sanaysay, sipi mula sa pangunahing sanggunian, at balik-aral', '#0369A1', '#7DD3FC', 'ScrollText', 'plain', 0, now, now);
 
   // Note 1: Word-like Lab Report
   const labContentJson = JSON.stringify({
@@ -129,28 +129,28 @@ export function ensureDemoUser(db: DatabaseSync): string {
       {
         type: 'heading',
         attrs: { level: 1 },
-        content: [{ type: 'text', text: 'Lab Report 04: Catalase Enzyme Kinetics Assay' }],
+        content: [{ type: 'text', text: 'Ulat sa Laboratoryo 04: Kinetika ng Ensaym na Katalase' }],
       },
       {
         type: 'paragraph',
         content: [
-          { type: 'text', marks: [{ type: 'bold' }], text: 'Course: ' },
-          { type: 'text', text: 'BIO 204 — Cellular & Molecular Biology   |   ' },
-          { type: 'text', marks: [{ type: 'bold' }], text: 'Lab Partner: ' },
+          { type: 'text', marks: [{ type: 'bold' }], text: 'Asignatura: ' },
+          { type: 'text', text: 'BIO 204 — Biyolohiyang Selular at Molekular   |   ' },
+          { type: 'text', marks: [{ type: 'bold' }], text: 'Katuwang sa Lab: ' },
           { type: 'text', text: 'Maya Lin' },
         ],
       },
       {
         type: 'heading',
         attrs: { level: 2 },
-        content: [{ type: 'text', text: '1. Objective & Hypothesis' }],
+        content: [{ type: 'text', text: '1. Layunin at Hipotesis' }],
       },
       {
         type: 'paragraph',
         content: [
           {
             type: 'text',
-            text: 'Determine the initial reaction velocity (V₀) of bovine liver catalase across varying hydrogen peroxide (H₂O₂) concentrations and estimate Vmax and Km using Lineweaver-Burk double-reciprocal linearization.',
+            text: 'Tukuyin ang paunang bilis ng reaksyon (V₀) ng katalase sa iba’t ibang konsentrasyon ng hydrogen peroxide (H₂O₂) at tantiyahin ang Vmax at Km gamit ang pagguhit ng Lineweaver-Burk.',
           },
         ],
       },
@@ -163,7 +163,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
               {
                 type: 'text',
                 marks: [{ type: 'italic' }],
-                text: 'Hypothesis: Reaction velocity increases hyperbolically with substrate concentration until enzyme active sites saturate at Vmax.',
+                text: 'Hipotesis: Tumataas ang bilis ng reaksyon kasabay ng konsentrasyon ng substrate hanggang mapuno ang mga aktibong bahagi ng ensaym sa Vmax.',
               },
             ],
           },
@@ -172,7 +172,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
       {
         type: 'heading',
         attrs: { level: 2 },
-        content: [{ type: 'text', text: '2. Experimental Trial Data' }],
+        content: [{ type: 'text', text: '2. Datos ng Eksperimental na Pagsubok' }],
       },
       {
         type: 'table',
@@ -181,9 +181,9 @@ export function ensureDemoUser(db: DatabaseSync): string {
             type: 'tableRow',
             content: [
               { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: '[H₂O₂] (mM)' }] }] },
-              { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Trial 1 O₂ Rate (mL/s)' }] }] },
-              { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Trial 2 O₂ Rate (mL/s)' }] }] },
-              { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Mean V₀ (mL/s)' }] }] },
+              { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Pagsubok 1 Bilis ng O₂ (mL/s)' }] }] },
+              { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Pagsubok 2 Bilis ng O₂ (mL/s)' }] }] },
+              { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Katamtamang V₀ (mL/s)' }] }] },
             ],
           },
           {
@@ -218,7 +218,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
       {
         type: 'heading',
         attrs: { level: 2 },
-        content: [{ type: 'text', text: '3. Lab Submission Checklist' }],
+        content: [{ type: 'text', text: '3. Talaan ng Isusumite sa Laboratoryo' }],
       },
       {
         type: 'taskList',
@@ -226,24 +226,24 @@ export function ensureDemoUser(db: DatabaseSync): string {
           {
             type: 'taskItem',
             attrs: { checked: true },
-            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Calibrate dissolved oxygen sensor before Trial 1' }] }],
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'I-calibrate ang dissolved oxygen sensor bago ang Pagsubok 1' }] }],
           },
           {
             type: 'taskItem',
             attrs: { checked: true },
-            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Compute Lineweaver-Burk slope (Km / Vmax)' }] }],
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Kuwentahin ang slope ng Lineweaver-Burk (Km / Vmax)' }] }],
           },
           {
             type: 'taskItem',
             attrs: { checked: false },
-            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Attach error bar plot and export PDF for Friday submission' }] }],
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Ilakip ang graph ng error bar at i-export ang PDF para sa pasahan sa Biyernes' }] }],
           },
         ],
       },
     ],
   });
 
-  const labHtml = `<h1>Lab Report 04: Catalase Enzyme Kinetics Assay</h1><p><strong>Course: </strong>BIO 204 — Cellular &amp; Molecular Biology | <strong>Lab Partner: </strong>Maya Lin</p><h2>1. Objective &amp; Hypothesis</h2><p>Determine the initial reaction velocity (V₀) of bovine liver catalase across varying hydrogen peroxide (H₂O₂) concentrations and estimate Vmax and Km using Lineweaver-Burk double-reciprocal linearization.</p>`;
+  const labHtml = `<h1>Ulat sa Laboratoryo 04: Kinetika ng Ensaym na Katalase</h1><p><strong>Asignatura: </strong>BIO 204 — Biyolohiyang Selular at Molekular | <strong>Katuwang sa Lab: </strong>Maya Lin</p><h2>1. Layunin at Hipotesis</h2><p>Tukuyin ang paunang bilis ng reaksyon (V₀) ng katalase sa iba’t ibang konsentrasyon ng hydrogen peroxide (H₂O₂) at tantiyahin ang Vmax at Km gamit ang pagguhit ng Lineweaver-Burk.</p>`;
   const labPlain = extractPlainTextFromTipTap(labContentJson);
 
   // Note 2: Cornell Notebook + Vector Ink Graph Sketch
@@ -253,20 +253,20 @@ export function ensureDemoUser(db: DatabaseSync): string {
       {
         type: 'heading',
         attrs: { level: 2 },
-        content: [{ type: 'text', text: 'Graph Traversal: BFS vs. DFS & Dijkstra Shortest Path' }],
+        content: [{ type: 'text', text: 'Paglalakbay sa Grapo: BFS kumpara sa DFS at Pinakamaikling Daan ni Dijkstra' }],
       },
       {
         type: 'paragraph',
         content: [
           { type: 'text', marks: [{ type: 'bold' }], text: 'Breadth-First Search (BFS): ' },
-          { type: 'text', text: 'Explores graph level-by-level using a FIFO queue. Guarantees shortest unweighted path in O(V + E) time.' },
+          { type: 'text', text: 'Sinusuri ang grapo nang bawat antas gamit ang FIFO queue. Tinitiyak nito ang pinakamaikling daang walang timbang sa oras na O(V + E).' },
         ],
       },
       {
         type: 'paragraph',
         content: [
           { type: 'text', marks: [{ type: 'bold' }], text: 'Depth-First Search (DFS): ' },
-          { type: 'text', text: 'Explores as deep as possible via recursion or stack before backtracking. Useful for topological sort, cycle detection, and strongly connected components.' },
+          { type: 'text', text: 'Pumapasok nang pinakamalalim hangga’t maaari gamit ang recursion o stack bago bumalik. Kapaki-pakinabang sa topological sort at pagtuklas ng cycle.' },
         ],
       },
       {
@@ -281,8 +281,8 @@ export function ensureDemoUser(db: DatabaseSync): string {
     ],
   });
   const csPlain = extractPlainTextFromTipTap(csContentJson);
-  const csCues = 'BFS vs DFS?\n\nTime Complexity?\n\nWhen does Dijkstra fail?\n\nTopological Sort?';
-  const csSummary = 'BFS uses a queue for unweighted shortest paths in O(V+E). DFS uses a stack/recursion for structural properties. Dijkstra uses a min-heap for non-negative edge weights in O((V+E) log V).';
+  const csCues = 'BFS kumpara sa DFS?\n\nKompleksidad sa Oras?\n\nKailan nabibigo si Dijkstra?\n\nTopological Sort?';
+  const csSummary = 'Gumagamit ang BFS ng queue para sa pinakamaikling daan sa O(V+E). Ang DFS ay gumagamit ng stack/recursion. Ang Dijkstra ay gumagamit ng min-heap para sa hindi negatibong timbang sa O((V+E) log V).';
 
   const csDrawingData = JSON.stringify({
     version: 1,
@@ -291,7 +291,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
       {
         id: 'st-1',
         tool: 'highlighter',
-        color: '#DDD6FE',
+        color: '#BFDBFE',
         width: 14,
         opacity: 0.5,
         points: [
@@ -302,16 +302,16 @@ export function ensureDemoUser(db: DatabaseSync): string {
       },
     ],
     shapes: [
-      { id: 'sh-1', kind: 'circle', x1: 520, y1: 110, x2: 572, y2: 162, color: '#6D28D9', width: 2.5, opacity: 1 },
-      { id: 'sh-2', kind: 'circle', x1: 635, y1: 75, x2: 687, y2: 127, color: '#6D28D9', width: 2.5, opacity: 1 },
-      { id: 'sh-3', kind: 'circle', x1: 635, y1: 165, x2: 687, y2: 217, color: '#6D28D9', width: 2.5, opacity: 1 },
-      { id: 'sh-4', kind: 'arrow', x1: 572, y1: 128, x2: 634, y2: 102, color: '#1E1B4B', width: 2.2, opacity: 1 },
-      { id: 'sh-5', kind: 'arrow', x1: 572, y1: 146, x2: 634, y2: 186, color: '#1E1B4B', width: 2.2, opacity: 1 },
+      { id: 'sh-1', kind: 'circle', x1: 520, y1: 110, x2: 572, y2: 162, color: '#1D4ED8', width: 2.5, opacity: 1 },
+      { id: 'sh-2', kind: 'circle', x1: 635, y1: 75, x2: 687, y2: 127, color: '#2563EB', width: 2.5, opacity: 1 },
+      { id: 'sh-3', kind: 'circle', x1: 635, y1: 165, x2: 687, y2: 217, color: '#0284C7', width: 2.5, opacity: 1 },
+      { id: 'sh-4', kind: 'arrow', x1: 572, y1: 128, x2: 634, y2: 102, color: '#1E3A8A', width: 2.2, opacity: 1 },
+      { id: 'sh-5', kind: 'arrow', x1: 572, y1: 146, x2: 634, y2: 186, color: '#1E3A8A', width: 2.2, opacity: 1 },
     ],
     texts: [
-      { id: 'tx-1', x: 540, y: 142, text: 'A', color: '#6D28D9', fontSize: 16 },
-      { id: 'tx-2', x: 655, y: 107, text: 'B', color: '#6D28D9', fontSize: 16 },
-      { id: 'tx-3', x: 655, y: 197, text: 'C', color: '#6D28D9', fontSize: 16 },
+      { id: 'tx-1', x: 540, y: 142, text: 'A', color: '#1D4ED8', fontSize: 16 },
+      { id: 'tx-2', x: 655, y: 107, text: 'B', color: '#1D4ED8', fontSize: 16 },
+      { id: 'tx-3', x: 655, y: 197, text: 'C', color: '#1D4ED8', fontSize: 16 },
     ],
   });
 
@@ -340,18 +340,18 @@ export function ensureDemoUser(db: DatabaseSync): string {
       },
     ],
     shapes: [
-      { id: 'nuc-1', kind: 'circle', x1: 310, y1: 185, x2: 430, y2: 305, color: '#6D28D9', width: 3, opacity: 1 },
-      { id: 'nuc-2', kind: 'circle', x1: 350, y1: 225, x2: 390, y2: 265, color: '#8B5CF6', width: 2, opacity: 0.85 },
-      { id: 'mito-1', kind: 'circle', x1: 465, y1: 175, x2: 535, y2: 220, color: '#3B82F6', width: 2.5, opacity: 1 },
+      { id: 'nuc-1', kind: 'circle', x1: 310, y1: 185, x2: 430, y2: 305, color: '#1D4ED8', width: 3, opacity: 1 },
+      { id: 'nuc-2', kind: 'circle', x1: 350, y1: 225, x2: 390, y2: 265, color: '#3B82F6', width: 2, opacity: 0.85 },
+      { id: 'mito-1', kind: 'circle', x1: 465, y1: 175, x2: 535, y2: 220, color: '#0284C7', width: 2.5, opacity: 1 },
       { id: 'arr-1', kind: 'arrow', x1: 115, y1: 185, x2: 195, y2: 185, color: '#334155', width: 2, opacity: 1 },
-      { id: 'arr-2', kind: 'arrow', x1: 370, y1: 130, x2: 370, y2: 182, color: '#6D28D9', width: 2, opacity: 1 },
+      { id: 'arr-2', kind: 'arrow', x1: 370, y1: 130, x2: 370, y2: 182, color: '#1D4ED8', width: 2, opacity: 1 },
       { id: 'arr-3', kind: 'arrow', x1: 585, y1: 155, x2: 525, y2: 185, color: '#2563EB', width: 2, opacity: 1 },
     ],
     texts: [
-      { id: 'lbl-0', x: 245, y: 65, text: 'Eukaryotic Cell Cross-Section', color: '#1E1B4B', fontSize: 20 },
-      { id: 'lbl-1', x: 24, y: 188, text: 'Plasma Membrane', color: '#2563EB', fontSize: 14 },
-      { id: 'lbl-2', x: 328, y: 122, text: 'Nucleus & Nucleolus', color: '#6D28D9', fontSize: 14 },
-      { id: 'lbl-3', x: 560, y: 148, text: 'Mitochondrion (ATP)', color: '#2563EB', fontSize: 14 },
+      { id: 'lbl-0', x: 225, y: 65, text: 'Estruktura ng Selulang Eukaryotiko', color: '#1E3A8A', fontSize: 20 },
+      { id: 'lbl-1', x: 24, y: 188, text: 'Lamad ng Plasma', color: '#2563EB', fontSize: 14 },
+      { id: 'lbl-2', x: 322, y: 122, text: 'Nukleus at Nukleolus', color: '#1D4ED8', fontSize: 14 },
+      { id: 'lbl-3', x: 560, y: 148, text: 'Mitokondriya (ATP)', color: '#2563EB', fontSize: 14 },
     ],
   });
 
@@ -362,23 +362,23 @@ export function ensureDemoUser(db: DatabaseSync): string {
       {
         type: 'heading',
         attrs: { level: 1 },
-        content: [{ type: 'text', text: 'From Clockwork Mechanics to Statistical Physics' }],
+        content: [{ type: 'text', text: 'Mula sa Mekanikang Relos Patungong Estadistikal na Pisika' }],
       },
       {
         type: 'paragraph',
         content: [
           {
             type: 'text',
-            text: 'Nineteenth-century thermodynamics challenged the strictly deterministic Newtonian cosmos by introducing irreversibility, entropy, and probabilistic ensembles.',
+            text: 'Hinamon ng termodinamika noong ikalabinsiyam na siglo ang mahigpit na deterministikong pananaw ni Newton sa pamamagitan ng pagpapakilala ng entropiya at probabilidad.',
           },
         ],
       },
       {
         type: 'bulletList',
         content: [
-          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Sadi Carnot (1824): idealized heat engine efficiency limits' }] }] },
-          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Rudolf Clausius (1865): formalization of entropy S and the Second Law' }] }] },
-          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Ludwig Boltzmann (1877): statistical bridge S = k ln W' }] }] },
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Sadi Carnot (1824): hangganan ng kahusayan ng makina ng init' }] }] },
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Rudolf Clausius (1865): pormalisasyon ng entropiya S at Ikalawang Batas' }] }] },
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Ludwig Boltzmann (1877): ugnayang estadistikal na S = k ln W' }] }] },
         ],
       },
     ],
@@ -400,66 +400,66 @@ export function ensureDemoUser(db: DatabaseSync): string {
 
   insertNote.run(
     note1Id, userId, folderLabsId, bioNbId, bioId,
-    'Lab Report 04: Catalase Enzyme Kinetics',
-    'Experimental reaction velocity measurements and Lineweaver-Burk linearization for BIO 204.',
-    'Lab Report',
+    'Ulat sa Lab 04: Kinetika ng Ensaym na Katalase',
+    'Mga sukat ng bilis ng reaksyon at pagsusuring Lineweaver-Burk para sa BIO 204.',
+    'Ulat sa Lab',
     'document', 'plain', '', 'a4',
     labContentJson, labHtml, labPlain, '', '',
     JSON.stringify({ version: 1, strokes: [], shapes: [], texts: [], background: 'transparent' }),
-    JSON.stringify(['lab-report', 'biochem', 'kinetics']),
+    JSON.stringify(['ulat-sa-lab', 'biokimika', 'kinetika']),
     countWords(labPlain), 1, 1, isoOffset(-1), isoOffset(-18), isoOffset(-2)
   );
 
   insertNote.run(
     note2Id, userId, folderFallId, csNbId, csId,
-    'Lecture 08: Graph Traversal (BFS, DFS & Dijkstra)',
-    'Cornell cues, traversal pseudocode, and annotated graph diagram for CS 301 algorithms.',
-    'Lecture Notes',
-    'notebook', 'cornell', '#FFFDF5', 'a4',
+    'Lektura 08: Paglalakbay sa Grapo (BFS, DFS at Dijkstra)',
+    'Mga gabay na tanong sa Cornell, pseudocode, at guhit ng grapo para sa CS 301.',
+    'Mga Tala sa Lektura',
+    'notebook', 'cornell', '#F8FAFC', 'a4',
     csContentJson, '', csPlain, csCues, csSummary,
     csDrawingData,
-    JSON.stringify(['algorithms', 'graphs', 'midterm']),
+    JSON.stringify(['algoritmo', 'grapo', 'midterm']),
     countWords(csPlain), 1, 1, isoOffset(-3), isoOffset(-30), isoOffset(-5)
   );
 
   insertNote.run(
     note3Id, userId, folderLabsId, bioNbId, bioId,
-    'Eukaryotic Cell Organelle Sketch',
-    'Hand-drawn vector membrane, nucleus, and mitochondrion reference diagram.',
-    'Study Guide',
+    'Guhit ng mga Organel ng Selulang Eukaryotiko',
+    'Guhit-kamay na sanggunian para sa lamad, nukleus, at mitokondriya.',
+    'Gabay sa Pag-aaral',
     'drawing', 'grid', '#EFF6FF', 'fluid',
-    JSON.stringify({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Visual reference sketch for Chapter 4 Organelle Structure.' }] }] }),
-    '<p>Visual reference sketch for Chapter 4 Organelle Structure.</p>',
-    'Visual reference sketch for Chapter 4 Organelle Structure.',
+    JSON.stringify({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Biswal na sanggunian para sa Kabanata 4: Estruktura ng Organel.' }] }] }),
+    '<p>Biswal na sanggunian para sa Kabanata 4: Estruktura ng Organel.</p>',
+    'Biswal na sanggunian para sa Kabanata 4: Estruktura ng Organel.',
     '', '',
     cellDrawingData,
-    JSON.stringify(['diagram', 'cell-biology', 'sketch']),
+    JSON.stringify(['dayagram', 'biyolohiya', 'guhit']),
     8, 0, 1, isoOffset(-4), isoOffset(-48), isoOffset(-10)
   );
 
   insertNote.run(
     note4Id, userId, folderExamsId, histNbId, histId,
-    'Midterm Essay: Thermodynamics & Determinism',
-    'Outline and primary scholarly sources from Carnot to Boltzmann.',
-    'Essay',
+    'Sanaysay sa Midterm: Termodinamika at Determinismo',
+    'Balangkas at mga pangunahing sanggunian mula kay Carnot hanggang kay Boltzmann.',
+    'Sanaysay',
     'document', 'plain', '#FFFFFF', 'letter',
     histContentJson, '', histPlain, '', '',
     JSON.stringify({ version: 1, strokes: [], shapes: [], texts: [], background: 'transparent' }),
-    JSON.stringify(['essay', 'thermodynamics']),
+    JSON.stringify(['sanaysay', 'termodinamika']),
     countWords(histPlain), 0, 0, isoOffset(-12), isoOffset(-72), isoOffset(-24)
   );
 
-  syncNoteFts(db, { id: note1Id, user_id: userId, title: 'Lab Report 04: Catalase Enzyme Kinetics', description: 'Experimental reaction velocity measurements and Lineweaver-Burk linearization for BIO 204.', category: 'Lab Report', plain_text: labPlain, cornell_cues: '', cornell_summary: '', tags_json: '["lab-report","biochem","kinetics"]', is_trashed: 0 });
-  syncNoteFts(db, { id: note2Id, user_id: userId, title: 'Lecture 08: Graph Traversal (BFS, DFS & Dijkstra)', description: 'Cornell cues, traversal pseudocode, and annotated graph diagram for CS 301 algorithms.', category: 'Lecture Notes', plain_text: csPlain, cornell_cues: csCues, cornell_summary: csSummary, tags_json: '["algorithms","graphs","midterm"]', is_trashed: 0 });
-  syncNoteFts(db, { id: note3Id, user_id: userId, title: 'Eukaryotic Cell Organelle Sketch', description: 'Hand-drawn vector membrane, nucleus, and mitochondrion reference diagram.', category: 'Study Guide', plain_text: 'Visual reference sketch for Chapter 4 Organelle Structure.', cornell_cues: '', cornell_summary: '', tags_json: '["diagram","cell-biology","sketch"]', is_trashed: 0 });
-  syncNoteFts(db, { id: note4Id, user_id: userId, title: 'Midterm Essay: Thermodynamics & Determinism', description: 'Outline and primary scholarly sources from Carnot to Boltzmann.', category: 'Essay', plain_text: histPlain, cornell_cues: '', cornell_summary: '', tags_json: '["essay","thermodynamics"]', is_trashed: 0 });
+  syncNoteFts(db, { id: note1Id, user_id: userId, title: 'Ulat sa Lab 04: Kinetika ng Ensaym na Katalase', description: 'Mga sukat ng bilis ng reaksyon at pagsusuring Lineweaver-Burk para sa BIO 204.', category: 'Ulat sa Lab', plain_text: labPlain, cornell_cues: '', cornell_summary: '', tags_json: '["ulat-sa-lab","biokimika","kinetika"]', is_trashed: 0 });
+  syncNoteFts(db, { id: note2Id, user_id: userId, title: 'Lektura 08: Paglalakbay sa Grapo (BFS, DFS at Dijkstra)', description: 'Mga gabay na tanong sa Cornell, pseudocode, at guhit ng grapo para sa CS 301.', category: 'Mga Tala sa Lektura', plain_text: csPlain, cornell_cues: csCues, cornell_summary: csSummary, tags_json: '["algoritmo","grapo","midterm"]', is_trashed: 0 });
+  syncNoteFts(db, { id: note3Id, user_id: userId, title: 'Guhit ng mga Organel ng Selulang Eukaryotiko', description: 'Guhit-kamay na sanggunian para sa lamad, nukleus, at mitokondriya.', category: 'Gabay sa Pag-aaral', plain_text: 'Biswal na sanggunian para sa Kabanata 4: Estruktura ng Organel.', cornell_cues: '', cornell_summary: '', tags_json: '["dayagram","biyolohiya","guhit"]', is_trashed: 0 });
+  syncNoteFts(db, { id: note4Id, user_id: userId, title: 'Sanaysay sa Midterm: Termodinamika at Determinismo', description: 'Balangkas at mga pangunahing sanggunian mula kay Carnot hanggang kay Boltzmann.', category: 'Sanaysay', plain_text: histPlain, cornell_cues: '', cornell_summary: '', tags_json: '["sanaysay","termodinamika"]', is_trashed: 0 });
 
   db.prepare(
     `INSERT INTO note_versions (id, note_id, user_id, label, title, mode, paper_style, content_json, content_html, cornell_cues, cornell_summary, drawing_data, word_count, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
-    generateId(), note1Id, userId, 'Initial Lab Draft',
-    'Lab Report 04: Catalase Enzyme Kinetics', 'document', 'plain',
+    generateId(), note1Id, userId, 'Paunang Burador sa Lab',
+    'Ulat sa Lab 04: Kinetika ng Ensaym na Katalase', 'document', 'plain',
     labContentJson, labHtml, '', '',
     JSON.stringify({ version: 1, strokes: [], shapes: [], texts: [], background: 'transparent' }),
     countWords(labPlain), isoOffset(-12)
@@ -469,19 +469,19 @@ export function ensureDemoUser(db: DatabaseSync): string {
     `INSERT INTO study_tasks (id, user_id, subject_id, note_id, title, description, due_date, priority, status, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
-  insertTask.run(generateId(), userId, bioId, note1Id, 'Finalize Enzyme Kinetics Lab Report PDF', 'Plot Lineweaver-Burk graph and attach error analysis', isoOffset(36), 'high', 'in_progress', now, now);
-  insertTask.run(generateId(), userId, csId, note2Id, 'Implement Dijkstra with Binary Min-Heap', 'Practice problem set #5 in CS 301', isoOffset(60), 'high', 'todo', now, now);
-  insertTask.run(generateId(), userId, histId, note4Id, 'Outline Boltzmann Primary Source Citations', 'Check pages 112-135 of syllabus reader', isoOffset(96), 'medium', 'todo', now, now);
-  insertTask.run(generateId(), userId, bioId, note3Id, 'Review Mitosis vs Meiosis Checkpoint Diagram', 'Self-quiz using organelle flashcards', isoOffset(-12), 'low', 'done', now, now);
+  insertTask.run(generateId(), userId, bioId, note1Id, 'Tapusin ang PDF ng Ulat sa Kinetika ng Ensaym', 'Iguhit ang graph ng Lineweaver-Burk at ilakip ang pagsusuri ng error', isoOffset(36), 'high', 'in_progress', now, now);
+  insertTask.run(generateId(), userId, csId, note2Id, 'Ipatupad ang Dijkstra gamit ang Binary Min-Heap', 'Pagsasanay #5 sa CS 301', isoOffset(60), 'high', 'todo', now, now);
+  insertTask.run(generateId(), userId, histId, note4Id, 'Balangkasin ang mga Sipi mula kay Boltzmann', 'Suriin ang mga pahina 112–135 ng babasahin sa kurso', isoOffset(96), 'medium', 'todo', now, now);
+  insertTask.run(generateId(), userId, bioId, note3Id, 'Balik-aralin ang Dayagram ng Mitosis at Meiosis', 'Magsanay gamit ang mga flashcard ng organel', isoOffset(-12), 'low', 'done', now, now);
 
   const insertCard = db.prepare(
     `INSERT INTO flashcards (id, user_id, subject_id, notebook_id, note_id, front, back, confidence, review_count, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
-  insertCard.run(generateId(), userId, csId, csNbId, note2Id, 'What is the time complexity of BFS on an adjacency-list graph?', 'O(V + E), where V is vertices and E is edges.', 4, 3, now);
-  insertCard.run(generateId(), userId, csId, csNbId, note2Id, 'Why does Dijkstra’s algorithm require non-negative edge weights?', 'Once a vertex is popped from the min-heap, it assumes no later path can reduce its distance; negative edges break this greedy invariant.', 3, 2, now);
-  insertCard.run(generateId(), userId, bioId, bioNbId, note1Id, 'What does Km represent in Michaelis-Menten kinetics?', 'The substrate concentration at which reaction velocity is exactly half of Vmax (1/2 Vmax); lower Km indicates higher enzyme affinity.', 4, 4, now);
-  insertCard.run(generateId(), userId, bioId, bioNbId, note3Id, 'Which organelle houses the citric acid cycle and ATP synthase?', 'Mitochondrion (matrix and inner mitochondrial cristae membrane).', 5, 5, now);
+  insertCard.run(generateId(), userId, csId, csNbId, note2Id, 'Ano ang time complexity ng BFS sa isang adjacency-list graph?', 'O(V + E), kung saan V ang mga vertex at E ang mga edge.', 4, 3, now);
+  insertCard.run(generateId(), userId, csId, csNbId, note2Id, 'Bakit nangangailangan ang algoritmo ni Dijkstra ng mga hindi negatibong timbang?', 'Kapag nailabas na ang isang vertex sa min-heap, ipinapalagay na wala nang mas maikling daan; sinisira ito ng mga negatibong edge.', 3, 2, now);
+  insertCard.run(generateId(), userId, bioId, bioNbId, note1Id, 'Ano ang kinakatawan ng Km sa kinetika ng Michaelis-Menten?', 'Ang konsentrasyon ng substrate kung saan kalahati ng Vmax ang bilis ng reaksyon; ang mas mababang Km ay nangangahulugang mas malakas ang pagkapit ng ensaym.', 4, 4, now);
+  insertCard.run(generateId(), userId, bioId, bioNbId, note3Id, 'Aling organel ang naglalaman ng citric acid cycle at ATP synthase?', 'Mitokondriya (matrix at panloob na lamad ng cristae).', 5, 5, now);
 
   const insertSession = db.prepare(
     `INSERT INTO study_sessions (id, user_id, subject_id, note_id, duration_minutes, mode, completed_at)
@@ -498,7 +498,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
       id, email, email_verified, password_hash, role, status, status_reason, full_name, university,
       major, academic_year, bio, theme_preference, workspace_accent, is_demo,
       last_login_at, login_count, created_at, updated_at
-    ) VALUES (?, ?, 1, ?, 'student', ?, ?, ?, ?, ?, ?, '', 'light', 'purple', 0, ?, ?, ?, ?)`
+    ) VALUES (?, ?, 1, ?, 'student', ?, ?, ?, ?, ?, ?, '', 'light', 'blue', 0, ?, ?, ?, ?)`
   );
 
   insertExtraStudent.run(
@@ -509,8 +509,8 @@ export function ensureDemoUser(db: DatabaseSync): string {
     '',
     'Samantha Lee',
     'Bridgewater State University',
-    'Biomedical Engineering',
-    'Sophomore (Year 2)',
+    'Inhinyeriyang Biyomedikal',
+    'Ikalawang Taon (Sophomore)',
     isoOffset(-8),
     12,
     isoOffset(-190),
@@ -522,11 +522,11 @@ export function ensureDemoUser(db: DatabaseSync): string {
     'jordan.patel.demo@gmail.com',
     hashPassword('StudentDemo2026!'),
     'suspended',
-    'Temporary suspension pending email verification review',
+    'Pansamantalang suspensyon habang hinihintay ang beripikasyon ng email',
     'Jordan Patel',
     'Bridgewater State University',
-    'Applied Mathematics',
-    'Senior (Year 4)',
+    'Aplikadong Matematika',
+    'Ikaapat na Taon (Senior)',
     isoOffset(-96),
     3,
     isoOffset(-310),
@@ -540,9 +540,9 @@ export function ensureDemoUser(db: DatabaseSync): string {
     generateId(),
     jordanId,
     'jordan.patel.demo@gmail.com',
-    'Requesting reactivation after updating student ID',
+    'Kahilingan para sa muling pag-aktibo matapos mag-update ng ID ng mag-aaral',
     'account_access',
-    'Hello Admin, I have verified my Gmail address. Could you reactivate my INKORA account ahead of finals?',
+    'Magandang araw Admin, naberipika ko na ang aking Gmail address. Maaari bang paki-activate muli ang aking INKORA account bago ang finals?',
     isoOffset(-14),
     isoOffset(-14)
   );
@@ -559,38 +559,38 @@ export function seedStarterWorkspaceForNewUser(db: DatabaseSync, userId: string)
 
   db.prepare(
     `INSERT INTO folders (id, user_id, parent_id, name, color, icon, created_at, updated_at)
-     VALUES (?, ?, NULL, 'Getting Started', '#6D28D9', 'Folder', ?, ?)`
+     VALUES (?, ?, NULL, 'Pagsisimula', '#2563EB', 'Folder', ?, ?)`
   ).run(folderId, userId, now, now);
 
   db.prepare(
     `INSERT INTO subjects (id, user_id, code, name, instructor, semester, color, icon, sort_order, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
-  ).run(subjectId, userId, 'STUDY 101', 'General Academic Notes', '', 'Current Term', '#6D28D9', 'GraduationCap', now, now);
+  ).run(subjectId, userId, 'STUDY 101', 'Pangkalahatang mga Tala', '', 'Kasalukuyang Semestre', '#1D4ED8', 'GraduationCap', now, now);
 
   db.prepare(
     `INSERT INTO notebooks (id, user_id, subject_id, title, description, cover_color, accent_color, icon, default_paper_style, is_pinned, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
-  ).run(notebookId, userId, subjectId, 'My First Notebook', 'Write documents, Cornell lecture notes, and sketches here', '#4C1D95', '#A78BFA', 'NotebookPen', 'lined', now, now);
+  ).run(notebookId, userId, subjectId, 'Aking Unang Kuwaderno', 'Magsulat ng mga dokumento, talang Cornell, at mga guhit dito', '#1E3A8A', '#60A5FA', 'NotebookPen', 'lined', now, now);
 
   const welcomeJson = JSON.stringify({
     type: 'doc',
     content: [
-      { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Welcome to INKORA' }] },
+      { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Maligayang Pagdating sa INKORA' }] },
       {
         type: 'paragraph',
         content: [
           {
             type: 'text',
-            text: 'Your Thoughts. Your Space. Your Ink. Use the studio switcher above to move smoothly between Document mode (Word-style formatting, tables, checklists), Notebook mode (Cornell cues, lined/grid paper, and ink annotations), Drawing Pad, or Split Studio.',
+            text: 'Iyong mga Ideya. Iyong Espasyo. Iyong Tinta. Gamitin ang tagapagpalit ng studio sa itaas upang lumipat sa Dokumento (pag-format na parang Word, mga talahanayan, checklist), Kuwaderno (gabay na Cornell, linyado o grid na papel, at tinta), Guhit-kamay, o Hatiing Studio.',
           },
         ],
       },
       {
         type: 'taskList',
         content: [
-          { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Organize notes into Folders, Courses, or Notebooks' }] }] },
-          { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Try sketching diagrams in Draw Pad or Split mode' }] }] },
-          { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Upload PDFs or lecture slides to your File Vault' }] }] },
+          { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Ayusin ang mga tala sa mga Folder, Asignatura, o Kuwaderno' }] }] },
+          { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Subukang gumuhit ng mga dayagram sa Guhit-kamay o Split mode' }] }] },
+          { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Mag-upload ng mga PDF o slide ng klase sa iyong Baul ng File' }] }] },
         ],
       },
     ],
@@ -603,10 +603,10 @@ export function seedStarterWorkspaceForNewUser(db: DatabaseSync, userId: string)
       id, user_id, folder_id, notebook_id, subject_id, title, description, category, mode, paper_style, paper_bg_color, page_size,
       content_json, content_html, plain_text, cornell_cues, cornell_summary,
       drawing_data, tags_json, word_count, is_pinned, is_starred, is_trashed, last_opened_at, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Getting Started', 'document', 'plain', '', 'a4', ?, '', ?, '', '', ?, '["getting-started"]', ?, 1, 0, 0, ?, ?, ?)`
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pagsisimula', 'document', 'plain', '', 'a4', ?, '', ?, '', '', ?, '["pagsisimula"]', ?, 1, 0, 0, ?, ?, ?)`
   ).run(
-    noteId, userId, folderId, notebookId, subjectId, 'Welcome to INKORA',
-    'Quick orientation note covering documents, digital notebooks, drawings, and file storage.',
+    noteId, userId, folderId, notebookId, subjectId, 'Maligayang Pagdating sa INKORA',
+    'Maikling gabay tungkol sa mga dokumento, digital na kuwaderno, pagguhit, at lagayan ng file.',
     welcomeJson, plain,
     JSON.stringify({ version: 1, strokes: [], shapes: [], texts: [], background: 'transparent' }),
     countWords(plain), now, now, now
@@ -615,13 +615,13 @@ export function seedStarterWorkspaceForNewUser(db: DatabaseSync, userId: string)
   syncNoteFts(db, {
     id: noteId,
     user_id: userId,
-    title: 'Welcome to INKORA',
-    description: 'Quick orientation note covering documents, digital notebooks, drawings, and file storage.',
-    category: 'Getting Started',
+    title: 'Maligayang Pagdating sa INKORA',
+    description: 'Maikling gabay tungkol sa mga dokumento, digital na kuwaderno, pagguhit, at lagayan ng file.',
+    category: 'Pagsisimula',
     plain_text: plain,
     cornell_cues: '',
     cornell_summary: '',
-    tags_json: '["getting-started"]',
+    tags_json: '["pagsisimula"]',
     is_trashed: 0,
   });
 }

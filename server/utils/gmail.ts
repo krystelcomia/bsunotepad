@@ -16,10 +16,10 @@ export function isValidGmailAddress(raw: string): boolean {
 
 export function validatePasswordStrength(password: string): string | null {
   if (typeof password !== 'string' || password.length < 8) {
-    return 'Password must be at least 8 characters long.';
+    return 'Ang password ay dapat may hindi bababa sa 8 karakter.';
   }
   if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
-    return 'Password must contain at least one letter and one number.';
+    return 'Ang password ay dapat maglaman ng hindi bababa sa isang letra at isang numero.';
   }
   return null;
 }

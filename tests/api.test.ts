@@ -488,7 +488,7 @@ describe('INKORA Gmail Auth, Email Verification, Password Reset & RBAC Tests', (
       };
     }>(`/api/notes/${created.data.note.id}/duplicate`, { method: 'POST' });
     assert.equal(duplicated.status, 201);
-    assert.equal(duplicated.data.note.title, 'AAA Quantum Summary (Copy)');
+    assert.equal(duplicated.data.note.title, 'AAA Quantum Summary (Kopya)');
     assert.equal(duplicated.data.note.description, 'Wavefunction normalization and operator identities for PHYS 302.');
     assert.equal(duplicated.data.note.category, 'Exam Prep');
     assert.equal(duplicated.data.note.paper_bg_color, '#1E293B');

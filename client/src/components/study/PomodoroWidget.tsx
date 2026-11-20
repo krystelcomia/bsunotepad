@@ -27,6 +27,7 @@ export const PomodoroWidget: React.FC<PomodoroWidgetProps> = ({
         if (prev <= 1) {
           setRunning(false);
           const mins = mode === 'focus' ? 25 : 5;
+          const modeLabel = mode === 'focus' ? 'pokus' : 'pahinga';
           api
             .logStudySession(mins, mode, {
               subjectId: activeSubjectId,
@@ -34,7 +35,7 @@ export const PomodoroWidget: React.FC<PomodoroWidgetProps> = ({
             })
             .then(() => {
               onSessionLogged?.();
-              onNotify?.('success', `Logged ${mins}-minute ${mode} session!`);
+              onNotify?.('success', `Naitala ang ${mins}-minutong sesyon ng ${modeLabel}!`);
             })
             .catch(() => {});
           const nextMode = mode === 'focus' ? 'break' : 'focus';
@@ -63,10 +64,10 @@ export const PomodoroWidget: React.FC<PomodoroWidgetProps> = ({
         onClick={() => setExpanded((v) => !v)}
         className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
           running
-            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-stone-200 dark:border-slate-700 hover:bg-stone-50 dark:hover:bg-slate-700/70'
+            ? 'bg-blue-700 text-white border-blue-700 shadow-xs'
+            : 'bg-white dark:bg-[#132340] text-slate-700 dark:text-blue-100 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/60'
         }`}
-        title="Study Focus Timer"
+        title="Timer sa Pokus ng Pag-aaral"
       >
         {mode === 'focus' ? <Timer className="w-3.5 h-3.5" /> : <Coffee className="w-3.5 h-3.5" />}
         <span className="font-mono tabular-nums">
@@ -75,33 +76,33 @@ export const PomodoroWidget: React.FC<PomodoroWidgetProps> = ({
       </button>
 
       {expanded && (
-        <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 shadow-xl p-4 z-40">
+        <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-[#0D1930] border border-blue-200 dark:border-blue-800 shadow-xl p-4 z-40">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Study Timer
+              Timer sa Pag-aaral
             </span>
             <div className="flex gap-1">
               <button
                 type="button"
                 onClick={() => switchMode('focus')}
-                className={`px-2 py-0.5 text-[11px] font-semibold rounded-md ${
+                className={`px-2 py-0.5 text-[11px] font-semibold rounded-md cursor-pointer ${
                   mode === 'focus'
-                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-200'
-                    : 'text-slate-500 hover:bg-stone-100 dark:hover:bg-slate-800'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-sky-200'
+                    : 'text-slate-500 hover:bg-blue-50 dark:hover:bg-blue-950'
                 }`}
               >
-                Focus 25m
+                Pokus 25m
               </button>
               <button
                 type="button"
                 onClick={() => switchMode('break')}
-                className={`px-2 py-0.5 text-[11px] font-semibold rounded-md ${
+                className={`px-2 py-0.5 text-[11px] font-semibold rounded-md cursor-pointer ${
                   mode === 'break'
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200'
-                    : 'text-slate-500 hover:bg-stone-100 dark:hover:bg-slate-800'
+                    ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/60 dark:text-sky-200'
+                    : 'text-slate-500 hover:bg-blue-50 dark:hover:bg-blue-950'
                 }`}
               >
-                Break 5m
+                Pahinga 5m
               </button>
             </div>
           </div>
@@ -116,16 +117,16 @@ export const PomodoroWidget: React.FC<PomodoroWidgetProps> = ({
             <button
               type="button"
               onClick={() => setRunning((r) => !r)}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition cursor-pointer"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold transition cursor-pointer"
             >
               {running ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-              {running ? 'Pause' : 'Start'}
+              {running ? 'Ihinto' : 'Simulan'}
             </button>
             <button
               type="button"
               onClick={() => switchMode(mode)}
-              className="p-2 rounded-xl border border-stone-200 dark:border-slate-700 text-slate-500 hover:bg-stone-100 dark:hover:bg-slate-800"
-              title="Reset timer"
+              className="p-2 rounded-xl border border-blue-200 dark:border-blue-800 text-slate-500 hover:bg-blue-50 dark:hover:bg-blue-950 cursor-pointer"
+              title="I-reset ang timer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>

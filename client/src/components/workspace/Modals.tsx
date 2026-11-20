@@ -4,7 +4,7 @@ import { api } from '../../api/client';
 import { Folder, Notebook, PaperStyle, Subject } from '../../types';
 import { Modal } from '../common/Modal';
 
-const COLORS = ['#6D28D9', '#8B5CF6', '#3B82F6', '#4C1D95', '#0EA5E9', '#EC4899', '#10B981', '#F59E0B'];
+const COLORS = ['#1D4ED8', '#2563EB', '#3B82F6', '#0284C7', '#0EA5E9', '#1E3A8A', '#0369A1', '#60A5FA'];
 
 export const FolderModal: React.FC<{
   open: boolean;
@@ -14,7 +14,7 @@ export const FolderModal: React.FC<{
   onNotify: (type: 'success' | 'error' | 'info', text: string) => void;
 }> = ({ open, editing, onClose, onSaved, onNotify }) => {
   const [name, setName] = useState('');
-  const [color, setColor] = useState('#6D28D9');
+  const [color, setColor] = useState('#2563EB');
 
   useEffect(() => {
     if (!open) return;
@@ -23,7 +23,7 @@ export const FolderModal: React.FC<{
       setColor(editing.color);
     } else {
       setName('');
-      setColor('#6D28D9');
+      setColor('#2563EB');
     }
   }, [open, editing]);
 
@@ -32,41 +32,41 @@ export const FolderModal: React.FC<{
     try {
       if (editing) {
         await api.updateFolder(editing.id, { name, color });
-        onNotify('success', 'Folder updated');
+        onNotify('success', 'Na-update ang folder');
       } else {
         await api.createFolder({ name, color });
-        onNotify('success', 'Folder created');
+        onNotify('success', 'Nagawa ang folder');
       }
       onSaved();
       onClose();
     } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'Failed to save folder');
+      onNotify('error', err instanceof Error ? err.message : 'Nabigong i-save ang folder');
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={editing ? 'Edit Folder' : 'Create Folder'}>
+    <Modal open={open} onClose={onClose} title={editing ? 'I-edit ang Folder' : 'Gumawa ng Folder'}>
       <form onSubmit={submit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold mb-1">Folder Name *</label>
+          <label className="block text-xs font-semibold mb-1">Pangalan ng Folder *</label>
           <input
             type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Midterm Study Packets"
-            className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-slate-700 bg-violet-50/40 dark:bg-slate-800"
+            placeholder="Mga Babasahin sa Midterm"
+            className="w-full px-3 py-2 text-sm rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340]"
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold mb-1.5">Folder Color</label>
+          <label className="block text-xs font-semibold mb-1.5">Kulay ng Folder</label>
           <div className="flex gap-2">
             {COLORS.map((c) => (
               <button
                 key={c}
                 type="button"
                 onClick={() => setColor(c)}
-                className={`w-7 h-7 rounded-full cursor-pointer ${color === c ? 'ring-2 ring-offset-2 ring-violet-600' : ''}`}
+                className={`w-7 h-7 rounded-full cursor-pointer ${color === c ? 'ring-2 ring-offset-2 ring-blue-600' : ''}`}
                 style={{ backgroundColor: c }}
               />
             ))}
@@ -77,23 +77,23 @@ export const FolderModal: React.FC<{
             <button
               type="button"
               onClick={async () => {
-                if (!window.confirm(`Delete folder "${editing.name}"? Notes inside will remain in All Notes.`)) return;
+                if (!window.confirm(`Burahin ang folder na "${editing.name}"? Mananatili sa Lahat ng Tala ang mga dokumento sa loob.`)) return;
                 await api.deleteFolder(editing.id);
                 onSaved();
                 onClose();
               }}
               className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:underline cursor-pointer"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Delete Folder
+              <Trash2 className="w-3.5 h-3.5" /> Burahin ang Folder
             </button>
           ) : (
             <span />
           )}
           <button
             type="submit"
-            className="px-5 py-2 rounded-xl bg-gradient-to-r from-violet-700 to-blue-600 text-white text-sm font-semibold cursor-pointer"
+            className="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-700 to-sky-600 text-white text-sm font-semibold cursor-pointer"
           >
-            {editing ? 'Save Folder' : 'Create Folder'}
+            {editing ? 'I-save ang Folder' : 'Gumawa ng Folder'}
           </button>
         </div>
       </form>
@@ -111,8 +111,8 @@ export const SubjectModal: React.FC<{
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [instructor, setInstructor] = useState('');
-  const [semester, setSemester] = useState('Fall 2026');
-  const [color, setColor] = useState('#4F46E5');
+  const [semester, setSemester] = useState('Unang Semestre 2026');
+  const [color, setColor] = useState('#1D4ED8');
 
   useEffect(() => {
     if (!open) return;
@@ -126,8 +126,8 @@ export const SubjectModal: React.FC<{
       setCode('');
       setName('');
       setInstructor('');
-      setSemester('Fall 2026');
-      setColor('#4F46E5');
+      setSemester('Unang Semestre 2026');
+      setColor('#1D4ED8');
     }
   }, [open, editing]);
 
@@ -136,74 +136,74 @@ export const SubjectModal: React.FC<{
     try {
       if (editing) {
         await api.updateSubject(editing.id, { code, name, instructor, semester, color });
-        onNotify('success', 'Course updated');
+        onNotify('success', 'Na-update ang asignatura');
       } else {
         await api.createSubject({ code, name, instructor, semester, color });
-        onNotify('success', 'Course created');
+        onNotify('success', 'Nagawa ang asignatura');
       }
       onSaved();
       onClose();
     } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'Failed to save course');
+      onNotify('error', err instanceof Error ? err.message : 'Nabigong i-save ang asignatura');
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={editing ? 'Edit Course' : 'Add Academic Course'}>
+    <Modal open={open} onClose={onClose} title={editing ? 'I-edit ang Asignatura' : 'Magdagdag ng Asignatura'}>
       <form onSubmit={submit} className="space-y-3.5">
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs font-semibold mb-1">Course Code</label>
+            <label className="block text-xs font-semibold mb-1">Kodigo ng Kurso</label>
             <input
               type="text"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="CS 301"
-              className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+              className="w-full px-3 py-2 text-sm rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340]"
             />
           </div>
           <div className="col-span-2">
-            <label className="block text-xs font-semibold mb-1">Course Name *</label>
+            <label className="block text-xs font-semibold mb-1">Pangalan ng Asignatura *</label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Data Structures & Algorithms"
-              className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+              placeholder="Mga Algoritmo at Estruktura ng Datos"
+              className="w-full px-3 py-2 text-sm rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340]"
             />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold mb-1">Instructor</label>
+            <label className="block text-xs font-semibold mb-1">Guro / Propesor</label>
             <input
               type="text"
               value={instructor}
               onChange={(e) => setInstructor(e.target.value)}
               placeholder="Dr. Elena Vance"
-              className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+              className="w-full px-3 py-2 text-sm rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340]"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Semester</label>
+            <label className="block text-xs font-semibold mb-1">Semestre</label>
             <input
               type="text"
               value={semester}
               onChange={(e) => setSemester(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+              className="w-full px-3 py-2 text-sm rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340]"
             />
           </div>
         </div>
         <div>
-          <label className="block text-xs font-semibold mb-1.5">Course Color</label>
+          <label className="block text-xs font-semibold mb-1.5">Kulay ng Asignatura</label>
           <div className="flex gap-2">
             {COLORS.map((c) => (
               <button
                 key={c}
                 type="button"
                 onClick={() => setColor(c)}
-                className={`w-7 h-7 rounded-full cursor-pointer ${color === c ? 'ring-2 ring-offset-2 ring-indigo-500' : ''}`}
+                className={`w-7 h-7 rounded-full cursor-pointer ${color === c ? 'ring-2 ring-offset-2 ring-blue-600' : ''}`}
                 style={{ backgroundColor: c }}
               />
             ))}
@@ -215,20 +215,23 @@ export const SubjectModal: React.FC<{
             <button
               type="button"
               onClick={async () => {
-                if (!window.confirm(`Delete course "${editing.name}"? Notes inside will remain accessible.`)) return;
+                if (!window.confirm(`Burahin ang asignaturang "${editing.name}"? Mananatiling bukas ang mga tala sa loob.`)) return;
                 await api.deleteSubject(editing.id);
                 onSaved();
                 onClose();
               }}
               className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:underline cursor-pointer"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Delete Course
+              <Trash2 className="w-3.5 h-3.5" /> Burahin ang Asignatura
             </button>
           ) : (
             <span />
           )}
-          <button type="submit" className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold cursor-pointer">
-            {editing ? 'Save Course' : 'Create Course'}
+          <button
+            type="submit"
+            className="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-700 to-sky-600 text-white text-sm font-semibold cursor-pointer"
+          >
+            {editing ? 'I-save ang Asignatura' : 'Gumawa ng Asignatura'}
           </button>
         </div>
       </form>
@@ -247,7 +250,7 @@ export const NotebookModal: React.FC<{
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [subjectId, setSubjectId] = useState('');
-  const [coverColor, setCoverColor] = useState('#312E81');
+  const [coverColor, setCoverColor] = useState('#1E3A8A');
   const [paperStyle, setPaperStyle] = useState<PaperStyle>('lined');
 
   useEffect(() => {
@@ -262,7 +265,7 @@ export const NotebookModal: React.FC<{
       setTitle('');
       setDescription('');
       setSubjectId('');
-      setCoverColor('#312E81');
+      setCoverColor('#1E3A8A');
       setPaperStyle('lined');
     }
   }, [open, editing]);
@@ -279,51 +282,51 @@ export const NotebookModal: React.FC<{
       };
       if (editing) {
         await api.updateNotebook(editing.id, payload);
-        onNotify('success', 'Notebook updated');
+        onNotify('success', 'Na-update ang kuwaderno');
       } else {
         await api.createNotebook(payload);
-        onNotify('success', 'Notebook created');
+        onNotify('success', 'Nagawa ang kuwaderno');
       }
       onSaved();
       onClose();
     } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'Failed to save notebook');
+      onNotify('error', err instanceof Error ? err.message : 'Nabigong i-save ang kuwaderno');
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={editing ? 'Notebook Settings' : 'Create Digital Notebook'}>
+    <Modal open={open} onClose={onClose} title={editing ? 'Mga Setting ng Kuwaderno' : 'Gumawa ng Digital na Kuwaderno'}>
       <form onSubmit={submit} className="space-y-3.5">
         <div>
-          <label className="block text-xs font-semibold mb-1">Notebook Title *</label>
+          <label className="block text-xs font-semibold mb-1">Pamagat ng Kuwaderno *</label>
           <input
             type="text"
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Organic Chemistry Lecture Notes"
-            className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+            placeholder="Mga Tala sa Organikong Kimika"
+            className="w-full px-3 py-2 text-sm rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340]"
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold mb-1">Description</label>
+          <label className="block text-xs font-semibold mb-1">Paglalarawan</label>
           <input
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Reaction mechanisms, lab sheets, and summaries"
-            className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+            placeholder="Mga mekanismo ng reaksyon, ulat sa lab, at buod"
+            className="w-full px-3 py-2 text-sm rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340]"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold mb-1">Course</label>
+            <label className="block text-xs font-semibold mb-1">Asignatura</label>
             <select
               value={subjectId}
               onChange={(e) => setSubjectId(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+              className="w-full px-3 py-2 text-sm rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340]"
             >
-              <option value="">General / None</option>
+              <option value="">Pangkalahatan / Wala</option>
               {subjects.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.code ? `${s.code} · ${s.name}` : s.name}
@@ -332,29 +335,29 @@ export const NotebookModal: React.FC<{
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Default Paper</label>
+            <label className="block text-xs font-semibold mb-1">Karaniwang Papel</label>
             <select
               value={paperStyle}
               onChange={(e) => setPaperStyle(e.target.value as PaperStyle)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+              className="w-full px-3 py-2 text-sm rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340]"
             >
-              <option value="lined">College Ruled</option>
-              <option value="cornell">Cornell Lecture</option>
-              <option value="grid">Graph Grid</option>
-              <option value="dot">Dot Grid</option>
-              <option value="plain">Plain Document</option>
+              <option value="lined">Linyado (Kolehiyo)</option>
+              <option value="cornell">Lekturang Cornell</option>
+              <option value="grid">Grid na Papel</option>
+              <option value="dot">May Tuldok</option>
+              <option value="plain">Blankong Dokumento</option>
             </select>
           </div>
         </div>
         <div>
-          <label className="block text-xs font-semibold mb-1.5">Cover Spine Color</label>
+          <label className="block text-xs font-semibold mb-1.5">Kulay ng Pabalat</label>
           <div className="flex gap-2">
             {COLORS.map((c) => (
               <button
                 key={c}
                 type="button"
                 onClick={() => setCoverColor(c)}
-                className={`w-7 h-7 rounded-full cursor-pointer ${coverColor === c ? 'ring-2 ring-offset-2 ring-indigo-500' : ''}`}
+                className={`w-7 h-7 rounded-full cursor-pointer ${coverColor === c ? 'ring-2 ring-offset-2 ring-blue-600' : ''}`}
                 style={{ backgroundColor: c }}
               />
             ))}
@@ -366,20 +369,23 @@ export const NotebookModal: React.FC<{
             <button
               type="button"
               onClick={async () => {
-                if (!window.confirm(`Delete notebook "${editing.title}"? Its notes will stay in All Notes.`)) return;
+                if (!window.confirm(`Burahin ang kuwadernong "${editing.title}"? Mananatili sa Lahat ng Tala ang mga pahina nito.`)) return;
                 await api.deleteNotebook(editing.id);
                 onSaved();
                 onClose();
               }}
               className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:underline cursor-pointer"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Delete Notebook
+              <Trash2 className="w-3.5 h-3.5" /> Burahin ang Kuwaderno
             </button>
           ) : (
             <span />
           )}
-          <button type="submit" className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold cursor-pointer">
-            {editing ? 'Save Notebook' : 'Create Notebook'}
+          <button
+            type="submit"
+            className="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-700 to-sky-600 text-white text-sm font-semibold cursor-pointer"
+          >
+            {editing ? 'I-save ang Kuwaderno' : 'Gumawa ng Kuwaderno'}
           </button>
         </div>
       </form>

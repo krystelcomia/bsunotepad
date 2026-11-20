@@ -44,7 +44,7 @@ function main() {
           id, email, email_verified, password_hash, role, status, status_reason, full_name,
           university, major, academic_year, bio, theme_preference, workspace_accent,
           storage_quota_bytes, is_demo, last_login_at, login_count, created_at, updated_at
-        ) VALUES (?, ?, 1, ?, 'admin', 'active', '', ?, 'INKORA Platform Operations', 'Administration', 'Staff', '', 'light', 'purple', ?, 0, NULL, 0, ?, ?)`
+        ) VALUES (?, ?, 1, ?, 'admin', 'active', '', ?, 'INKORA Operasyon ng Platform', 'Pangangasiwa', 'Kawani', '', 'light', 'blue', ?, 0, NULL, 0, ?, ?)`
       ).run(generateId(), email, passwordHash, fullName, config.defaultStorageQuotaBytes, now, now);
       console.log(`Created new Administrator account "${email}".`);
     }

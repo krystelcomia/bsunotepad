@@ -4,23 +4,23 @@
 
 @layer base {
   :root {
-    --ink-bg: #f6f4fb;
+    --ink-bg: #f4f8ff;
     --ink-surface: #ffffff;
-    --ink-surface-muted: #f0ecf9;
-    --ink-border: #e5dff4;
-    --ink-text: #18132a;
-    --ink-text-muted: #5f5b76;
-    --ink-accent: #5b21b6;
+    --ink-surface-muted: #eff6ff;
+    --ink-border: #dbeafe;
+    --ink-text: #0f172a;
+    --ink-text-muted: #475569;
+    --ink-accent: #1d4ed8;
   }
 
   .dark {
-    --ink-bg: #0b0914;
-    --ink-surface: #141024;
-    --ink-surface-muted: #1c1633;
-    --ink-border: #2c244b;
-    --ink-text: #f4f2ff;
-    --ink-text-muted: #a8a2c8;
-    --ink-accent: #a78bfa;
+    --ink-bg: #071021;
+    --ink-surface: #0d1930;
+    --ink-surface-muted: #132340;
+    --ink-border: #1e3a5f;
+    --ink-text: #f8fafc;
+    --ink-text-muted: #93c5fd;
+    --ink-accent: #60a5fa;
   }
 
   body {
@@ -194,7 +194,7 @@
 .inkora-prose .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
   width: 1rem;
   height: 1rem;
-  accent-color: #4f46e5;
+  accent-color: #2563eb;
   cursor: pointer;
 }
 
@@ -204,8 +204,8 @@
 }
 
 .inkora-prose .ProseMirror blockquote {
-  border-left: 3.5px solid #4f46e5;
-  background: rgba(79, 70, 229, 0.06);
+  border-left: 3.5px solid #2563eb;
+  background: rgba(37, 99, 235, 0.06);
   padding: 0.65rem 1rem;
   border-radius: 0 0.5rem 0.5rem 0;
   margin: 0.9rem 0;
@@ -223,8 +223,8 @@
 }
 
 .inkora-prose .ProseMirror code {
-  background: rgba(99, 102, 241, 0.12);
-  color: #4338ca;
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
   padding: 0.12em 0.36em;
   border-radius: 0.3rem;
   font-family: 'JetBrains Mono', monospace;
@@ -233,8 +233,8 @@
 
 .dark .paper-adaptive .ProseMirror code,
 .paper-dark_board .ProseMirror code {
-  background: rgba(129, 140, 248, 0.18);
-  color: #a5b4fc;
+  background: rgba(96, 165, 250, 0.18);
+  color: #93c5fd;
 }
 
 .inkora-prose .ProseMirror pre code {
@@ -262,7 +262,7 @@
 }
 
 .inkora-prose .ProseMirror table th {
-  background: rgba(99, 102, 241, 0.09);
+  background: rgba(37, 99, 235, 0.08);
   font-weight: 700;
   text-align: left;
 }
@@ -283,7 +283,7 @@
 }
 
 .inkora-prose .ProseMirror a {
-  color: #4f46e5;
+  color: #2563eb;
   text-decoration: underline;
   text-underline-offset: 2px;
 }

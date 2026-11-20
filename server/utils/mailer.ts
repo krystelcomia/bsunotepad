@@ -45,22 +45,22 @@ export async function sendVerificationEmail(params: {
     await transporter.sendMail({
       from: `"INKORA" <${from}>`,
       to: params.to,
-      subject: 'Verify your INKORA Gmail address',
+      subject: 'Beripikahin ang iyong INKORA Gmail address',
       html: `
-        <div style="font-family:Inter,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;border:1px solid #e5dff4;border-radius:16px;">
-          <h2 style="color:#4C1D95;margin:0 0 8px;">Verify your INKORA account</h2>
+        <div style="font-family:Inter,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;border:1px solid #dbeafe;border-radius:16px;background:#ffffff;">
+          <h2 style="color:#1e3a8a;margin:0 0 8px;">Beripikahin ang iyong INKORA account</h2>
           <p style="color:#334155;font-size:14px;line-height:1.6;">
-            Hi ${params.fullName}, enter this 6-digit verification code or click the button below to verify <strong>${params.to}</strong>:
+            Kumusta ${params.fullName}, ilagay ang 6-digit na verification code o pindutin ang button sa ibaba upang beripikahin ang <strong>${params.to}</strong>:
           </p>
-          <div style="font-size:28px;font-weight:800;letter-spacing:6px;color:#5B21B6;background:#F5F3FF;padding:14px 20px;border-radius:12px;text-align:center;margin:18px 0;">
+          <div style="font-size:28px;font-weight:800;letter-spacing:6px;color:#1d4ed8;background:#eff6ff;padding:14px 20px;border-radius:12px;text-align:center;margin:18px 0;">
             ${params.otp}
           </div>
           <p style="text-align:center;margin:20px 0;">
-            <a href="${params.verifyUrl}" style="background:#5B21B6;color:#fff;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:600;font-size:14px;">
-              Verify Gmail Address
+            <a href="${params.verifyUrl}" style="background:#1d4ed8;color:#fff;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:600;font-size:14px;">
+              Beripikahin ang Gmail Address
             </a>
           </p>
-          <p style="color:#64748b;font-size:12px;">This code and link expire in 15 minutes.</p>
+          <p style="color:#64748b;font-size:12px;">Mag-e-expire ang code at link na ito sa loob ng 15 minuto.</p>
         </div>
       `,
     });
@@ -91,22 +91,22 @@ export async function sendPasswordResetEmail(params: {
     await transporter.sendMail({
       from: `"INKORA" <${from}>`,
       to: params.to,
-      subject: 'Reset your INKORA password',
+      subject: 'I-reset ang iyong password sa INKORA',
       html: `
-        <div style="font-family:Inter,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;border:1px solid #e5dff4;border-radius:16px;">
-          <h2 style="color:#4C1D95;margin:0 0 8px;">Password Reset Request</h2>
+        <div style="font-family:Inter,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;border:1px solid #dbeafe;border-radius:16px;background:#ffffff;">
+          <h2 style="color:#1e3a8a;margin:0 0 8px;">Kahilingan sa Pag-reset ng Password</h2>
           <p style="color:#334155;font-size:14px;line-height:1.6;">
-            Hi ${params.fullName}, use this 6-digit code or click the reset link below to choose a new password for <strong>${params.to}</strong>:
+            Kumusta ${params.fullName}, gamitin ang 6-digit code na ito o pindutin ang link sa ibaba upang magtakda ng bagong password para sa <strong>${params.to}</strong>:
           </p>
-          <div style="font-size:28px;font-weight:800;letter-spacing:6px;color:#5B21B6;background:#F5F3FF;padding:14px 20px;border-radius:12px;text-align:center;margin:18px 0;">
+          <div style="font-size:28px;font-weight:800;letter-spacing:6px;color:#1d4ed8;background:#eff6ff;padding:14px 20px;border-radius:12px;text-align:center;margin:18px 0;">
             ${params.otp}
           </div>
           <p style="text-align:center;margin:20px 0;">
             <a href="${params.resetUrl}" style="background:#2563EB;color:#fff;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:600;font-size:14px;">
-              Reset Password
+              I-reset ang Password
             </a>
           </p>
-          <p style="color:#64748b;font-size:12px;">If you did not request this, you can safely ignore this email. Expires in 15 minutes.</p>
+          <p style="color:#64748b;font-size:12px;">Kung hindi ikaw ang humiling nito, maaari mong balewalain ang email na ito. Mag-e-expire ito sa loob ng 15 minuto.</p>
         </div>
       `,
     });

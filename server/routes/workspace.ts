@@ -212,13 +212,13 @@ export function createWorkspaceRouter(
     const editedMap = new Map(editedByDayRows.map((r) => [r.day, Number(r.c)]));
     const studyMap = new Map(studyByDayRows.map((r) => [r.day, Number(r.mins)]));
 
-    const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayLabels = ['Lin', 'Lun', 'Mar', 'Miy', 'Huw', 'Biy', 'Sab'];
     const days = Array.from({ length: 7 }, (_, idx) => {
       const dt = new Date(Date.now() - (6 - idx) * 24 * 3600 * 1000);
       const dateStr = dt.toISOString().slice(0, 10);
       return {
         date: dateStr,
-        label: idx === 6 ? 'Today' : dayLabels[dt.getUTCDay()],
+        label: idx === 6 ? 'Ngayon' : dayLabels[dt.getUTCDay()],
         notesCreated: createdMap.get(dateStr) || 0,
         notesEdited: editedMap.get(dateStr) || 0,
         studyMinutes: studyMap.get(dateStr) || 0,
@@ -370,7 +370,7 @@ export function createWorkspaceRouter(
   router.post('/subjects', (req: AuthenticatedRequest, res) => {
     const name = String(req.body?.name || '').trim();
     if (!name) {
-      res.status(400).json({ error: 'Course/subject name is required.' });
+      res.status(400).json({ error: 'Kinakailangan ang pangalan ng kurso o asignatura.' });
       return;
     }
 
@@ -379,7 +379,7 @@ export function createWorkspaceRouter(
     const code = String(req.body?.code || '').trim().slice(0, 24);
     const instructor = String(req.body?.instructor || '').trim().slice(0, 80);
     const semester = String(req.body?.semester || '').trim().slice(0, 40);
-    const color = String(req.body?.color || '#4F46E5').trim().slice(0, 20);
+    const color = String(req.body?.color || '#1D4ED8').trim().slice(0, 20);
     const icon = String(req.body?.icon || 'BookOpen').trim().slice(0, 40);
 
     db.prepare(
@@ -397,13 +397,13 @@ export function createWorkspaceRouter(
       .get(req.params.id, req.user!.id) as Record<string, unknown> | undefined;
 
     if (!existing) {
-      res.status(404).json({ error: 'Subject not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang asignatura.' });
       return;
     }
 
     const name = req.body?.name !== undefined ? String(req.body.name).trim() : String(existing.name);
     if (!name) {
-      res.status(400).json({ error: 'Course name cannot be empty.' });
+      res.status(400).json({ error: 'Hindi maaaring walang laman ang pangalan ng kurso.' });
       return;
     }
 
@@ -428,7 +428,7 @@ export function createWorkspaceRouter(
       .prepare('DELETE FROM subjects WHERE id = ? AND user_id = ?')
       .run(req.params.id, req.user!.id);
     if (info.changes === 0) {
-      res.status(404).json({ error: 'Subject not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang asignatura.' });
       return;
     }
     res.json({ ok: true });

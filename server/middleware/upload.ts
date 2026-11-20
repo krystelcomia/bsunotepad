@@ -41,7 +41,7 @@ export function createFileUploader(config: AppConfig) {
     fileFilter: (_req, file, cb) => {
       const ext = path.extname(file.originalname || '').toLowerCase();
       if (BLOCKED_EXTENSIONS.has(ext)) {
-        cb(new Error('Executable file types are not permitted for security reasons.'));
+        cb(new Error('Hindi pinapayagan ang mga executable na uri ng file para sa seguridad.'));
         return;
       }
       cb(null, true);
@@ -70,7 +70,7 @@ export function createAvatarUploader(config: AppConfig) {
     limits: { fileSize: config.maxAvatarSizeBytes },
     fileFilter: (_req, file, cb) => {
       if (!ALLOWED_AVATAR_MIME.has((file.mimetype || '').toLowerCase())) {
-        cb(new Error('Avatar must be a PNG, JPG, WEBP, or GIF image.'));
+        cb(new Error('Dapat ay PNG, JPG, WEBP, o GIF na larawan ang avatar.'));
         return;
       }
       cb(null, true);

@@ -63,18 +63,41 @@ import { PAPER_BG_SWATCHES, RibbonToolbar } from './RibbonToolbar';
 import { VersionHistoryDrawer } from './VersionHistoryDrawer';
 
 const NOTE_CATEGORIES = [
-  'General',
-  'Lecture Notes',
-  'Study Guide',
-  'Lab Report',
-  'Essay',
-  'Assignment',
-  'Exam Prep',
-  'Research',
-  'Summary',
-  'Personal',
-  'Getting Started',
+  'Pangkalahatan',
+  'Mga Tala sa Lektura',
+  'Gabay sa Pag-aaral',
+  'Ulat sa Lab',
+  'Sanaysay',
+  'Takdang-Aralin',
+  'Paghahanda sa Pagsusulit',
+  'Pananaliksik',
+  'Buod',
+  'Pansarili',
+  'Pagsisimula',
 ] as const;
+
+function getPaperStyleLabel(style: PaperStyle): string {
+  switch (style) {
+    case 'plain':
+      return 'Blankong Papel';
+    case 'lined':
+      return 'Linyado';
+    case 'wide_ruled':
+      return 'Malawak na Linya';
+    case 'grid':
+      return 'Grid';
+    case 'dot':
+      return 'May Tuldok';
+    case 'cornell':
+      return 'Cornell';
+    case 'cream':
+      return 'Krema';
+    case 'dark_board':
+      return 'Madilim na Pisara';
+    default:
+      return String(style);
+  }
+}
 
 interface NoteWorkspaceProps {
   noteId: string;
@@ -110,7 +133,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('General');
+  const [category, setCategory] = useState('Pangkalahatan');
   const [studioView, setStudioView] = useState<StudioView>('document');
   const [paperStyle, setPaperStyle] = useState<PaperStyle>('plain');
   const [paperBgColor, setPaperBgColor] = useState('');
@@ -165,7 +188,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
       TableCell,
       Link.configure({ openOnClick: false }),
       ImageExtension.configure({ inline: false, allowBase64: true }),
-      Placeholder.configure({ placeholder: 'Start writing your academic notes, essays, or lecture summaries...' }),
+      Placeholder.configure({ placeholder: 'Magsimulang magsulat ng mga tala sa klase, sanaysay, o buod...' }),
       CharacterCount,
       MathFormula,
     ],
@@ -185,7 +208,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
       setNote(loaded);
       setTitle(loaded.title);
       setDescription(loaded.description || '');
-      setCategory(loaded.category || 'General');
+      setCategory(loaded.category || 'Pangkalahatan');
       setStudioView(loaded.mode as StudioView);
       setPaperStyle((loaded.paper_style || 'plain') as PaperStyle);
       setPaperBgColor(loaded.paper_bg_color || '');
@@ -222,7 +245,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
         hydrateFromNote(res.note);
       })
       .catch((err) => {
-        onNotify('error', err instanceof Error ? err.message : 'Could not load note');
+        onNotify('error', err instanceof Error ? err.message : 'Hindi ma-load ang tala.');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -232,7 +255,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
     };
   }, [noteId, hydrateFromNote, onNotify]);
 
-  // Flush pending save on unmount or note change
+  // I-save ang nakabinbing pagbabago bago magsara o lumipat ng tala
   const flushSaveNow = useCallback(async () => {
     if (saveTimerRef.current) {
       window.clearTimeout(saveTimerRef.current);
@@ -261,7 +284,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
     }
     const pending: Record<string, unknown> = {
       ...latestPayloadRef.current,
-      title: title.trim() || 'Untitled Note',
+      title: title.trim() || 'Walang Pamagat na Tala',
       description,
       category,
       paper_style: paperStyle,
@@ -280,10 +303,10 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
       onNoteUpdated(res.note);
       setSaveState('saved');
       setLastSavedAt(new Date().toISOString());
-      onNotify('success', 'Note saved manually');
+      onNotify('success', 'Mano-manong na-save ang tala');
     } catch (err) {
       setSaveState('dirty');
-      onNotify('error', err instanceof Error ? err.message : 'Save failed');
+      onNotify('error', err instanceof Error ? err.message : 'Nabigo ang pag-save');
     }
   }, [noteId, title, description, category, paperStyle, paperBgColor, pageSize, editor, onNoteUpdated, onNotify]);
 
@@ -306,12 +329,12 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
       await flushSaveNow();
       const res = await api.duplicateNote(noteId);
       onNoteUpdated(res.note);
-      onNotify('success', `Duplicated as "${res.note.title}"`);
+      onNotify('success', `Nakopya bilang "${res.note.title}"`);
       if (onOpenNote) {
         onOpenNote(res.note.id);
       }
     } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'Failed to duplicate note');
+      onNotify('error', err instanceof Error ? err.message : 'Nabigong kopyahin ang tala');
     }
   };
 
@@ -347,12 +370,12 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
 
   const handleEmbedDrawingIntoDoc = (dataUrl: string) => {
     if (!editor) return;
-    editor.chain().focus().setImage({ src: dataUrl, alt: 'INKORA Sketch' }).run();
+    editor.chain().focus().setImage({ src: dataUrl, alt: 'Guhit mula sa INKORA' }).run();
     if (studioView === 'drawing') {
       setStudioView('document');
       queueSave({ mode: 'document' });
     }
-    onNotify('success', 'Drawing embedded into your document!');
+    onNotify('success', 'Naisama ang guhit sa iyong dokumento!');
   };
 
   const handleUploadInlineImage = async (file: File) => {
@@ -361,9 +384,9 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
       setAttachments((prev) => [res.file, ...prev]);
       const url = `/api/files/${res.file.id}/content`;
       editor?.chain().focus().setImage({ src: url, alt: res.file.original_name }).run();
-      onNotify('success', 'Image uploaded and inserted!');
+      onNotify('success', 'Na-upload at naisingit ang larawan!');
     } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'Image upload failed');
+      onNotify('error', err instanceof Error ? err.message : 'Nabigo ang pag-upload ng larawan');
     }
   };
 
@@ -371,9 +394,9 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
     try {
       const res = await api.uploadFile(file, { noteId, subjectId: note?.subject_id || null });
       setAttachments((prev) => [res.file, ...prev]);
-      onNotify('success', `Attached "${res.file.original_name}"`);
+      onNotify('success', `Nailakip ang "${res.file.original_name}"`);
     } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'Attachment upload failed');
+      onNotify('error', err instanceof Error ? err.message : 'Nabigo ang paglalakip ng file');
     }
   };
 
@@ -384,21 +407,21 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
     const regex = new RegExp(escaped, 'g');
     const matches = html.match(regex);
     if (!matches || matches.length === 0) {
-      onNotify('info', `No matches found for "${findTerm}"`);
+      onNotify('info', `Walang tugma para sa "${findTerm}"`);
       return;
     }
     const replaced = html.replace(regex, replaceTerm);
     editor.commands.setContent(replaced, true);
-    onNotify('success', `Replaced ${matches.length} occurrence(s).`);
+    onNotify('success', `Napalitan ang ${matches.length} bahagi.`);
   };
 
   const handleSaveSnapshot = async () => {
     await flushSaveNow();
     try {
       await api.createNoteVersion(noteId);
-      onNotify('success', 'Version snapshot saved!');
+      onNotify('success', 'Na-save ang bersyon ng tala!');
     } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'Could not save snapshot');
+      onNotify('error', err instanceof Error ? err.message : 'Hindi ma-save ang bersyon');
     }
   };
 
@@ -406,9 +429,9 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
     try {
       const res = await api.toggleNoteShare(noteId, enabled);
       setNote((prev) => (prev ? { ...prev, share_token: res.share_token } : null));
-      onNotify('success', res.share_token ? 'Share link activated!' : 'Share link disabled.');
+      onNotify('success', res.share_token ? 'Pinagana ang link ng pagbabahagi!' : 'Pinatay ang link ng pagbabahagi.');
     } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'Could not update sharing');
+      onNotify('error', err instanceof Error ? err.message : 'Hindi ma-update ang pagbabahagi');
     }
   };
 
@@ -442,6 +465,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
     () =>
       paperStyle === 'dark_board' ||
       paperBgColor === '#1E293B' ||
+      paperBgColor === '#0B172E' ||
       paperBgColor === '#13111C',
     [paperStyle, paperBgColor]
   );
@@ -455,10 +479,16 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
   const wordCount = editor?.storage.characterCount?.words() ?? note?.word_count ?? 0;
   const charCount = editor?.storage.characterCount?.characters() ?? 0;
 
+  const categoryChoices = useMemo(() => {
+    const list = new Set<string>(NOTE_CATEGORIES);
+    if (category) list.add(category);
+    return Array.from(list);
+  }, [category]);
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center text-sm text-slate-400">
-        Opening studio workspace...
+        Binubuksan ang workspace ng studio...
       </div>
     );
   }
@@ -466,9 +496,9 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
   if (!note) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3">
-        <p className="text-sm text-slate-500">Note not found.</p>
-        <button type="button" onClick={onBack} className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm">
-          Back to Workspace
+        <p className="text-sm text-slate-500">Hindi nahanap ang tala.</p>
+        <button type="button" onClick={onBack} className="px-4 py-2 rounded-xl bg-blue-700 text-white text-sm cursor-pointer">
+          Bumalik sa Workspace
         </button>
       </div>
     );
@@ -479,16 +509,16 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
     : '';
 
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 bg-[#EFECE5] dark:bg-[#0B0F17]">
-      {/* Studio Top Bar */}
-      <div className="no-print px-3 sm:px-5 py-2.5 bg-white dark:bg-slate-900 border-b border-stone-200 dark:border-slate-800 flex flex-wrap items-center gap-2.5">
+    <div className="flex-1 flex flex-col h-full min-h-0 bg-[#EFF6FF] dark:bg-[#071021]">
+      {/* Tuktok na Bar ng Studio */}
+      <div className="no-print px-3 sm:px-5 py-2.5 bg-white dark:bg-[#0D1930] border-b border-blue-200/80 dark:border-blue-900/60 flex flex-wrap items-center gap-2.5">
         <button
           type="button"
           onClick={() => {
             flushSaveNow().then(onBack);
           }}
-          className="p-2 rounded-xl text-slate-500 hover:bg-stone-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
-          title="Back to list"
+          className="p-2 rounded-xl text-slate-500 hover:bg-blue-50 dark:hover:bg-blue-950/60 hover:text-blue-700 dark:hover:text-white transition cursor-pointer"
+          title="Bumalik sa listahan"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
@@ -503,7 +533,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                 setTitle(e.target.value);
                 queueSave({ title: e.target.value });
               }}
-              placeholder="Untitled Note"
+              placeholder="Walang Pamagat na Tala"
               className="w-full font-display font-bold text-base sm:text-lg text-slate-900 dark:text-white bg-transparent focus:outline-none truncate"
             />
             <button
@@ -512,8 +542,8 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                 titleInputRef.current?.focus();
                 titleInputRef.current?.select();
               }}
-              className="p-1 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-slate-800 cursor-pointer shrink-0"
-              title="Rename note"
+              className="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer shrink-0"
+              title="Palitan ang pamagat ng tala"
             >
               <Edit3 className="w-3.5 h-3.5" />
             </button>
@@ -525,10 +555,10 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                 setCategory(e.target.value);
                 queueSave({ category: e.target.value });
               }}
-              className="bg-violet-50/80 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-semibold rounded px-1.5 py-0.5 cursor-pointer"
-              title="Note Category"
+              className="bg-blue-50/80 dark:bg-blue-950/60 text-blue-700 dark:text-sky-300 font-semibold rounded px-1.5 py-0.5 cursor-pointer"
+              title="Kategorya ng Tala"
             >
-              {NOTE_CATEGORIES.map((c) => (
+              {categoryChoices.map((c) => (
                 <option key={c} value={c}>
                   {c}
                 </option>
@@ -538,10 +568,10 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
             <select
               value={note.folder_id || ''}
               onChange={(e) => queueSave({ folder_id: e.target.value || null })}
-              className="bg-transparent hover:bg-violet-50 dark:hover:bg-slate-800 rounded px-1 py-0.5 cursor-pointer"
-              title="Assign Folder"
+              className="bg-transparent hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded px-1 py-0.5 cursor-pointer"
+              title="Italaga sa Folder"
             >
-              <option value="">No Folder</option>
+              <option value="">Walang Folder</option>
               {folders.map((f) => (
                 <option key={f.id} value={f.id}>
                   📁 {f.name}
@@ -552,10 +582,10 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
             <select
               value={note.subject_id || ''}
               onChange={(e) => queueSave({ subject_id: e.target.value || null })}
-              className="bg-transparent hover:bg-violet-50 dark:hover:bg-slate-800 rounded px-1 py-0.5 cursor-pointer"
-              title="Assign Course"
+              className="bg-transparent hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded px-1 py-0.5 cursor-pointer"
+              title="Italaga sa Asignatura"
             >
-              <option value="">No Course</option>
+              <option value="">Walang Asignatura</option>
               {subjects.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.code ? `${s.code} · ${s.name}` : s.name}
@@ -566,10 +596,10 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
             <select
               value={note.notebook_id || ''}
               onChange={(e) => queueSave({ notebook_id: e.target.value || null })}
-              className="bg-transparent hover:bg-violet-50 dark:hover:bg-slate-800 rounded px-1 py-0.5 cursor-pointer"
-              title="Assign Notebook"
+              className="bg-transparent hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded px-1 py-0.5 cursor-pointer"
+              title="Italaga sa Kuwaderno"
             >
-              <option value="">Loose Page</option>
+              <option value="">Malayang Pahina</option>
               {notebooks.map((nb) => (
                 <option key={nb.id} value={nb.id}>
                   {nb.title}
@@ -582,7 +612,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
               onClick={() => {
                 const next = !autoSaveEnabled;
                 setAutoSaveEnabled(next);
-                onNotify('info', next ? 'Auto-save enabled' : 'Auto-save paused (use Save button)');
+                onNotify('info', next ? 'Pinagana ang awtomatikong pag-save' : 'Ihinto muna ang awtomatikong pag-save (gamitin ang button na I-save)');
                 if (next && saveState === 'dirty') {
                   flushSaveNow();
                 }
@@ -590,41 +620,41 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
               className={`px-1.5 py-0.5 rounded font-semibold cursor-pointer ${
                 autoSaveEnabled
                   ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-stone-100 dark:bg-slate-800 text-slate-500'
+                  : 'bg-blue-50 dark:bg-[#132340] text-slate-500'
               }`}
-              title="Toggle automatic saving"
+              title="I-on o i-off ang awtomatikong pag-save"
             >
-              Auto: {autoSaveEnabled ? 'ON' : 'OFF'}
+              Auto: {autoSaveEnabled ? 'BUKAS' : 'PATAY'}
             </button>
             <span
               className={`font-medium ${
                 saveState === 'saving'
-                  ? 'text-indigo-500'
+                  ? 'text-blue-600 dark:text-sky-400'
                   : saveState === 'dirty'
                     ? 'text-amber-600'
                     : 'text-emerald-600 dark:text-emerald-400'
               }`}
-              title={lastSavedAt ? `Last saved ${new Date(lastSavedAt).toLocaleTimeString()}` : undefined}
+              title={lastSavedAt ? `Huling na-save ${new Date(lastSavedAt).toLocaleTimeString()}` : undefined}
             >
               {saveState === 'saving'
-                ? 'Saving...'
+                ? 'Sini-save...'
                 : saveState === 'dirty'
-                  ? 'Unsaved changes'
+                  ? 'May hindi pa na-save'
                   : lastSavedAt
-                    ? `Saved ${new Date(lastSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                    : 'Saved'}
+                    ? `Na-save ${new Date(lastSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                    : 'Na-save'}
             </span>
           </div>
         </div>
 
-        {/* Studio Mode Switcher */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-stone-100 dark:bg-slate-800">
+        {/* Tagapagpalit ng Studio Mode */}
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-blue-50/80 dark:bg-[#132340]">
           {(
             [
-              { id: 'document', label: 'Document', icon: <FileText className="w-3.5 h-3.5" /> },
-              { id: 'notebook', label: 'Notebook', icon: <NotebookPen className="w-3.5 h-3.5" /> },
-              { id: 'drawing', label: 'Draw Pad', icon: <PenTool className="w-3.5 h-3.5" /> },
-              { id: 'split', label: 'Split', icon: <Columns2 className="w-3.5 h-3.5" /> },
+              { id: 'document', label: 'Dokumento', icon: <FileText className="w-3.5 h-3.5" /> },
+              { id: 'notebook', label: 'Kuwaderno', icon: <NotebookPen className="w-3.5 h-3.5" /> },
+              { id: 'drawing', label: 'Guhitan', icon: <PenTool className="w-3.5 h-3.5" /> },
+              { id: 'split', label: 'Hatiin', icon: <Columns2 className="w-3.5 h-3.5" /> },
             ] as const
           ).map((m) => (
             <button
@@ -633,8 +663,8 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
               onClick={() => handleModeSwitch(m.id)}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 studioView === m.id
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  ? 'bg-white dark:bg-[#0D1930] text-blue-700 dark:text-sky-300 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-blue-700'
               }`}
             >
               {m.icon}
@@ -643,16 +673,16 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
           ))}
         </div>
 
-        {/* Quick Actions */}
+        {/* Mga Mabilisang Aksyon */}
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={handleManualSave}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-violet-700 hover:bg-violet-800 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
-            title="Manual Save (Ctrl+S)"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+            title="Mano-manong I-save (Ctrl+S)"
           >
             <Save className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Save</span>
+            <span className="hidden sm:inline">I-save</span>
           </button>
           {onNewNote && (
             <button
@@ -661,8 +691,8 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                 await flushSaveNow();
                 onNewNote();
               }}
-              className="p-2 rounded-xl text-slate-500 hover:bg-stone-100 dark:hover:bg-slate-800 hover:text-violet-600 cursor-pointer"
-              title="Create New Note"
+              className="p-2 rounded-xl text-slate-500 hover:bg-blue-50 dark:hover:bg-blue-950/60 hover:text-blue-700 cursor-pointer"
+              title="Gumawa ng Bagong Tala"
             >
               <FilePlus2 className="w-4 h-4" />
             </button>
@@ -670,52 +700,52 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
           <button
             type="button"
             onClick={handleDuplicateInStudio}
-            className="p-2 rounded-xl text-slate-500 hover:bg-stone-100 dark:hover:bg-slate-800 hover:text-violet-600 cursor-pointer"
-            title="Duplicate Note"
+            className="p-2 rounded-xl text-slate-500 hover:bg-blue-50 dark:hover:bg-blue-950/60 hover:text-blue-700 cursor-pointer"
+            title="Kopyahin ang Tala"
           >
             <CopyPlus className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => setCustomizerOpen((v) => !v)}
-            className={`p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer ${
-              customizerOpen ? 'text-violet-700 bg-violet-50 dark:bg-violet-950/60' : 'text-slate-500'
+            className={`p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer ${
+              customizerOpen ? 'text-blue-700 bg-blue-50 dark:bg-blue-950/60 dark:text-sky-300' : 'text-slate-500'
             }`}
-            title="Customize Paper Style, Colors, Size & Theme"
+            title="I-customize ang Estilo ng Papel, Kulay, Laki at Tema"
           >
             <Palette className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => queueSave({ is_starred: note.is_starred ? 0 : 1 })}
-            className={`p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer ${
+            className={`p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer ${
               note.is_starred ? 'text-amber-500' : 'text-slate-400'
             }`}
-            title="Favorite note"
+            title="Paboritong tala"
           >
             <Star className="w-4 h-4" fill={note.is_starred ? 'currentColor' : 'none'} />
           </button>
           <button
             type="button"
             onClick={() => queueSave({ is_pinned: note.is_pinned ? 0 : 1 })}
-            className={`p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer ${
-              note.is_pinned ? 'text-indigo-600' : 'text-slate-400'
+            className={`p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer ${
+              note.is_pinned ? 'text-blue-600 dark:text-sky-400' : 'text-slate-400'
             }`}
-            title="Pin to top"
+            title="I-pin sa itaas"
           >
             <Pin className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => setAttachmentsOpen((v) => !v)}
-            className={`relative p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer ${
-              attachmentsOpen ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/50' : 'text-slate-500'
+            className={`relative p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer ${
+              attachmentsOpen ? 'text-blue-700 bg-blue-50 dark:bg-blue-950/50 dark:text-sky-300' : 'text-slate-500'
             }`}
-            title="Attachments & Files"
+            title="Mga Kalakip na File"
           >
             <Paperclip className="w-4 h-4" />
             {attachments.length > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-blue-700 text-white text-[10px] font-bold flex items-center justify-center">
                 {attachments.length}
               </span>
             )}
@@ -723,18 +753,18 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
           <button
             type="button"
             onClick={() => setVersionsOpen(true)}
-            className="p-2 rounded-xl text-slate-500 hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer"
-            title="Version History"
+            className="p-2 rounded-xl text-slate-500 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer"
+            title="Kasaysayan ng Bersyon"
           >
             <History className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => setShareOpen(true)}
-            className={`p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer ${
+            className={`p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer ${
               note.share_token ? 'text-emerald-600' : 'text-slate-500'
             }`}
-            title="Share Note"
+            title="Ibahagi ang Tala"
           >
             <Share2 className="w-4 h-4" />
           </button>
@@ -742,22 +772,22 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
             type="button"
             onClick={async () => {
               await api.trashNote(note.id);
-              onNotify('info', 'Moved note to Trash');
+              onNotify('info', 'Inilipat ang tala sa Basurahan');
               onNoteDeleted();
             }}
             className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
-            title="Delete Note (Move to Trash)"
+            title="Burahin ang Tala (Ilipat sa Basurahan)"
           >
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Compact Note Description & Quick Paper/Theme Customizer Strip */}
-      <div className="no-print px-3 sm:px-5 py-1.5 bg-stone-50/90 dark:bg-slate-900/75 border-b border-stone-200/80 dark:border-slate-800 flex flex-wrap items-center gap-3 text-xs">
+      {/* Maikling Paglalarawan at Mabilisang Tagapag-customize */}
+      <div className="no-print px-3 sm:px-5 py-1.5 bg-white/80 dark:bg-[#0D1930]/80 border-b border-blue-100 dark:border-blue-900/60 flex flex-wrap items-center gap-3 text-xs">
         <div className="flex-1 min-w-[220px] flex items-center gap-2">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 shrink-0">
-            Description:
+            Paglalarawan:
           </span>
           <input
             type="text"
@@ -766,37 +796,37 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
               setDescription(e.target.value);
               queueSave({ description: e.target.value });
             }}
-            placeholder="Add a brief description, lecture topic, or learning objective..."
+            placeholder="Magdagdag ng maikling paglalarawan, paksa ng lektura, o layunin ng pag-aaral..."
             className="w-full bg-transparent text-xs text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none"
           />
         </div>
         <button
           type="button"
           onClick={() => setCustomizerOpen((v) => !v)}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:border-violet-400 cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-[#132340] border border-blue-200 dark:border-blue-800 text-[11px] font-semibold text-blue-800 dark:text-blue-200 hover:border-blue-400 cursor-pointer"
         >
-          <Palette className="w-3 h-3 text-violet-600" />
-          {paperStyle === 'plain' ? 'Blank Paper' : paperStyle === 'dot' ? 'Dotted Paper' : `${paperStyle.replace('_', ' ')}`}
+          <Palette className="w-3 h-3 text-blue-600 dark:text-sky-400" />
+          {getPaperStyleLabel(paperStyle)}
           <span className="text-slate-400">·</span>
           <span className="uppercase">{pageSize}</span>
         </button>
       </div>
 
-      {/* Expandable Note Customization Panel (Page Styles, Colors, Sizes, Workspace Theme) */}
+      {/* Nabubuksang Panel ng Pag-customize ng Tala */}
       {customizerOpen && (
-        <div className="no-print px-4 sm:px-6 py-3 bg-violet-50/70 dark:bg-[#161229] border-b border-violet-200/70 dark:border-violet-900/60 flex flex-wrap items-center gap-x-5 gap-y-2.5 text-xs">
+        <div className="no-print px-4 sm:px-6 py-3 bg-blue-50/80 dark:bg-[#132340] border-b border-blue-200/70 dark:border-blue-900/60 flex flex-wrap items-center gap-x-5 gap-y-2.5 text-xs">
           <div className="flex items-center gap-1.5">
-            <span className="font-bold text-slate-600 dark:text-slate-300">Page Style:</span>
+            <span className="font-bold text-slate-600 dark:text-slate-300">Estilo ng Papel:</span>
             <div className="flex flex-wrap items-center gap-1">
               {(
                 [
-                  { id: 'plain', label: 'Blank' },
-                  { id: 'lined', label: 'Lined' },
+                  { id: 'plain', label: 'Blanko' },
+                  { id: 'lined', label: 'Linyado' },
                   { id: 'grid', label: 'Grid' },
-                  { id: 'dot', label: 'Dotted' },
+                  { id: 'dot', label: 'May Tuldok' },
                   { id: 'cornell', label: 'Cornell' },
-                  { id: 'wide_ruled', label: 'Wide Ruled' },
-                  { id: 'dark_board', label: 'Chalkboard' },
+                  { id: 'wide_ruled', label: 'Malawak na Linya' },
+                  { id: 'dark_board', label: 'Pisara' },
                 ] as const
               ).map((ps) => (
                 <button
@@ -808,8 +838,8 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                   }}
                   className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
                     paperStyle === ps.id
-                      ? 'bg-violet-700 text-white shadow-xs'
-                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-stone-200 dark:border-slate-700'
+                      ? 'bg-blue-700 text-white shadow-xs'
+                      : 'bg-white dark:bg-[#0D1930] text-slate-700 dark:text-slate-300 border border-blue-200 dark:border-blue-800'
                   }`}
                 >
                   {ps.label}
@@ -819,7 +849,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="font-bold text-slate-600 dark:text-slate-300">Background:</span>
+            <span className="font-bold text-slate-600 dark:text-slate-300">Kulay ng Background:</span>
             <div className="flex items-center gap-1">
               {PAPER_BG_SWATCHES.map((sw) => (
                 <button
@@ -832,8 +862,8 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                   title={sw.label}
                   className={`w-5 h-5 rounded-full border transition cursor-pointer ${
                     paperBgColor === sw.value
-                      ? 'ring-2 ring-violet-600 ring-offset-1 border-violet-600 scale-110'
-                      : 'border-stone-300 dark:border-slate-600'
+                      ? 'ring-2 ring-blue-600 ring-offset-1 border-blue-600 scale-110'
+                      : 'border-blue-200 dark:border-blue-700'
                   }`}
                   style={'preview' in sw ? { background: sw.preview } : { backgroundColor: sw.value }}
                 />
@@ -842,7 +872,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="font-bold text-slate-600 dark:text-slate-300">Page Size:</span>
+            <span className="font-bold text-slate-600 dark:text-slate-300">Laki ng Pahina:</span>
             <select
               value={pageSize}
               onChange={(e) => {
@@ -850,35 +880,35 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                 setPageSize(sz);
                 queueSave({ page_size: sz });
               }}
-              className="px-2.5 py-1 rounded-lg border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+              className="px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-800 bg-white dark:bg-[#0D1930] text-slate-700 dark:text-slate-200"
             >
-              <option value="compact">Compact (B5)</option>
-              <option value="a4">A4 Standard</option>
-              <option value="letter">US Letter</option>
-              <option value="wide">Wide Studio</option>
-              <option value="fluid">Full Fluid Width</option>
+              <option value="compact">Siksik (B5)</option>
+              <option value="a4">Pamantayang A4</option>
+              <option value="letter">Liham (US Letter)</option>
+              <option value="wide">Malawak na Studio</option>
+              <option value="fluid">Buong Lapad</option>
             </select>
           </div>
 
           <button
             type="button"
             onClick={toggleWorkspaceTheme}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-[#0D1930] border border-blue-200 dark:border-blue-800 font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
           >
             {workspaceTheme === 'dark' ? (
               <>
-                <Sun className="w-3.5 h-3.5 text-amber-400" /> Switch to Light Theme
+                <Sun className="w-3.5 h-3.5 text-amber-400" /> Lumipat sa Maliwanag na Tema
               </>
             ) : (
               <>
-                <Moon className="w-3.5 h-3.5 text-violet-600" /> Switch to Dark Theme
+                <Moon className="w-3.5 h-3.5 text-blue-600" /> Lumipat sa Madilim na Tema
               </>
             )}
           </button>
         </div>
       )}
 
-      {/* Hidden inline image upload input */}
+      {/* Nakatagong upload input para sa inline na larawan */}
       <input
         ref={imageUploadRef}
         type="file"
@@ -891,7 +921,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
         }}
       />
 
-      {/* Word Ribbon Toolbar (shown for Document, Notebook, or Split) */}
+      {/* Ribbon Toolbar na Parang Word */}
       {studioView !== 'drawing' && (
         <RibbonToolbar
           editor={editor}
@@ -922,7 +952,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
           onOpenMathModal={() => setMathOpen(true)}
           onEmbedDrawing={() => {
             setStudioView('split');
-            onNotify('info', 'Sketch on the right pad and click Embed to insert it into your document.');
+            onNotify('info', 'Gumuhit sa kanang panel at pindutin ang Ilakip upang ilagay ito sa dokumento.');
           }}
           onSaveSnapshot={handleSaveSnapshot}
           onOpenVersions={() => setVersionsOpen(true)}
@@ -930,7 +960,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
           onExportHtml={() => exportNoteAsHtml(note, editor?.getHTML() || '')}
           onExportMarkdown={() => {
             const md = htmlToMarkdownApprox(note, editor?.getText() || '');
-            const slug = (title || 'note').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'note';
+            const slug = (title || 'tala').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'tala';
             downloadTextFile(`${slug}.md`, md, 'text/markdown;charset=utf-8');
           }}
           onPrintPdf={() => window.print()}
@@ -938,56 +968,57 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
         />
       )}
 
-      {/* Find & Replace Bar */}
+      {/* Hanapin at Palitan Bar */}
       {findOpen && studioView !== 'drawing' && (
-        <div className="no-print px-4 py-2 bg-amber-50/90 dark:bg-slate-800 border-b border-amber-200 dark:border-slate-700 flex flex-wrap items-center gap-2 text-xs">
+        <div className="no-print px-4 py-2 bg-blue-50/90 dark:bg-[#132340] border-b border-blue-200 dark:border-blue-800 flex flex-wrap items-center gap-2 text-xs">
           <input
             type="text"
             value={findTerm}
             onChange={(e) => setFindTerm(e.target.value)}
-            placeholder="Find text..."
-            className="px-2.5 py-1.5 rounded-lg border border-stone-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+            placeholder="Hanapin ang teksto..."
+            className="px-2.5 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-white dark:bg-[#0D1930]"
           />
           <input
             type="text"
             value={replaceTerm}
             onChange={(e) => setReplaceTerm(e.target.value)}
-            placeholder="Replace with..."
-            className="px-2.5 py-1.5 rounded-lg border border-stone-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+            placeholder="Palitan ng..."
+            className="px-2.5 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-white dark:bg-[#0D1930]"
           />
           <button
             type="button"
             onClick={handleFindReplace}
-            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-blue-700 text-white font-semibold cursor-pointer"
           >
-            Replace All
+            Palitan Lahat
           </button>
           <button
             type="button"
             onClick={() => setFindOpen(false)}
-            className="ml-auto p-1 text-slate-400 hover:text-slate-700"
+            aria-label="Isara ang paghahanap"
+            className="ml-auto p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* Main Studio Body */}
+      {/* Pangunahing Katawan ng Studio */}
       <div className="flex-1 min-h-0 flex overflow-hidden">
-        {/* Document / Notebook Area */}
+        {/* Lugar ng Dokumento / Kuwaderno */}
         {studioView !== 'drawing' && (
           <div
             className={`flex-1 overflow-y-auto p-4 sm:p-8 flex flex-col items-center ${
-              studioView === 'split' ? 'lg:w-1/2 border-r border-stone-200 dark:border-slate-800' : ''
+              studioView === 'split' ? 'lg:w-1/2 border-r border-blue-200 dark:border-blue-900' : ''
             }`}
           >
-            {/* Notebook Overlay Ink Toggle Bar */}
+            {/* Bar ng Tinta sa Pahina (Notebook Mode) */}
             {studioView === 'notebook' && (
-              <div className={`no-print ${pageWidthClass} mb-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/90 dark:bg-slate-900/90 border border-stone-200 dark:border-slate-800 shadow-xs`}>
+              <div className={`no-print ${pageWidthClass} mb-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/95 dark:bg-[#0D1930]/95 border border-blue-200 dark:border-blue-900 shadow-xs`}>
                 <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                  <span className="font-semibold">Notebook Sheet:</span>
-                  <span className="capitalize px-2 py-0.5 rounded bg-stone-100 dark:bg-slate-800 font-medium">
-                    {paperStyle === 'plain' ? 'Blank Paper' : paperStyle === 'dot' ? 'Dotted Paper' : paperStyle.replace('_', ' ')}
+                  <span className="font-semibold">Pahina ng Kuwaderno:</span>
+                  <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-[#132340] text-blue-800 dark:text-blue-200 font-medium">
+                    {getPaperStyleLabel(paperStyle)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -996,20 +1027,20 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                     onClick={() => setInkOverlayActive((v) => !v)}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                       inkOverlayActive
-                        ? 'bg-amber-500 text-white shadow-xs'
-                        : 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100'
+                        ? 'bg-sky-600 text-white shadow-xs'
+                        : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-sky-300 hover:bg-blue-100'
                     }`}
                   >
                     <PenTool className="w-3.5 h-3.5" />
-                    {inkOverlayActive ? 'Drawing Ink On Paper (Switch to Type)' : 'Annotate Paper With Ink'}
+                    {inkOverlayActive ? 'Gumuguhit ng Tinta (Lumipat sa Pagsulat)' : 'Guhitan ng Tinta ang Papel'}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Paper Sheet */}
+            {/* Pahina ng Papel */}
             <div
-              className={`print-sheet relative ${pageWidthClass} rounded-2xl shadow-lg border border-stone-300/80 dark:border-slate-700/80 overflow-hidden transition-all ${paperBgClass} ${
+              className={`print-sheet relative ${pageWidthClass} rounded-2xl shadow-lg border border-blue-200/80 dark:border-blue-800/70 overflow-hidden transition-all ${paperBgClass} ${
                 isDarkPaper ? 'text-slate-100' : 'text-slate-900'
               }`}
               style={{
@@ -1018,26 +1049,26 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                 transformOrigin: 'top center',
               }}
             >
-              {/* Spiral binding decoration in Notebook Mode */}
+              {/* Dekorasyong Spiral sa Kuwaderno */}
               {studioView === 'notebook' && (
-                <div className="no-print h-4 bg-gradient-to-b from-stone-200/70 to-transparent dark:from-slate-800/70 flex items-center justify-around px-6 border-b border-stone-200/60 dark:border-slate-700/50">
+                <div className="no-print h-4 bg-gradient-to-b from-blue-100/70 to-transparent dark:from-blue-950/70 flex items-center justify-around px-6 border-b border-blue-200/60 dark:border-blue-800/50">
                   {Array.from({ length: 18 }).map((_, i) => (
                     <span
                       key={i}
-                      className="w-2.5 h-2.5 rounded-full bg-stone-400/60 dark:bg-slate-600 ring-1 ring-white/50"
+                      className="w-2.5 h-2.5 rounded-full bg-blue-300/70 dark:bg-blue-700 ring-1 ring-white/50"
                     />
                   ))}
                 </div>
               )}
 
-              {/* Sheet Body (Cornell or Standard) */}
+              {/* Katawan ng Papel (Cornell o Karaniwan) */}
               <div className={`relative ${paperStyle === 'lined' || paperStyle === 'wide_ruled' ? 'pl-20 pr-8 py-8' : 'px-8 sm:px-12 py-9'}`}>
                 {paperStyle === 'cornell' ? (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-[210px_1fr] gap-6 border-b-2 border-indigo-200/70 dark:border-indigo-800/50 pb-6">
-                      <div className="md:border-r-2 md:border-rose-300/70 md:pr-5">
-                        <div className="text-[11px] font-bold uppercase tracking-wider text-rose-500 mb-2">
-                          Cues & Questions
+                    <div className="grid grid-cols-1 md:grid-cols-[210px_1fr] gap-6 border-b-2 border-blue-200/80 dark:border-blue-800/60 pb-6">
+                      <div className="md:border-r-2 md:border-sky-300/80 md:pr-5">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 mb-2">
+                          Mga Gabay at Tanong
                         </div>
                         <textarea
                           value={cornellCues}
@@ -1046,13 +1077,13 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                             queueSave({ cornell_cues: e.target.value });
                           }}
                           rows={16}
-                          placeholder="Key questions, formulas, exam prompts..."
+                          placeholder="Mga pangunahing tanong, pormula, gabay sa pagsusulit..."
                           className="w-full bg-transparent text-sm leading-7 resize-none focus:outline-none text-current placeholder:text-slate-400"
                         />
                       </div>
                       <div>
-                        <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-500 mb-2">
-                          Lecture Notes
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300 mb-2">
+                          Mga Tala sa Lektura
                         </div>
                         <div className="inkora-prose">
                           <EditorContent editor={editor} />
@@ -1061,8 +1092,8 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                     </div>
 
                     <div>
-                      <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 mb-1.5">
-                        Page Summary
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-sky-400 mb-1.5">
+                        Buod ng Pahina
                       </div>
                       <textarea
                         value={cornellSummary}
@@ -1071,7 +1102,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                           queueSave({ cornell_summary: e.target.value });
                         }}
                         rows={3}
-                        placeholder="Summarize the key ideas from this page in 2-3 sentences..."
+                        placeholder="Ibuod ang mahahalagang ideya ng pahinang ito sa 2–3 pangungusap..."
                         className="w-full bg-transparent text-sm leading-relaxed resize-none focus:outline-none text-current placeholder:text-slate-400"
                       />
                     </div>
@@ -1082,7 +1113,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                   </div>
                 )}
 
-                {/* Transparent Ink Annotation Overlay in Notebook Mode */}
+                {/* Transparenteng Ink Annotation Layer sa Notebook Mode */}
                 {studioView === 'notebook' &&
                   (inkOverlayActive ||
                     drawingData.strokes.length > 0 ||
@@ -1114,13 +1145,13 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
               </div>
             </div>
 
-            {/* Tags Footer */}
+            {/* Footer ng mga Tag */}
             <div className="no-print w-full max-w-[794px] mt-5 flex flex-wrap items-center gap-2 px-2">
               <Tag className="w-3.5 h-3.5 text-slate-400" />
               {tags.map((t) => (
                 <span
                   key={t}
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300"
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white dark:bg-[#0D1930] border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-200"
                 >
                   #{t}
                   <button
@@ -1142,14 +1173,14 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                     addTag();
                   }
                 }}
-                placeholder="Add tag + Enter..."
+                placeholder="Magdagdag ng tag + Enter..."
                 className="text-xs bg-transparent px-2 py-1 text-slate-600 dark:text-slate-300 focus:outline-none placeholder:text-slate-400"
               />
             </div>
           </div>
         )}
 
-        {/* Dedicated Drawing Pad (Full or Split Right Pane) */}
+        {/* Nakalaang Guhitan (Buo o Kalahating Studio) */}
         {(studioView === 'drawing' || studioView === 'split') && (
           <div className={studioView === 'split' ? 'hidden lg:flex lg:w-1/2 flex-col min-h-0' : 'flex-1 flex flex-col min-h-0'}>
             <DrawingCanvas
@@ -1176,16 +1207,16 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
           </div>
         )}
 
-        {/* Attachments Drawer */}
+        {/* Drawer ng mga Kalakip na File */}
         {attachmentsOpen && (
-          <div className="no-print w-72 sm:w-80 bg-white dark:bg-slate-900 border-l border-stone-200 dark:border-slate-800 flex flex-col shrink-0">
-            <div className="px-4 py-3 border-b border-stone-200 dark:border-slate-800 flex items-center justify-between">
-              <span className="font-display font-bold text-sm">Note Attachments</span>
-              <button type="button" onClick={() => setAttachmentsOpen(false)} className="text-slate-400 hover:text-slate-700">
+          <div className="no-print w-72 sm:w-80 bg-white dark:bg-[#0D1930] border-l border-blue-200 dark:border-blue-900 flex flex-col shrink-0">
+            <div className="px-4 py-3 border-b border-blue-100 dark:border-blue-900 flex items-center justify-between">
+              <span className="font-display font-bold text-sm">Mga Kalakip ng Tala</span>
+              <button type="button" onClick={() => setAttachmentsOpen(false)} aria-label="Isara" className="text-slate-400 hover:text-slate-700 cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-3 border-b border-stone-100 dark:border-slate-800">
+            <div className="p-3 border-b border-blue-100 dark:border-blue-900">
               <input
                 ref={attachUploadRef}
                 type="file"
@@ -1199,19 +1230,19 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
               <button
                 type="button"
                 onClick={() => attachUploadRef.current?.click()}
-                className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full py-2 px-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <Upload className="w-3.5 h-3.5" /> Attach File to Note
+                <Upload className="w-3.5 h-3.5" /> Maglakip ng File sa Tala
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {attachments.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center py-8">No files attached to this note yet.</p>
+                <p className="text-xs text-slate-400 text-center py-8">Wala pang nakalakip na file sa talang ito.</p>
               ) : (
                 attachments.map((att) => (
                   <div
                     key={att.id}
-                    className="p-2.5 rounded-xl border border-stone-200 dark:border-slate-800 bg-stone-50/70 dark:bg-slate-800/50 space-y-1.5"
+                    className="p-2.5 rounded-xl border border-blue-100 dark:border-blue-800 bg-blue-50/50 dark:bg-[#132340] space-y-1.5"
                   >
                     <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
                       {att.original_name}
@@ -1225,16 +1256,16 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                             onClick={() =>
                               editor.chain().focus().setImage({ src: `/api/files/${att.id}/content`, alt: att.original_name }).run()
                             }
-                            className="text-indigo-600 font-semibold hover:underline cursor-pointer"
+                            className="text-blue-600 dark:text-sky-400 font-semibold hover:underline cursor-pointer"
                           >
-                            Insert
+                            Isingit
                           </button>
                         )}
                         <a
                           href={`/api/files/${att.id}/content?download=1`}
                           className="text-slate-600 dark:text-slate-300 hover:underline"
                         >
-                          Download
+                          I-download
                         </a>
                       </div>
                     </div>
@@ -1246,7 +1277,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
         )}
       </div>
 
-      {/* Version History Drawer */}
+      {/* Drawer ng Kasaysayan ng Bersyon */}
       <VersionHistoryDrawer
         open={versionsOpen}
         noteId={noteId}
@@ -1258,32 +1289,32 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
         onNotify={onNotify}
       />
 
-      {/* Math Equation Modal */}
+      {/* Modal para sa Pormulang Matematika */}
       <Modal
         open={mathOpen}
         onClose={() => setMathOpen(false)}
-        title="Insert Mathematical Equation"
-        subtitle="Write LaTeX notation rendered cleanly with KaTeX"
+        title="Magsingit ng Pormulang Matematika"
+        subtitle="Magsulat ng notasyong LaTeX na malinis na ire-render gamit ang KaTeX"
       >
         <div className="space-y-4">
           <textarea
             value={latexInput}
             onChange={(e) => setLatexInput(e.target.value)}
             rows={3}
-            className="w-full px-3 py-2 text-sm font-mono rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 text-sm font-mono rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340] focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <div className="flex flex-wrap gap-1.5 text-xs">
             {[
-              { label: 'Quadratic', tex: 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}' },
+              { label: 'Kwadratiko', tex: 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}' },
               { label: 'Michaelis-Menten', tex: 'V_0 = \\frac{V_{\\max}[S]}{K_m + [S]}' },
-              { label: 'Entropy', tex: 'S = k_B \\ln \\Omega' },
-              { label: 'Big-O Sum', tex: '\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}' },
+              { label: 'Entropiya', tex: 'S = k_B \\ln \\Omega' },
+              { label: 'Kabuuan (Big-O)', tex: '\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}' },
             ].map((p) => (
               <button
                 key={p.label}
                 type="button"
                 onClick={() => setLatexInput(p.tex)}
-                className="px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-slate-800 hover:bg-indigo-50 text-slate-700 dark:text-slate-300 font-medium cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-[#132340] hover:bg-blue-100 text-blue-800 dark:text-blue-200 font-medium cursor-pointer"
               >
                 {p.label}
               </button>
@@ -1293,9 +1324,9 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
             <button
               type="button"
               onClick={() => setMathOpen(false)}
-              className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-stone-100"
+              className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-blue-50 cursor-pointer"
             >
-              Cancel
+              Kanselahin
             </button>
             <button
               type="button"
@@ -1305,29 +1336,29 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                 }
                 setMathOpen(false);
               }}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold cursor-pointer"
             >
-              Insert Equation
+              Isingit ang Pormula
             </button>
           </div>
         </div>
       </Modal>
 
-      {/* Share Note Modal */}
+      {/* Modal ng Pagbabahagi ng Tala */}
       <Modal
         open={shareOpen}
         onClose={() => setShareOpen(false)}
-        title="Share Note"
-        subtitle="Create a public read-only web link for classmates or instructors"
+        title="Ibahagi ang Tala"
+        subtitle="Gumawa ng pampublikong read-only link para sa mga kaklase o guro"
       >
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-xl bg-stone-50 dark:bg-slate-800/70 border border-stone-200 dark:border-slate-700">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-blue-50/70 dark:bg-[#132340] border border-blue-200 dark:border-blue-800">
             <div>
               <div className="text-sm font-bold text-slate-900 dark:text-white">
-                Public Read-Only Link
+                Pampublikong Read-Only Link
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                Anyone with the secret link can view this note.
+                Maaaring tingnan ng sinumang may hawak ng lihim na link ang talang ito.
               </div>
             </div>
             <button
@@ -1336,10 +1367,10 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 note.share_token
                   ? 'bg-emerald-600 text-white'
-                  : 'bg-stone-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
+                  : 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
               }`}
             >
-              {note.share_token ? 'Active' : 'Enable'}
+              {note.share_token ? 'Aktibo' : 'Paganahin'}
             </button>
           </div>
 
@@ -1349,26 +1380,26 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                 <input
                   readOnly
                   value={shareUrl}
-                  className="flex-1 px-3 py-2 text-xs font-mono rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+                  className="flex-1 px-3 py-2 text-xs font-mono rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340]"
                 />
                 <button
                   type="button"
                   onClick={() => {
                     navigator.clipboard.writeText(shareUrl);
-                    onNotify('success', 'Copied share link!');
+                    onNotify('success', 'Nakopya ang link ng pagbabahagi!');
                   }}
-                  className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold cursor-pointer"
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-700 text-white text-xs font-semibold cursor-pointer"
                 >
-                  <Copy className="w-3.5 h-3.5" /> Copy
+                  <Copy className="w-3.5 h-3.5" /> Kopyahin
                 </button>
               </div>
               <a
                 href={shareUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-sky-400 hover:underline"
               >
-                <ExternalLink className="w-3.5 h-3.5" /> Open Shared View
+                <ExternalLink className="w-3.5 h-3.5" /> Buksan ang Ibinahaging Pahina
               </a>
             </div>
           )}
@@ -1377,9 +1408,9 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
             <button
               type="button"
               onClick={() => setShareOpen(false)}
-              className="px-4 py-2 rounded-xl bg-stone-100 dark:bg-slate-800 text-sm font-semibold flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-blue-50 dark:bg-[#132340] text-blue-800 dark:text-blue-200 text-sm font-semibold flex items-center gap-1.5 cursor-pointer"
             >
-              <Check className="w-4 h-4" /> Done
+              <Check className="w-4 h-4" /> Tapos na
             </button>
           </div>
         </div>

@@ -20,55 +20,55 @@ function getTemplatePayload(templateId: string | undefined): TemplateData {
   switch (templateId) {
     case 'cornell':
       return {
-        title: 'Cornell Lecture Notes',
+        title: 'Mga Tala sa Lektura (Cornell)',
         mode: 'notebook',
         paper_style: 'cornell',
         content_json: JSON.stringify({
           type: 'doc',
           content: [
-            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Lecture Key Concepts' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'Capture detailed explanations, derivations, and examples during lecture.' }] },
-            { type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Main thesis or theorem...' }] }] }] },
+            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Mga Pangunahing Konsepto ng Lektura' }] },
+            { type: 'paragraph', content: [{ type: 'text', text: 'Itala rito ang detalyadong mga paliwanag, pormula, at halimbawa habang nakikinig sa klase.' }] },
+            { type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Pangunahing ideya o teorya...' }] }] }] },
           ],
         }),
-        cornell_cues: 'Key Questions?\n\nVocabulary / Formulas?\n\nExam Hints?',
-        cornell_summary: 'Synthesize the 2-3 core takeaways from this lecture in your own words.',
+        cornell_cues: 'Mga Pangunahing Tanong?\n\nTalasalitaan / Pormula?\n\nMga Paalala sa Pagsusulit?',
+        cornell_summary: 'Ibuod sa iyong sariling pananalita ang 2–3 pinakamahalagang aral mula sa lekturang ito.',
       };
     case 'lab-report':
       return {
-        title: 'Academic Lab Report',
+        title: 'Ulat sa Eksperimento sa Laboratoryo',
         mode: 'document',
         paper_style: 'plain',
         content_json: JSON.stringify({
           type: 'doc',
           content: [
-            { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Experiment Title & Lab Report' }] },
-            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '1. Abstract & Hypothesis' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'State the scientific goal, apparatus, and testable prediction.' }] },
-            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '2. Observations & Data Table' }] },
+            { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Pamagat ng Eksperimento at Ulat sa Laboratoryo' }] },
+            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '1. Abstrak at Hipotesis' }] },
+            { type: 'paragraph', content: [{ type: 'text', text: 'Ilahad ang layuning siyentipiko, mga kagamitan, at nasusubok na hula.' }] },
+            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '2. Mga Obserbasyon at Talahanayan ng Datos' }] },
             {
               type: 'table',
               content: [
                 {
                   type: 'tableRow',
                   content: [
-                    { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Trial' }] }] },
-                    { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Measurement' }] }] },
-                    { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Notes' }] }] },
+                    { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Pagsubok' }] }] },
+                    { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Sukat' }] }] },
+                    { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Mga Tala' }] }] },
                   ],
                 },
                 {
                   type: 'tableRow',
                   content: [
-                    { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Trial 1' }] }] },
+                    { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Pagsubok 1' }] }] },
                     { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: '0.00' }] }] },
-                    { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Baseline' }] }] },
+                    { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Batayan' }] }] },
                   ],
                 },
               ],
             },
-            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '3. Conclusion & Error Analysis' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'Evaluate experimental error and link back to theoretical expectations.' }] },
+            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '3. Konklusyon at Pagsusuri ng Error' }] },
+            { type: 'paragraph', content: [{ type: 'text', text: 'Suriin ang posibleng pagkakamali sa eksperimento at iugnay sa inaasahang teorya.' }] },
           ],
         }),
         cornell_cues: '',
@@ -76,20 +76,20 @@ function getTemplatePayload(templateId: string | undefined): TemplateData {
       };
     case 'essay':
       return {
-        title: 'Structured Essay Draft',
+        title: 'Balangkas ng Sanaysay',
         mode: 'document',
         paper_style: 'plain',
         content_json: JSON.stringify({
           type: 'doc',
           content: [
-            { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Essay Title' }] },
-            { type: 'blockquote', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Thesis Statement: Write your central argument concisely here.' }] }] },
-            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Introduction' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'Context, scholarly framing, and thesis roadmap.' }] },
-            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Body Arguments' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'Evidence, citations, and critical analysis.' }] },
-            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Conclusion & Works Cited' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'Synthesis and broader academic significance.' }] },
+            { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Pamagat ng Sanaysay' }] },
+            { type: 'blockquote', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Pahayag ng Tesis: Isulat nang malinaw at maikli ang iyong pangunahing argumento rito.' }] }] },
+            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Panimula' }] },
+            { type: 'paragraph', content: [{ type: 'text', text: 'Konteksto, pang-akademikong batayan, at direksyon ng tesis.' }] },
+            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Katawan ng mga Argumento' }] },
+            { type: 'paragraph', content: [{ type: 'text', text: 'Mga ebidensya, sanggunian, at kritikal na pagsusuri.' }] },
+            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Konklusyon at mga Sanggunian' }] },
+            { type: 'paragraph', content: [{ type: 'text', text: 'Paglalagom at mas malawak na kahalagahan sa pag-aaral.' }] },
           ],
         }),
         cornell_cues: '',
@@ -97,7 +97,7 @@ function getTemplatePayload(templateId: string | undefined): TemplateData {
       };
     case 'sketchpad':
       return {
-        title: 'Visual Diagram & Sketchpad',
+        title: 'Biswal na Dayagram at Guhit',
         mode: 'drawing',
         paper_style: 'dot',
         content_json: emptyDoc,
@@ -106,7 +106,7 @@ function getTemplatePayload(templateId: string | undefined): TemplateData {
       };
     case 'lined-notebook':
       return {
-        title: 'Lined Class Notebook Page',
+        title: 'May Linyang Pahina ng Kuwaderno',
         mode: 'notebook',
         paper_style: 'lined',
         content_json: emptyDoc,
@@ -115,7 +115,7 @@ function getTemplatePayload(templateId: string | undefined): TemplateData {
       };
     default:
       return {
-        title: 'Untitled Document',
+        title: 'Walang Pamagat na Dokumento',
         mode: 'document',
         paper_style: 'plain',
         content_json: emptyDoc,
@@ -233,7 +233,7 @@ export function createNotesRouter(
       .get(req.params.id, req.user!.id);
 
     if (!existing) {
-      res.status(404).json({ error: 'Note not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang tala.' });
       return;
     }
 
@@ -279,8 +279,8 @@ export function createNotesRouter(
       req.body?.description !== undefined ? String(req.body.description).trim().slice(0, 500) : '';
     const category =
       req.body?.category !== undefined
-        ? String(req.body.category).trim().slice(0, 60) || 'General'
-        : 'General';
+        ? String(req.body.category).trim().slice(0, 60) || 'Pangkalahatan'
+        : 'Pangkalahatan';
     const mode = req.body?.mode && ['document', 'notebook', 'drawing'].includes(String(req.body.mode))
       ? String(req.body.mode)
       : tpl.mode;
@@ -344,7 +344,7 @@ export function createNotesRouter(
         drawing_data, tags_json, word_count, is_pinned, is_starred, is_trashed, last_opened_at, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?)`
     ).run(
-      id, userId, folderId, notebookId, subjectId, title || 'Untitled Note', description, category,
+      id, userId, folderId, notebookId, subjectId, title || 'Walang Pamagat na Tala', description, category,
       mode, paperStyle, paperBgColor, pageSize,
       contentJson, contentHtml, plainText, cornellCues, cornellSummary,
       drawingData, tagsJson, wordCount, req.body?.is_starred ? 1 : 0, now, now, now
@@ -353,7 +353,7 @@ export function createNotesRouter(
     syncNoteFts(db, {
       id,
       user_id: userId,
-      title: title || 'Untitled Note',
+      title: title || 'Walang Pamagat na Tala',
       description,
       category,
       plain_text: plainText,
@@ -385,19 +385,19 @@ export function createNotesRouter(
       .get(req.params.id, userId) as Record<string, unknown> | undefined;
 
     if (!existing) {
-      res.status(404).json({ error: 'Note not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang tala.' });
       return;
     }
 
-    const title = req.body?.title !== undefined ? String(req.body.title).trim() || 'Untitled Note' : String(existing.title);
+    const title = req.body?.title !== undefined ? String(req.body.title).trim() || 'Walang Pamagat na Tala' : String(existing.title);
     const description =
       req.body?.description !== undefined
         ? String(req.body.description).trim().slice(0, 500)
         : String(existing.description || '');
     const category =
       req.body?.category !== undefined
-        ? String(req.body.category).trim().slice(0, 60) || 'General'
-        : String(existing.category || 'General');
+        ? String(req.body.category).trim().slice(0, 60) || 'Pangkalahatan'
+        : String(existing.category || 'Pangkalahatan');
     const mode = req.body?.mode && ['document', 'notebook', 'drawing'].includes(String(req.body.mode))
       ? String(req.body.mode)
       : String(existing.mode);
@@ -500,7 +500,7 @@ export function createNotesRouter(
       .run(now, req.params.id, req.user!.id);
 
     if (info.changes === 0) {
-      res.status(404).json({ error: 'Note not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang tala.' });
       return;
     }
     removeNoteFts(db, req.params.id);
@@ -513,7 +513,7 @@ export function createNotesRouter(
       .run(new Date().toISOString(), req.params.id, req.user!.id);
 
     if (info.changes === 0) {
-      res.status(404).json({ error: 'Note not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang tala.' });
       return;
     }
 
@@ -541,7 +541,7 @@ export function createNotesRouter(
       .prepare('DELETE FROM notes WHERE id = ? AND user_id = ?')
       .run(req.params.id, req.user!.id);
     if (info.changes === 0) {
-      res.status(404).json({ error: 'Note not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang tala.' });
       return;
     }
     removeNoteFts(db, req.params.id);
@@ -554,15 +554,15 @@ export function createNotesRouter(
       .get(req.params.id, req.user!.id) as Record<string, unknown> | undefined;
 
     if (!src) {
-      res.status(404).json({ error: 'Note not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang tala.' });
       return;
     }
 
     const newId = generateId();
     const now = new Date().toISOString();
-    const newTitle = `${String(src.title)} (Copy)`;
+    const newTitle = `${String(src.title)} (Kopya)`;
     const description = String(src.description || '');
-    const category = String(src.category || 'General');
+    const category = String(src.category || 'Pangkalahatan');
     const paperBgColor = String(src.paper_bg_color || '');
 
     db.prepare(
@@ -647,12 +647,12 @@ export function createNotesRouter(
       .get(req.params.id, req.user!.id) as Record<string, unknown> | undefined;
 
     if (!note) {
-      res.status(404).json({ error: 'Note not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang tala.' });
       return;
     }
 
     const versionId = generateId();
-    const label = String(req.body?.label || '').trim() || `Snapshot ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const label = String(req.body?.label || '').trim() || `Kuha ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     const now = new Date().toISOString();
 
     db.prepare(
@@ -687,7 +687,7 @@ export function createNotesRouter(
       .get(req.params.versionId, req.params.id, req.user!.id) as Record<string, unknown> | undefined;
 
     if (!version) {
-      res.status(404).json({ error: 'Version snapshot not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang bersyon ng tala.' });
       return;
     }
 
@@ -739,7 +739,7 @@ export function createNotesRouter(
       .get(req.params.id, req.user!.id) as { id: string; share_token: string | null } | undefined;
 
     if (!existing) {
-      res.status(404).json({ error: 'Note not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang tala.' });
       return;
     }
 
@@ -772,7 +772,7 @@ export function createNotesRouter(
       .get(req.params.token);
 
     if (!note) {
-      res.status(404).json({ error: 'Shared note link is invalid or has been revoked.' });
+      res.status(404).json({ error: 'Hindi wasto o binawi na ang ibinahaging link ng tala.' });
       return;
     }
 

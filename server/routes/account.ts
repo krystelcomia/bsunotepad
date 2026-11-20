@@ -22,7 +22,7 @@ export function createAccountRouter(
     const filename = path.basename(req.params.filename || '');
     const fullPath = path.join(config.avatarsDir, userId, filename);
     if (!fs.existsSync(fullPath)) {
-      res.status(404).json({ error: 'Avatar not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang avatar.' });
       return;
     }
     res.sendFile(fullPath);
@@ -96,24 +96,24 @@ export function createAccountRouter(
     const accent = req.body?.workspace_accent !== undefined ? String(req.body.workspace_accent) : req.user!.workspace_accent;
 
     if (fullName.length < 2) {
-      res.status(400).json({ error: 'Full name must be at least 2 characters.' });
+      res.status(400).json({ error: 'Ang buong pangalan ay dapat may hindi bababa sa 2 titik.' });
       return;
     }
     if (!isValidGmailAddress(requestedEmail)) {
-      res.status(400).json({ error: 'Only valid Gmail addresses ending in @gmail.com are allowed.' });
+      res.status(400).json({ error: 'Mga wastong Gmail address lamang na nagtatapos sa @gmail.com ang pinapayagan.' });
       return;
     }
     if (requestedEmail !== req.user!.email) {
       res.status(400).json({
-        error: 'Your verified Gmail address cannot be changed directly. Contact an administrator if needed.',
+        error: 'Hindi maaaring direktang palitan ang iyong beripikadong Gmail address. Makipag-ugnayan sa administrator kung kinakailangan.',
       });
       return;
     }
     if (!['system', 'light', 'dark'].includes(theme)) {
-      res.status(400).json({ error: 'Invalid theme preference.' });
+      res.status(400).json({ error: 'Hindi wastong kagustuhan sa tema.' });
       return;
     }
-    const validAccent = ['purple', 'lavender', 'blue'].includes(accent) ? accent : 'purple';
+    const validAccent = ['blue', 'sky', 'navy', 'purple', 'lavender'].includes(accent) ? accent : 'blue';
 
     const now = new Date().toISOString();
     db.prepare(
@@ -133,11 +133,11 @@ export function createAccountRouter(
   router.post('/avatar', requireAuth, (req: AuthenticatedRequest, res) => {
     avatarUpload.single('avatar')(req, res, (err) => {
       if (err) {
-        res.status(400).json({ error: err.message || 'Avatar upload failed' });
+        res.status(400).json({ error: err.message || 'Nabigo ang pag-upload ng avatar.' });
         return;
       }
       if (!req.file) {
-        res.status(400).json({ error: 'No avatar image file provided' });
+        res.status(400).json({ error: 'Walang ibinigay na file ng larawan para sa avatar.' });
         return;
       }
 
@@ -181,7 +181,7 @@ export function createAccountRouter(
       .get(req.user!.id) as { password_hash: string };
 
     if (!verifyPassword(currentPassword, row.password_hash)) {
-      res.status(401).json({ error: 'Current password is incorrect.' });
+      res.status(401).json({ error: 'Mali ang kasalukuyang password.' });
       return;
     }
 
@@ -207,7 +207,7 @@ export function createAccountRouter(
       .run(targetId, req.user!.id);
 
     if (info.changes === 0) {
-      res.status(404).json({ error: 'Session not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang session.' });
       return;
     }
     res.json({ ok: true });
@@ -236,7 +236,7 @@ export function createAccountRouter(
     const message = String(req.body?.message || '').trim();
 
     if (subject.length < 3 || message.length < 5) {
-      res.status(400).json({ error: 'Please provide both a subject and a detailed message.' });
+      res.status(400).json({ error: 'Mangyaring maglagay ng paksa at detalyadong mensahe.' });
       return;
     }
 
@@ -280,7 +280,7 @@ export function createAccountRouter(
   router.delete('/', requireAuth, (req: AuthenticatedRequest, res) => {
     const userId = req.user!.id;
     if (req.user!.role === 'admin') {
-      res.status(403).json({ error: 'Administrator accounts cannot be self-deleted here.' });
+      res.status(403).json({ error: 'Hindi maaaring direktang tanggalin ang sariling administrator account dito.' });
       return;
     }
 
@@ -290,7 +290,7 @@ export function createAccountRouter(
         .prepare('SELECT password_hash FROM users WHERE id = ?')
         .get(userId) as { password_hash: string };
       if (!verifyPassword(password, row.password_hash)) {
-        res.status(401).json({ error: 'Password confirmation failed.' });
+        res.status(401).json({ error: 'Nabigo ang pagkumpirma ng password.' });
         return;
       }
     }

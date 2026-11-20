@@ -45,7 +45,7 @@ export const MathFormula = Node.create<MathOptions>({
       mergeAttributes(this.options.HTMLAttributes, {
         'data-inkora-math': 'true',
         'data-latex': latex,
-        class: 'inkora-math-block my-3 p-3 rounded-xl bg-indigo-50/60 border border-indigo-200 text-center',
+        class: 'inkora-math-block my-3 p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-center',
       }),
       latex,
     ];
@@ -55,7 +55,7 @@ export const MathFormula = Node.create<MathOptions>({
     return ({ node }) => {
       const dom = document.createElement('div');
       dom.className =
-        'my-3 px-4 py-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/70 text-center overflow-x-auto select-none';
+        'my-3 px-4 py-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/70 text-center overflow-x-auto select-none';
       dom.setAttribute('data-inkora-math', 'true');
       const latex = String(node.attrs.latex || '');
       dom.setAttribute('data-latex', latex);

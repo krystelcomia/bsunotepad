@@ -81,11 +81,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const pct = Math.min(100, Math.round((storageUsedBytes / quota) * 100));
 
   const accentGradient =
-    user?.workspace_accent === 'blue'
-      ? 'from-blue-700 to-sky-500 shadow-blue-600/20'
-      : user?.workspace_accent === 'lavender'
-        ? 'from-purple-600 to-violet-400 shadow-purple-500/20'
-        : 'from-violet-800 via-purple-700 to-blue-600 shadow-violet-700/20';
+    user?.workspace_accent === 'sky'
+      ? 'from-sky-600 to-blue-500 shadow-sky-600/20'
+      : user?.workspace_accent === 'navy'
+        ? 'from-blue-900 via-blue-800 to-blue-600 shadow-blue-900/20'
+        : 'from-blue-800 via-blue-700 to-sky-500 shadow-blue-700/20';
 
   const isNavActive = (check: NavSection) => {
     if (activeNav.kind !== check.kind) return false;
@@ -104,13 +104,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     `w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition cursor-pointer ${
       active
         ? `bg-gradient-to-r ${accentGradient} text-white shadow-sm`
-        : 'text-slate-600 dark:text-violet-100/75 hover:bg-violet-100/70 dark:hover:bg-violet-950/60'
+        : 'text-slate-700 dark:text-blue-100/80 hover:bg-blue-100/80 dark:hover:bg-blue-950/60'
     }`;
 
   const content = (
-    <aside className="w-72 h-full flex flex-col bg-[#F1EEFA] dark:bg-[#110D22] border-r border-violet-200/80 dark:border-violet-900/50 select-none">
+    <aside className="w-72 h-full flex flex-col bg-[#EFF6FF] dark:bg-[#091326] border-r border-blue-200/80 dark:border-blue-900/50 select-none">
       {/* Header */}
-      <div className="px-4 py-4 flex items-center justify-between border-b border-violet-200/60 dark:border-violet-900/40">
+      <div className="px-4 py-4 flex items-center justify-between border-b border-blue-200/70 dark:border-blue-900/40 bg-white/70 dark:bg-[#0D1930]/80">
         <button
           type="button"
           onClick={() => {
@@ -118,21 +118,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onCloseMobile();
           }}
           className="text-left cursor-pointer"
-          title="Go to Student Dashboard"
+          title="Pumunta sa Dashboard ng Mag-aaral"
         >
           <BrandLogo size="sm" showTagline={false} />
         </button>
         <button
           type="button"
           onClick={onCloseMobile}
-          className="lg:hidden p-1.5 rounded-lg text-slate-500 hover:bg-violet-100 dark:hover:bg-violet-900/50"
-          aria-label="Close sidebar"
+          className="lg:hidden p-1.5 rounded-lg text-slate-500 hover:bg-blue-100 dark:hover:bg-blue-900/50 cursor-pointer"
+          aria-label="Isara ang sidebar"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Primary Action + Search */}
+      {/* Pangunahing Aksyon + Paghahanap */}
       <div className="p-3 space-y-2">
         <button
           type="button"
@@ -140,25 +140,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className={`w-full py-2.5 px-3.5 rounded-xl bg-gradient-to-r ${accentGradient} hover:brightness-110 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md transition cursor-pointer`}
         >
           <Plus className="w-4 h-4" />
-          New Note / Document
+          Bagong Tala / Dokumento
         </button>
 
         <button
           type="button"
           onClick={onOpenSearch}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/90 dark:bg-[#1A1533] border border-violet-200/80 dark:border-violet-800/60 text-xs text-slate-500 dark:text-violet-200/70 hover:border-violet-400 transition cursor-pointer"
+          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white dark:bg-[#132340] border border-blue-200/80 dark:border-blue-800/60 text-xs text-slate-500 dark:text-blue-200/75 hover:border-blue-400 transition cursor-pointer"
         >
           <span className="flex items-center gap-2">
-            <Search className="w-3.5 h-3.5 text-violet-500" />
-            Quick Search...
+            <Search className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+            Mabilisang Paghahanap...
           </span>
-          <kbd className="px-1.5 py-0.5 rounded bg-violet-50 dark:bg-[#251E45] text-[10px] font-mono">
+          <kbd className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-[#1D355E] text-[10px] font-mono text-blue-700 dark:text-blue-200">
             Ctrl K
           </kbd>
         </button>
       </div>
 
-      {/* Main Nav */}
+      {/* Pangunahing Nabigasyon */}
       <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-5">
         <div className="space-y-1">
           <button
@@ -182,7 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={navBtn(isNavActive({ kind: 'notes', filter: 'all' }))}
           >
             <FileText className="w-4 h-4 shrink-0" />
-            <span>All Notes</span>
+            <span>Lahat ng Tala</span>
           </button>
 
           <button
@@ -194,7 +194,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={navBtn(isNavActive({ kind: 'notes', filter: 'starred' }))}
           >
             <Star className="w-4 h-4 shrink-0" />
-            <span>Starred</span>
+            <span>May Bituin</span>
           </button>
 
           <button
@@ -206,7 +206,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={navBtn(isNavActive({ kind: 'study' }))}
           >
             <GraduationCap className="w-4 h-4 shrink-0" />
-            <span>Study Hub & Flashcards</span>
+            <span>Sentro ng Pag-aaral</span>
           </button>
 
           <button
@@ -218,7 +218,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={navBtn(isNavActive({ kind: 'files' }))}
           >
             <FolderOpen className="w-4 h-4 shrink-0" />
-            <span>File Vault</span>
+            <span>Baul ng File</span>
           </button>
 
           <button
@@ -230,31 +230,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={navBtn(isNavActive({ kind: 'notes', filter: 'trash' }))}
           >
             <Trash2 className="w-4 h-4 shrink-0" />
-            <span className="flex-1 text-left">Trash</span>
+            <span className="flex-1 text-left">Basurahan</span>
             {trashedCount > 0 && (
-              <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-violet-200/80 dark:bg-violet-900 text-violet-900 dark:text-violet-200">
+              <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-blue-200/80 dark:bg-blue-900 text-blue-900 dark:text-blue-100">
                 {trashedCount}
               </span>
             )}
           </button>
         </div>
 
-        {/* Folders */}
+        {/* Mga Folder */}
         <div>
           <div className="flex items-center justify-between px-2 mb-1.5">
             <button
               type="button"
               onClick={() => setFoldersExpanded((v) => !v)}
-              className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-violet-300/70 hover:text-violet-800 cursor-pointer"
+              className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-blue-300/75 hover:text-blue-800 cursor-pointer"
             >
               {foldersExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-              Folders ({folders.length})
+              Mga Folder ({folders.length})
             </button>
             <button
               type="button"
               onClick={onNewFolder}
-              className="p-1 rounded-md text-slate-500 hover:bg-violet-200/60 dark:hover:bg-violet-900/50 hover:text-violet-700 cursor-pointer"
-              title="New Folder"
+              className="p-1 rounded-md text-slate-500 hover:bg-blue-200/60 dark:hover:bg-blue-900/50 hover:text-blue-700 cursor-pointer"
+              title="Bagong Folder"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -273,8 +273,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       className={`flex-1 min-w-0 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
                         active
-                          ? 'bg-violet-700 text-white'
-                          : 'text-slate-700 dark:text-violet-100/80 hover:bg-violet-100/80 dark:hover:bg-violet-950/60'
+                          ? 'bg-blue-700 text-white'
+                          : 'text-slate-700 dark:text-blue-100/85 hover:bg-blue-100/80 dark:hover:bg-blue-950/60'
                       }`}
                     >
                       <FolderIcon
@@ -287,8 +287,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       type="button"
                       onClick={() => onEditFolder(folder)}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-400 hover:text-violet-700 dark:hover:text-violet-200 cursor-pointer"
-                      title="Edit folder"
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-400 hover:text-blue-700 dark:hover:text-blue-200 cursor-pointer"
+                      title="I-edit ang folder"
                     >
                       <Settings className="w-3 h-3" />
                     </button>
@@ -296,28 +296,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 );
               })}
               {folders.length === 0 && (
-                <p className="px-3 py-1.5 text-xs text-slate-400 italic">No folders yet</p>
+                <p className="px-3 py-1.5 text-xs text-slate-400 italic">Wala pang folder</p>
               )}
             </div>
           )}
         </div>
 
-        {/* Courses / Subjects */}
+        {/* Mga Asignatura */}
         <div>
           <div className="flex items-center justify-between px-2 mb-1.5">
             <button
               type="button"
               onClick={() => setCoursesExpanded((v) => !v)}
-              className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-violet-300/70 hover:text-violet-800 cursor-pointer"
+              className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-blue-300/75 hover:text-blue-800 cursor-pointer"
             >
               {coursesExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-              Courses ({subjects.length})
+              Mga Asignatura ({subjects.length})
             </button>
             <button
               type="button"
               onClick={onNewSubject}
-              className="p-1 rounded-md text-slate-500 hover:bg-violet-200/60 dark:hover:bg-violet-900/50 hover:text-violet-700 cursor-pointer"
-              title="Add Course"
+              className="p-1 rounded-md text-slate-500 hover:bg-blue-200/60 dark:hover:bg-blue-900/50 hover:text-blue-700 cursor-pointer"
+              title="Magdagdag ng Asignatura"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -336,8 +336,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       className={`flex-1 min-w-0 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
                         active
-                          ? 'bg-violet-700 text-white'
-                          : 'text-slate-700 dark:text-violet-100/80 hover:bg-violet-100/80 dark:hover:bg-violet-950/60'
+                          ? 'bg-blue-700 text-white'
+                          : 'text-slate-700 dark:text-blue-100/85 hover:bg-blue-100/80 dark:hover:bg-blue-950/60'
                       }`}
                     >
                       <span
@@ -352,8 +352,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       type="button"
                       onClick={() => onEditSubject(sub)}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-400 hover:text-violet-700 dark:hover:text-violet-200 cursor-pointer"
-                      title="Edit course"
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-400 hover:text-blue-700 dark:hover:text-blue-200 cursor-pointer"
+                      title="I-edit ang asignatura"
                     >
                       <Settings className="w-3 h-3" />
                     </button>
@@ -361,28 +361,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 );
               })}
               {subjects.length === 0 && (
-                <p className="px-3 py-1.5 text-xs text-slate-400 italic">No courses yet</p>
+                <p className="px-3 py-1.5 text-xs text-slate-400 italic">Wala pang asignatura</p>
               )}
             </div>
           )}
         </div>
 
-        {/* Notebooks */}
+        {/* Mga Kuwaderno */}
         <div>
           <div className="flex items-center justify-between px-2 mb-1.5">
             <button
               type="button"
               onClick={() => setNotebooksExpanded((v) => !v)}
-              className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-violet-300/70 hover:text-violet-800 cursor-pointer"
+              className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-blue-300/75 hover:text-blue-800 cursor-pointer"
             >
               {notebooksExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-              Notebooks ({notebooks.length})
+              Mga Kuwaderno ({notebooks.length})
             </button>
             <button
               type="button"
               onClick={onNewNotebook}
-              className="p-1 rounded-md text-slate-500 hover:bg-violet-200/60 dark:hover:bg-violet-900/50 hover:text-violet-700 cursor-pointer"
-              title="New Notebook"
+              className="p-1 rounded-md text-slate-500 hover:bg-blue-200/60 dark:hover:bg-blue-900/50 hover:text-blue-700 cursor-pointer"
+              title="Bagong Kuwaderno"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -401,8 +401,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       className={`flex-1 min-w-0 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
                         active
-                          ? 'bg-violet-700 text-white'
-                          : 'text-slate-700 dark:text-violet-100/80 hover:bg-violet-100/80 dark:hover:bg-violet-950/60'
+                          ? 'bg-blue-700 text-white'
+                          : 'text-slate-700 dark:text-blue-100/85 hover:bg-blue-100/80 dark:hover:bg-blue-950/60'
                       }`}
                     >
                       <NotebookPen
@@ -415,8 +415,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       type="button"
                       onClick={() => onEditNotebook(nb)}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-400 hover:text-violet-700 dark:hover:text-violet-200 cursor-pointer"
-                      title="Notebook settings"
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-400 hover:text-blue-700 dark:hover:text-blue-200 cursor-pointer"
+                      title="Mga setting ng kuwaderno"
                     >
                       <Settings className="w-3 h-3" />
                     </button>
@@ -424,25 +424,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 );
               })}
               {notebooks.length === 0 && (
-                <p className="px-3 py-1.5 text-xs text-slate-400 italic">No notebooks yet</p>
+                <p className="px-3 py-1.5 text-xs text-slate-400 italic">Wala pang kuwaderno</p>
               )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Bottom Storage & Profile */}
-      <div className="p-3 border-t border-violet-200/70 dark:border-violet-900/50 space-y-2.5 bg-[#EAE5F7]/80 dark:bg-[#0D0A1A]">
+      {/* Pang-ibabang Storage at Profile */}
+      <div className="p-3 border-t border-blue-200/70 dark:border-blue-900/50 space-y-2.5 bg-white/85 dark:bg-[#071021]">
         <div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-violet-200/70 mb-1">
-            <span className="font-medium">Vault Storage</span>
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-blue-200/75 mb-1">
+            <span className="font-medium">Espasyo sa Baul</span>
             <span>
               {formatBytes(storageUsedBytes)} / {formatBytes(quota)}
             </span>
           </div>
-          <div className="h-1.5 rounded-full bg-violet-200/70 dark:bg-violet-950 overflow-hidden">
+          <div className="h-1.5 rounded-full bg-blue-100 dark:bg-blue-950 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-violet-700 to-blue-500 transition-all"
+              className="h-full rounded-full bg-gradient-to-r from-blue-700 to-sky-500 transition-all"
               style={{ width: `${Math.max(2, pct)}%` }}
             />
           </div>
@@ -452,25 +452,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={onOpenAccount}
-            className="flex-1 min-w-0 flex items-center gap-2.5 p-2 rounded-xl hover:bg-white/80 dark:hover:bg-violet-950/70 transition text-left cursor-pointer"
-            title="Account Settings & Profile"
+            className="flex-1 min-w-0 flex items-center gap-2.5 p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/70 transition text-left cursor-pointer"
+            title="Mga Setting ng Account at Profile"
           >
             {user?.avatar_file ? (
               <img
                 src={`/api/account/avatar/${user.id}/${user.avatar_file}`}
                 alt={user.full_name}
-                className="w-8 h-8 rounded-full object-cover ring-1 ring-violet-300 dark:ring-violet-700 shrink-0"
+                className="w-8 h-8 rounded-full object-cover ring-1 ring-blue-300 dark:ring-blue-700 shrink-0"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-700 to-blue-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
-                {(user?.full_name || 'S').slice(0, 2).toUpperCase()}
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-700 to-sky-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                {(user?.full_name || 'M').slice(0, 2).toUpperCase()}
               </div>
             )}
             <div className="flex-1 min-w-0">
               <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                 {user?.full_name}
               </div>
-              <div className="text-[11px] text-slate-500 dark:text-violet-200/70 truncate">
+              <div className="text-[11px] text-slate-500 dark:text-blue-200/70 truncate">
                 {user?.major || user?.email}
               </div>
             </div>
@@ -480,8 +480,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             onClick={() => logout()}
             className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer shrink-0"
-            title="Sign Out"
-            aria-label="Sign Out"
+            title="Mag-sign Out"
+            aria-label="Mag-sign Out"
           >
             <LogOut className="w-4 h-4" />
           </button>

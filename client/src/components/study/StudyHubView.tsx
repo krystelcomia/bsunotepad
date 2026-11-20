@@ -19,6 +19,12 @@ interface StudyHubViewProps {
   onNotify: (type: 'success' | 'error' | 'info', text: string) => void;
 }
 
+function getPriorityLabel(priority: StudyTask['priority']): string {
+  if (priority === 'high') return 'Mataas';
+  if (priority === 'medium') return 'Katamtaman';
+  return 'Mababa';
+}
+
 export const StudyHubView: React.FC<StudyHubViewProps> = ({
   subjects,
   onRefreshSummary,
@@ -29,18 +35,18 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
 
-  // New Task form
+  // Form ng Bagong Gawain
   const [taskTitle, setTaskTitle] = useState('');
   const [taskSubject, setTaskSubject] = useState('');
   const [taskPriority, setTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [taskDue, setTaskDue] = useState('');
 
-  // New Flashcard form
+  // Form ng Bagong Flashcard
   const [cardFront, setCardFront] = useState('');
   const [cardBack, setCardBack] = useState('');
   const [cardSubject, setCardSubject] = useState('');
 
-  // Quiz state
+  // Estado ng Pagsusulit
   const [quizIndex, setQuizIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
 
@@ -55,7 +61,7 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
       setFlashcards(fRes.flashcards);
       setSessions(sRes.sessions);
     } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'Failed to load study hub');
+      onNotify('error', err instanceof Error ? err.message : 'Nabigong i-load ang Sentro ng Pag-aaral');
     }
   }, [onNotify]);
 
@@ -75,11 +81,11 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
       });
       setTaskTitle('');
       setTaskDue('');
-      onNotify('success', 'Assignment added');
+      onNotify('success', 'Naidagdag ang gawain');
       await loadAll();
       onRefreshSummary();
     } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'Could not add task');
+      onNotify('error', err instanceof Error ? err.message : 'Hindi maidagdag ang gawain');
     }
   };
 
@@ -107,11 +113,11 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
       });
       setCardFront('');
       setCardBack('');
-      onNotify('success', 'Flashcard added to deck');
+      onNotify('success', 'Naidagdag ang flashcard sa deck');
       await loadAll();
       onRefreshSummary();
     } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'Could not add flashcard');
+      onNotify('error', err instanceof Error ? err.message : 'Hindi maidagdag ang flashcard');
     }
   };
 
@@ -122,7 +128,7 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
       setQuizIndex((idx) => (idx + 1 < flashcards.length ? idx + 1 : 0));
       await loadAll();
     } catch {
-      // ignore
+      // huwag pansinin
     }
   };
 
@@ -133,18 +139,18 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-            Study Hub & Flashcards
+            Sentro ng Pag-aaral at Flashcards
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Track assignment deadlines, review active recall flashcards, and log focus sessions.
+            Subaybayan ang mga takdang-aralin, magsanay gamit ang flashcards, at itala ang oras ng pag-aaral.
           </p>
         </div>
 
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800">
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70">
           {[
-            { id: 'tasks', label: 'Assignments', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-            { id: 'flashcards', label: `Flashcards (${flashcards.length})`, icon: <Layers className="w-3.5 h-3.5" /> },
-            { id: 'quiz', label: 'Flip-Card Quiz', icon: <BrainCircuit className="w-3.5 h-3.5" /> },
+            { id: 'tasks', label: 'Mga Gawain', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+            { id: 'flashcards', label: `Mga Flashcard (${flashcards.length})`, icon: <Layers className="w-3.5 h-3.5" /> },
+            { id: 'quiz', label: 'Pagsusulit (Flip-Card)', icon: <BrainCircuit className="w-3.5 h-3.5" /> },
           ].map((t) => (
             <button
               key={t.id}
@@ -152,8 +158,8 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
               onClick={() => setTab(t.id as typeof tab)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 tab === t.id
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  ? 'bg-blue-700 text-white'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-white'
               }`}
             >
               {t.icon} {t.label}
@@ -167,22 +173,22 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
           <div className="lg:col-span-2 space-y-4">
             <form
               onSubmit={handleAddTask}
-              className="rounded-2xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 p-4 flex flex-wrap gap-2.5"
+              className="rounded-2xl bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70 p-4 flex flex-wrap gap-2.5"
             >
               <input
                 type="text"
                 required
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
-                placeholder="Add assignment, exam prep, or reading task..."
-                className="flex-1 min-w-[200px] px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Magdagdag ng takdang-aralin, paghahanda sa pagsusulit, o babasahin..."
+                className="flex-1 min-w-[200px] px-3 py-2 text-sm rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340] focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <select
                 value={taskSubject}
                 onChange={(e) => setTaskSubject(e.target.value)}
-                className="text-xs px-2.5 py-2 rounded-xl border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                className="text-xs px-2.5 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-[#132340]"
               >
-                <option value="">General</option>
+                <option value="">Pangkalahatan</option>
                 {subjects.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.code || s.name}
@@ -192,29 +198,29 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
               <select
                 value={taskPriority}
                 onChange={(e) => setTaskPriority(e.target.value as 'low' | 'medium' | 'high')}
-                className="text-xs px-2.5 py-2 rounded-xl border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                className="text-xs px-2.5 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-[#132340]"
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
+                <option value="low">Mababa</option>
+                <option value="medium">Katamtaman</option>
+                <option value="high">Mataas</option>
               </select>
               <input
                 type="date"
                 value={taskDue}
                 onChange={(e) => setTaskDue(e.target.value)}
-                className="text-xs px-2.5 py-2 rounded-xl border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                className="text-xs px-2.5 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-[#132340]"
               />
               <button
                 type="submit"
-                className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer"
+                className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold cursor-pointer"
               >
-                <Plus className="w-4 h-4" /> Add
+                <Plus className="w-4 h-4" /> Idagdag
               </button>
             </form>
 
-            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 divide-y divide-stone-100 dark:divide-slate-800">
+            <div className="rounded-2xl bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70 divide-y divide-blue-100 dark:divide-blue-900/60">
               {tasks.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center py-10">No assignments added yet.</p>
+                <p className="text-xs text-slate-400 text-center py-10">Wala pang naidadagdag na takdang-aralin.</p>
               ) : (
                 tasks.map((task) => {
                   const due = formatDueDate(task.due_date);
@@ -245,21 +251,21 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
                           {task.subject_code && (
                             <span
                               className="font-bold px-1.5 py-0.5 rounded text-white text-[10px]"
-                              style={{ backgroundColor: task.subject_color || '#4F46E5' }}
+                              style={{ backgroundColor: task.subject_color || '#2563EB' }}
                             >
                               {task.subject_code}
                             </span>
                           )}
                           <span
-                            className={`px-1.5 py-0.5 rounded font-semibold capitalize ${
+                            className={`px-1.5 py-0.5 rounded font-semibold ${
                               task.priority === 'high'
                                 ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
                                 : task.priority === 'medium'
                                   ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                                  : 'bg-stone-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                                  : 'bg-blue-50 text-blue-700 dark:bg-[#132340] dark:text-blue-200'
                             }`}
                           >
-                            {task.priority}
+                            {getPriorityLabel(task.priority)}
                           </span>
                           <span className={`flex items-center gap-1 ${due.urgent && task.status !== 'done' ? 'text-rose-600 font-semibold' : 'text-slate-400'}`}>
                             <CalendarClock className="w-3 h-3" /> {due.label}
@@ -270,6 +276,7 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
                         type="button"
                         onClick={() => handleDeleteTask(task.id)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 cursor-pointer"
+                        title="Burahin ang gawain"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -282,22 +289,22 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
 
           <div className="space-y-3">
             <h2 className="font-display text-sm font-bold uppercase tracking-wider text-slate-500">
-              Recent Focus Sessions
+              Kamakailang Sesyon ng Pokus
             </h2>
-            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 p-4 space-y-2.5">
+            <div className="rounded-2xl bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70 p-4 space-y-2.5">
               {sessions.length === 0 ? (
                 <p className="text-xs text-slate-400 text-center py-6">
-                  Use the Pomodoro timer in the top bar to log focus blocks.
+                  Gamitin ang Pomodoro timer sa itaas upang maitala ang iyong oras ng pag-aaral.
                 </p>
               ) : (
                 sessions.slice(0, 8).map((ss) => (
-                  <div key={ss.id} className="flex items-center justify-between text-xs py-1.5 border-b last:border-0 border-stone-100 dark:border-slate-800">
+                  <div key={ss.id} className="flex items-center justify-between text-xs py-1.5 border-b last:border-0 border-blue-100 dark:border-blue-900/60">
                     <div>
                       <span className="font-semibold text-slate-800 dark:text-slate-200">
-                        {ss.duration_minutes}m {ss.mode}
+                        {ss.duration_minutes}m {ss.mode === 'break' ? 'pahinga' : 'pokus'}
                       </span>
                       {ss.subject_code && (
-                        <span className="ml-2 text-[10px] font-bold text-indigo-600">{ss.subject_code}</span>
+                        <span className="ml-2 text-[10px] font-bold text-blue-600 dark:text-sky-400">{ss.subject_code}</span>
                       )}
                     </div>
                     <span className="text-slate-400">{formatRelativeTime(ss.completed_at)}</span>
@@ -313,15 +320,15 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <form
             onSubmit={handleAddFlashcard}
-            className="rounded-2xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 p-5 space-y-3 h-fit"
+            className="rounded-2xl bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70 p-5 space-y-3 h-fit"
           >
-            <h3 className="font-display font-bold text-base">Create Flashcard</h3>
+            <h3 className="font-display font-bold text-base">Gumawa ng Flashcard</h3>
             <select
               value={cardSubject}
               onChange={(e) => setCardSubject(e.target.value)}
-              className="w-full text-xs px-3 py-2 rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+              className="w-full text-xs px-3 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340]"
             >
-              <option value="">General Deck</option>
+              <option value="">Pangkalahatang Deck</option>
               {subjects.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.code ? `${s.code} · ${s.name}` : s.name}
@@ -333,22 +340,22 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
               rows={3}
               value={cardFront}
               onChange={(e) => setCardFront(e.target.value)}
-              placeholder="Front (Question / Concept / Term)..."
-              className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+              placeholder="Harap (Tanong / Konsepto / Termino)..."
+              className="w-full px-3 py-2 text-sm rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340]"
             />
             <textarea
               required
               rows={3}
               value={cardBack}
               onChange={(e) => setCardBack(e.target.value)}
-              placeholder="Back (Definition / Proof / Explanation)..."
-              className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+              placeholder="Likod (Kahulugan / Patunay / Paliwanag)..."
+              className="w-full px-3 py-2 text-sm rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-[#132340]"
             />
             <button
               type="submit"
-              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold cursor-pointer"
             >
-              Add to Deck
+              Idagdag sa Deck
             </button>
           </form>
 
@@ -356,19 +363,19 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
             {flashcards.map((fc) => (
               <div
                 key={fc.id}
-                className="rounded-2xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 p-4 flex flex-col justify-between gap-3"
+                className="rounded-2xl bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70 p-4 flex flex-col justify-between gap-3"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     {fc.subject_code ? (
                       <span
                         className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white"
-                        style={{ backgroundColor: fc.subject_color || '#4F46E5' }}
+                        style={{ backgroundColor: fc.subject_color || '#2563EB' }}
                       >
                         {fc.subject_code}
                       </span>
                     ) : (
-                      <span className="text-[10px] text-slate-400 font-semibold">General</span>
+                      <span className="text-[10px] text-slate-400 font-semibold">Pangkalahatan</span>
                     )}
                     <button
                       type="button"
@@ -378,18 +385,19 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
                         onRefreshSummary();
                       }}
                       className="text-slate-400 hover:text-rose-500 cursor-pointer"
+                      title="Burahin ang flashcard"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                   <div className="text-sm font-bold text-slate-900 dark:text-white">{fc.front}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-stone-100 dark:border-slate-800">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-blue-100 dark:border-blue-900/60">
                     {fc.back}
                   </div>
                 </div>
                 <div className="text-[11px] text-slate-400 flex items-center justify-between">
-                  <span>Confidence: {fc.confidence}/5</span>
-                  <span>Reviewed {fc.review_count}×</span>
+                  <span>Kumpiyansa: {fc.confidence}/5</span>
+                  <span>Nabalikan {fc.review_count}×</span>
                 </div>
               </div>
             ))}
@@ -400,24 +408,24 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
       {tab === 'quiz' && (
         <div className="max-w-xl mx-auto py-4">
           {flashcards.length === 0 ? (
-            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 p-10 text-center">
-              <p className="text-sm text-slate-500">Create flashcards first to start an active recall quiz.</p>
+            <div className="rounded-2xl bg-white dark:bg-[#0D1930] border border-blue-200 dark:border-blue-800 p-10 text-center">
+              <p className="text-sm text-slate-500">Gumawa muna ng mga flashcard upang masimulan ang pagsusulit.</p>
             </div>
           ) : currentQuizCard ? (
             <div className="space-y-5">
               <div className="flex items-center justify-between text-xs text-slate-500">
                 <span>
-                  Card {quizIndex + 1} of {flashcards.length}
+                  Kard {quizIndex + 1} sa {flashcards.length}
                 </span>
-                <span>{currentQuizCard.subject_code || 'General'}</span>
+                <span>{currentQuizCard.subject_code || 'Pangkalahatan'}</span>
               </div>
 
               <div
                 onClick={() => setFlipped((f) => !f)}
-                className="min-h-[240px] rounded-3xl bg-white dark:bg-slate-900 border-2 border-indigo-200 dark:border-indigo-800/70 shadow-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition hover:border-indigo-400"
+                className="min-h-[240px] rounded-3xl bg-white dark:bg-[#0D1930] border-2 border-blue-200 dark:border-blue-800 shadow-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition hover:border-blue-400"
               >
-                <span className="text-[11px] font-bold uppercase tracking-widest text-indigo-500 mb-3">
-                  {flipped ? 'Answer' : 'Question'} (Click to flip)
+                <span className="text-[11px] font-bold uppercase tracking-widest text-blue-600 dark:text-sky-400 mb-3">
+                  {flipped ? 'Sagot' : 'Tanong'} (Pindutin upang baliktarin)
                 </span>
                 <p className="font-display text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-relaxed">
                   {flipped ? currentQuizCard.back : currentQuizCard.front}
@@ -428,7 +436,7 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
               {flipped && (
                 <div className="space-y-2">
                   <div className="text-center text-xs font-medium text-slate-500">
-                    How well did you recall this?
+                    Gaano kahusay mong naalala ang sagot?
                   </div>
                   <div className="grid grid-cols-3 gap-2.5">
                     <button
@@ -436,21 +444,21 @@ export const StudyHubView: React.FC<StudyHubViewProps> = ({
                       onClick={() => handleRateCard(currentQuizCard, 1)}
                       className="py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold cursor-pointer"
                     >
-                      Needs Review (1)
+                      Kailangan Balikan (1)
                     </button>
                     <button
                       type="button"
                       onClick={() => handleRateCard(currentQuizCard, 3)}
-                      className="py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold cursor-pointer"
+                      className="py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold cursor-pointer"
                     >
-                      Good (3)
+                      Maayos (3)
                     </button>
                     <button
                       type="button"
                       onClick={() => handleRateCard(currentQuizCard, 5)}
                       className="py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold cursor-pointer"
                     >
-                      Mastered (5)
+                      Kabisado na (5)
                     </button>
                   </div>
                 </div>

@@ -32,7 +32,7 @@ export function createStudyRouter(
   router.post('/tasks', (req: AuthenticatedRequest, res) => {
     const title = String(req.body?.title || '').trim();
     if (!title) {
-      res.status(400).json({ error: 'Task title is required.' });
+      res.status(400).json({ error: 'Kinakailangan ang pamagat ng gawain.' });
       return;
     }
 
@@ -73,7 +73,7 @@ export function createStudyRouter(
       .get(req.params.id, req.user!.id) as Record<string, unknown> | undefined;
 
     if (!existing) {
-      res.status(404).json({ error: 'Task not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang gawain.' });
       return;
     }
 
@@ -114,7 +114,7 @@ export function createStudyRouter(
       .prepare('DELETE FROM study_tasks WHERE id = ? AND user_id = ?')
       .run(req.params.id, req.user!.id);
     if (info.changes === 0) {
-      res.status(404).json({ error: 'Task not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang gawain.' });
       return;
     }
     res.json({ ok: true });
@@ -145,7 +145,7 @@ export function createStudyRouter(
     const front = String(req.body?.front || '').trim();
     const back = String(req.body?.back || '').trim();
     if (!front || !back) {
-      res.status(400).json({ error: 'Both question (front) and answer (back) are required.' });
+      res.status(400).json({ error: 'Kinakailangan ang parehong tanong (harap) at sagot (likod).' });
       return;
     }
 
@@ -179,7 +179,7 @@ export function createStudyRouter(
       .get(req.params.id, req.user!.id) as { confidence: number; review_count: number } | undefined;
 
     if (!existing) {
-      res.status(404).json({ error: 'Flashcard not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang flashcard.' });
       return;
     }
 
@@ -200,7 +200,7 @@ export function createStudyRouter(
       .prepare('DELETE FROM flashcards WHERE id = ? AND user_id = ?')
       .run(req.params.id, req.user!.id);
     if (info.changes === 0) {
-      res.status(404).json({ error: 'Flashcard not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang flashcard.' });
       return;
     }
     res.json({ ok: true });

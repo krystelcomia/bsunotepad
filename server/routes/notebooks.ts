@@ -36,7 +36,7 @@ export function createNotebooksRouter(
   router.post('/', (req: AuthenticatedRequest, res) => {
     const title = String(req.body?.title || '').trim();
     if (!title) {
-      res.status(400).json({ error: 'Notebook title is required.' });
+      res.status(400).json({ error: 'Kinakailangan ang pamagat ng kuwaderno.' });
       return;
     }
 
@@ -46,7 +46,7 @@ export function createNotebooksRouter(
         .prepare('SELECT id FROM subjects WHERE id = ? AND user_id = ?')
         .get(subjectId, req.user!.id);
       if (!sub) {
-        res.status(400).json({ error: 'Invalid course selected.' });
+        res.status(400).json({ error: 'Hindi wastong kurso ang napili.' });
         return;
       }
     }
@@ -54,8 +54,8 @@ export function createNotebooksRouter(
     const id = generateId();
     const now = new Date().toISOString();
     const description = String(req.body?.description || '').trim();
-    const coverColor = String(req.body?.cover_color || '#312E81').trim();
-    const accentColor = String(req.body?.accent_color || '#F59E0B').trim();
+    const coverColor = String(req.body?.cover_color || '#1E3A8A').trim();
+    const accentColor = String(req.body?.accent_color || '#3B82F6').trim();
     const icon = String(req.body?.icon || 'NotebookPen').trim();
     const defaultPaperStyle = String(req.body?.default_paper_style || 'lined').trim();
     const isPinned = req.body?.is_pinned ? 1 : 0;
@@ -94,13 +94,13 @@ export function createNotebooksRouter(
       .get(req.params.id, req.user!.id) as Record<string, unknown> | undefined;
 
     if (!existing) {
-      res.status(404).json({ error: 'Notebook not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang kuwaderno.' });
       return;
     }
 
     const title = req.body?.title !== undefined ? String(req.body.title).trim() : String(existing.title);
     if (!title) {
-      res.status(400).json({ error: 'Notebook title cannot be empty.' });
+      res.status(400).json({ error: 'Hindi maaaring walang laman ang pamagat ng kuwaderno.' });
       return;
     }
 
@@ -137,7 +137,7 @@ export function createNotebooksRouter(
       .prepare('DELETE FROM notebooks WHERE id = ? AND user_id = ?')
       .run(req.params.id, req.user!.id);
     if (info.changes === 0) {
-      res.status(404).json({ error: 'Notebook not found' });
+      res.status(404).json({ error: 'Hindi nahanap ang kuwaderno.' });
       return;
     }
     res.json({ ok: true });

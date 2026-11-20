@@ -109,7 +109,7 @@ export function createAdminRouter(
     const reason = String(req.body?.status_reason || '').trim().slice(0, 300);
 
     if (!['active', 'deactivated', 'suspended'].includes(status)) {
-      res.status(400).json({ error: 'Invalid status. Must be active, deactivated, or suspended.' });
+      res.status(400).json({ error: 'Hindi wastong status. Dapat ay active, deactivated, o suspended.' });
       return;
     }
 
@@ -118,7 +118,7 @@ export function createAdminRouter(
       .get(targetId) as { id: string; role: string } | undefined;
 
     if (!target || target.role !== 'student') {
-      res.status(404).json({ error: 'Student account not found.' });
+      res.status(404).json({ error: 'Hindi nahanap ang account ng mag-aaral.' });
       return;
     }
 
@@ -153,7 +153,7 @@ export function createAdminRouter(
       .get(targetId) as { id: string; role: string } | undefined;
 
     if (!target || target.role !== 'student') {
-      res.status(404).json({ error: 'Student account not found.' });
+      res.status(404).json({ error: 'Hindi nahanap ang account ng mag-aaral.' });
       return;
     }
 
@@ -192,7 +192,7 @@ export function createAdminRouter(
       .get(req.params.id) as Record<string, unknown> | undefined;
 
     if (!existing) {
-      res.status(404).json({ error: 'Concern ticket not found.' });
+      res.status(404).json({ error: 'Hindi nahanap ang concern ticket.' });
       return;
     }
 
@@ -241,11 +241,11 @@ export function createAdminRouter(
     const password = String(req.body?.password || '');
 
     if (!isValidGmailAddress(email)) {
-      res.status(400).json({ error: 'Administrator account must use a valid @gmail.com address.' });
+      res.status(400).json({ error: 'Dapat gumamit ang administrator account ng wastong @gmail.com address.' });
       return;
     }
     if (fullName.length < 2) {
-      res.status(400).json({ error: 'Full name is required.' });
+      res.status(400).json({ error: 'Kinakailangan ang buong pangalan.' });
       return;
     }
     const pwErr = validatePasswordStrength(password);
@@ -256,7 +256,7 @@ export function createAdminRouter(
 
     const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(email);
     if (existing) {
-      res.status(409).json({ error: 'This Gmail address is already registered.' });
+      res.status(409).json({ error: 'Nakarehistro na ang Gmail address na ito.' });
       return;
     }
 
@@ -267,7 +267,7 @@ export function createAdminRouter(
         id, email, email_verified, password_hash, role, status, status_reason, full_name,
         university, major, academic_year, bio, theme_preference, workspace_accent,
         storage_quota_bytes, is_demo, last_login_at, login_count, created_at, updated_at
-      ) VALUES (?, ?, 1, ?, 'admin', 'active', '', ?, 'INKORA Platform Operations', 'Administration', 'Staff', '', 'light', 'purple', ?, 0, NULL, 0, ?, ?)`
+      ) VALUES (?, ?, 1, ?, 'admin', 'active', '', ?, 'INKORA Operasyon ng Platform', 'Pangangasiwa', 'Kawani', '', 'light', 'blue', ?, 0, NULL, 0, ?, ?)`
     ).run(adminId, email, hashPassword(password), fullName, config.defaultStorageQuotaBytes, now, now);
 
     const admin = db.prepare(`SELECT ${SAFE_USER_COLUMNS} FROM users u WHERE u.id = ?`).get(adminId);
@@ -278,7 +278,7 @@ export function createAdminRouter(
     const targetId = String(req.params.id || '');
     const role = String(req.body?.role || '');
     if (role !== 'admin') {
-      res.status(400).json({ error: 'Invalid role assignment target.' });
+      res.status(400).json({ error: 'Hindi wastong target para sa pagtatalaga ng papel.' });
       return;
     }
 
@@ -287,11 +287,11 @@ export function createAdminRouter(
       .get(targetId) as { id: string; role: string; email_verified: number; status: string } | undefined;
 
     if (!target || target.role !== 'student') {
-      res.status(404).json({ error: 'Student account not found.' });
+      res.status(404).json({ error: 'Hindi nahanap ang account ng mag-aaral.' });
       return;
     }
     if (target.email_verified !== 1 || target.status !== 'active') {
-      res.status(400).json({ error: 'Only active, verified Gmail accounts can be assigned the Administrator role.' });
+      res.status(400).json({ error: 'Mga aktibo at beripikadong Gmail account lamang ang maaaring italaga sa papel na Administrator.' });
       return;
     }
 
