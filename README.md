@@ -6,7 +6,7 @@
 
 ## Brand & Visual Identity
 
-- **Logo & Favicon**: Bespoke SVG emblem combining an open notebook, writing pen, and subtle digital spark node ([client/public/favicon.svg](file:///client/public/favicon.svg) & `BrandLogo` component in icon-only and full-name formats).
+- **Logo & Favicon**: Bespoke SVG emblem combining an open notebook, writing pen, and subtle digital spark node ([client/public/favicon.svg](client/public/favicon.svg) & `BrandLogo` component in icon-only and full-name formats).
 - **Color Palette**: Deep purple, lavender, and soft blue primary accents paired with crisp white, light gray, and smooth gradients.
 - **Landing Page**: Full introduction to INKORA's studios, organization tools, privacy model, interactive Sign In / Create Student Account, and instant Demo Student & Demo Admin entry.
 

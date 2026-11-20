@@ -10,11 +10,7 @@
   },
   "scripts": {
     "dev": "concurrently -n API,WEB -c blue,magenta \"tsx watch --no-warnings server/index.ts\" \"vite\"",
-    "dev:server": "tsx watch --no-warnings server/index.ts",
-    "dev:client": "vite",
     "build": "vite build && tsc -p tsconfig.server.json",
-    "build:client": "vite build",
-    "build:server": "tsc -p tsconfig.server.json",
     "start": "node --no-warnings dist/server/index.js",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.client.json",
     "test": "tsx --no-warnings --test tests/api.test.ts"

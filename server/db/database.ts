@@ -1,7 +1,12 @@
-import { DatabaseSync } from 'node:sqlite';
+import * as sqlite from 'node:sqlite';
+import type { DatabaseSync } from 'node:sqlite';
 import { AppConfig } from '../config.js';
 
 export type InkoraDatabase = DatabaseSync;
+
+const SqliteDatabaseCtor =
+  (sqlite as unknown as { Database?: typeof DatabaseSync; DatabaseSync: typeof DatabaseSync })
+    .Database ?? sqlite.DatabaseSync;
 
 function ensureColumn(db: DatabaseSync, table: string, column: string, definition: string): void {
   const cols = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
@@ -11,7 +16,7 @@ function ensureColumn(db: DatabaseSync, table: string, column: string, definitio
 }
 
 export function createDatabase(config: AppConfig): DatabaseSync {
-  const db = new DatabaseSync(config.dbPath);
+  const db = new SqliteDatabaseCtor(config.dbPath);
 
   db.exec(`
     PRAGMA journal_mode = WAL;

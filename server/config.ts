@@ -44,8 +44,8 @@ export function getConfig(): AppConfig {
     dbPath: path.join(dataDir, 'inkora.db'),
     sessionCookieName: 'inkora_session',
     sessionTtlMs: 14 * 24 * 60 * 60 * 1000,
-    maxFileSizeBytes: 20 * 1024 * 1024, // 20 MB
-    maxAvatarSizeBytes: 5 * 1024 * 1024, // 5 MB
+    maxFileSizeBytes: isVercel ? 4 * 1024 * 1024 : 20 * 1024 * 1024, // 4 MB on Vercel serverless, 20 MB standalone
+    maxAvatarSizeBytes: isVercel ? 3 * 1024 * 1024 : 5 * 1024 * 1024,
     defaultStorageQuotaBytes: 250 * 1024 * 1024, // 250 MB per student
     isProduction: process.env.NODE_ENV === 'production',
   };
