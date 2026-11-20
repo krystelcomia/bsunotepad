@@ -155,13 +155,43 @@ describe('INKORA Gmail Auth, Email Verification, Password Reset & RBAC Tests', (
     assert.equal(demo.data.user.role, 'student');
     assert.equal(demo.data.user.email_verified, 1);
 
-    const summary = await client.json<{ folders: unknown[]; subjects: unknown[]; recentNotes: unknown[] }>(
-      '/api/workspace/summary'
-    );
+    const summary = await client.json<{
+      folders: unknown[];
+      subjects: unknown[];
+      recentNotes: unknown[];
+      recentlyOpenedNotes: Array<{ id: string; last_opened_at?: string | null }>;
+      recentlyEditedDocuments: Array<{ id: string; mode: string }>;
+      favoriteNotes: Array<{ id: string; is_starred: number }>;
+      recentlyUsedFolders: Array<{ id: string }>;
+      activityOverview: { days: unknown[]; totalWords: number };
+      stats: { totalNotes: number; totalDocuments: number; totalFolders: number };
+    }>('/api/workspace/summary');
     assert.equal(summary.status, 200);
     assert.ok(summary.data.folders.length >= 3);
     assert.ok(summary.data.subjects.length >= 3);
     assert.ok(summary.data.recentNotes.length >= 4);
+    assert.ok(summary.data.recentlyOpenedNotes.length >= 4);
+    assert.ok(summary.data.recentlyEditedDocuments.length >= 2);
+    assert.ok(summary.data.recentlyEditedDocuments.every((d) => d.mode === 'document'));
+    assert.ok(summary.data.favoriteNotes.length >= 1);
+    assert.ok(summary.data.favoriteNotes.every((n) => n.is_starred === 1));
+    assert.ok(summary.data.recentlyUsedFolders.length >= 3);
+    assert.equal(summary.data.activityOverview.days.length, 7);
+    assert.ok(summary.data.stats.totalNotes >= 4);
+    assert.ok(summary.data.stats.totalDocuments >= 2);
+
+    // Opening the oldest recently-opened note updates last_opened_at and moves it to top
+    const oldestOpenedId =
+      summary.data.recentlyOpenedNotes[summary.data.recentlyOpenedNotes.length - 1].id;
+    const openedRes = await client.json<{ note: { id: string } }>(`/api/notes/${oldestOpenedId}`);
+    assert.equal(openedRes.status, 200);
+
+    const summaryAfterOpen = await client.json<{
+      recentlyOpenedNotes: Array<{ id: string; last_opened_at?: string | null }>;
+    }>('/api/workspace/summary');
+    assert.equal(summaryAfterOpen.status, 200);
+    assert.equal(summaryAfterOpen.data.recentlyOpenedNotes[0].id, oldestOpenedId);
+    assert.ok(summaryAfterOpen.data.recentlyOpenedNotes[0].last_opened_at);
 
     const forbiddenAdmin = await client.json('/api/admin/stats');
     assert.equal(forbiddenAdmin.status, 403);

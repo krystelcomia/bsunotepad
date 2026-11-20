@@ -311,6 +311,9 @@ const WorkspaceShell: React.FC = () => {
             onOpenStudyHub={() => setActiveNav({ kind: 'study' })}
             onOpenFiles={() => setActiveNav({ kind: 'files' })}
             onSelectNotebook={(nbId) => setActiveNav({ kind: 'notes', notebookId: nbId })}
+            onNewFolder={() => setFolderModal({ open: true, editing: null })}
+            onSelectFolder={(fldId) => setActiveNav({ kind: 'notes', folderId: fldId })}
+            onOpenAccount={() => setAccountOpen(true)}
             onNotify={notify}
           />
         ) : (

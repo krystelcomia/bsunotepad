@@ -48,26 +48,93 @@ export function createWorkspaceRouter(
       )
       .all(userId);
 
+    const noteCardSelect = `
+      SELECT n.id, n.folder_id, n.notebook_id, n.subject_id, n.title, n.mode, n.paper_style, n.page_size,
+             substr(n.plain_text, 1, 220) as excerpt, n.drawing_preview, n.tags_json,
+             n.word_count, n.is_pinned, n.is_starred, n.share_token, n.last_opened_at, n.created_at, n.updated_at,
+             f.name as folder_name, f.color as folder_color,
+             nb.title as notebook_title, s.code as subject_code, s.name as subject_name, s.color as subject_color
+      FROM notes n
+      LEFT JOIN folders f ON f.id = n.folder_id
+      LEFT JOIN notebooks nb ON nb.id = n.notebook_id
+      LEFT JOIN subjects s ON s.id = n.subject_id
+    `;
+
     const recentNotes = db
       .prepare(
-        `SELECT n.id, n.folder_id, n.notebook_id, n.subject_id, n.title, n.mode, n.paper_style, n.page_size,
-                substr(n.plain_text, 1, 220) as excerpt, n.drawing_preview, n.tags_json,
-                n.word_count, n.is_pinned, n.is_starred, n.share_token, n.created_at, n.updated_at,
-                f.name as folder_name, f.color as folder_color,
-                nb.title as notebook_title, s.code as subject_code, s.name as subject_name, s.color as subject_color
-         FROM notes n
-         LEFT JOIN folders f ON f.id = n.folder_id
-         LEFT JOIN notebooks nb ON nb.id = n.notebook_id
-         LEFT JOIN subjects s ON s.id = n.subject_id
+        `${noteCardSelect}
          WHERE n.user_id = ? AND n.is_trashed = 0
          ORDER BY n.is_pinned DESC, n.updated_at DESC
          LIMIT 12`
       )
       .all(userId);
 
+    const recentlyOpenedNotes = db
+      .prepare(
+        `${noteCardSelect}
+         WHERE n.user_id = ? AND n.is_trashed = 0
+         ORDER BY COALESCE(n.last_opened_at, n.updated_at) DESC
+         LIMIT 6`
+      )
+      .all(userId);
+
+    const recentlyEditedDocuments = db
+      .prepare(
+        `${noteCardSelect}
+         WHERE n.user_id = ? AND n.is_trashed = 0 AND n.mode = 'document'
+         ORDER BY n.updated_at DESC
+         LIMIT 6`
+      )
+      .all(userId);
+
+    const favoriteNotes = db
+      .prepare(
+        `${noteCardSelect}
+         WHERE n.user_id = ? AND n.is_trashed = 0 AND n.is_starred = 1
+         ORDER BY n.updated_at DESC
+         LIMIT 8`
+      )
+      .all(userId);
+
+    const recentlyUsedFolders = db
+      .prepare(
+        `SELECT f.*,
+          (SELECT COUNT(*) FROM notes n WHERE n.folder_id = f.id AND n.is_trashed = 0) as note_count,
+          COALESCE(
+            (SELECT MAX(COALESCE(n.last_opened_at, n.updated_at)) FROM notes n WHERE n.folder_id = f.id AND n.is_trashed = 0),
+            f.updated_at
+          ) as last_used_at
+         FROM folders f
+         WHERE f.user_id = ?
+         ORDER BY last_used_at DESC, f.updated_at DESC
+         LIMIT 6`
+      )
+      .all(userId);
+
     const trashedCount = Number(
       (db.prepare('SELECT COUNT(*) as c FROM notes WHERE user_id = ? AND is_trashed = 1').get(userId) as { c: number }).c
     );
+
+    const noteCounts = db
+      .prepare(
+        `SELECT
+           COUNT(*) as total_notes,
+           COALESCE(SUM(CASE WHEN mode = 'document' THEN 1 ELSE 0 END), 0) as total_documents,
+           COALESCE(SUM(CASE WHEN mode = 'notebook' THEN 1 ELSE 0 END), 0) as total_notebook_pages,
+           COALESCE(SUM(CASE WHEN mode = 'drawing' THEN 1 ELSE 0 END), 0) as total_drawings,
+           COALESCE(SUM(CASE WHEN is_starred = 1 THEN 1 ELSE 0 END), 0) as favorite_count,
+           COALESCE(SUM(word_count), 0) as total_words
+         FROM notes
+         WHERE user_id = ? AND is_trashed = 0`
+      )
+      .get(userId) as {
+        total_notes: number;
+        total_documents: number;
+        total_notebook_pages: number;
+        total_drawings: number;
+        favorite_count: number;
+        total_words: number;
+      };
 
     const upcomingTasks = db
       .prepare(
@@ -84,6 +151,20 @@ export function createWorkspaceRouter(
       .prepare('SELECT COALESCE(SUM(size_bytes), 0) as used FROM attachments WHERE user_id = ?')
       .get(userId) as { used: number };
 
+    const filesRow = db
+      .prepare('SELECT COUNT(*) as c FROM attachments WHERE user_id = ?')
+      .get(userId) as { c: number };
+
+    const taskCountsRow = db
+      .prepare(
+        `SELECT
+           COALESCE(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END), 0) as completed_count,
+           COALESCE(SUM(CASE WHEN status != 'done' THEN 1 ELSE 0 END), 0) as pending_count
+         FROM study_tasks
+         WHERE user_id = ?`
+      )
+      .get(userId) as { completed_count: number; pending_count: number };
+
     const studyRow = db
       .prepare(
         `SELECT COALESCE(SUM(duration_minutes), 0) as total_minutes
@@ -96,18 +177,84 @@ export function createWorkspaceRouter(
       .prepare('SELECT COUNT(*) as c FROM flashcards WHERE user_id = ?')
       .get(userId) as { c: number };
 
+    const sinceDate = new Date(Date.now() - 6 * 24 * 3600 * 1000);
+    const sinceIso = `${sinceDate.toISOString().slice(0, 10)}T00:00:00.000Z`;
+
+    const createdByDayRows = db
+      .prepare(
+        `SELECT substr(created_at, 1, 10) as day, COUNT(*) as c
+         FROM notes
+         WHERE user_id = ? AND created_at >= ?
+         GROUP BY day`
+      )
+      .all(userId, sinceIso) as Array<{ day: string; c: number }>;
+
+    const editedByDayRows = db
+      .prepare(
+        `SELECT substr(updated_at, 1, 10) as day, COUNT(*) as c
+         FROM notes
+         WHERE user_id = ? AND is_trashed = 0 AND updated_at >= ?
+         GROUP BY day`
+      )
+      .all(userId, sinceIso) as Array<{ day: string; c: number }>;
+
+    const studyByDayRows = db
+      .prepare(
+        `SELECT substr(completed_at, 1, 10) as day, COALESCE(SUM(duration_minutes), 0) as mins
+         FROM study_sessions
+         WHERE user_id = ? AND completed_at >= ?
+         GROUP BY day`
+      )
+      .all(userId, sinceIso) as Array<{ day: string; mins: number }>;
+
+    const createdMap = new Map(createdByDayRows.map((r) => [r.day, Number(r.c)]));
+    const editedMap = new Map(editedByDayRows.map((r) => [r.day, Number(r.c)]));
+    const studyMap = new Map(studyByDayRows.map((r) => [r.day, Number(r.mins)]));
+
+    const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const days = Array.from({ length: 7 }, (_, idx) => {
+      const dt = new Date(Date.now() - (6 - idx) * 24 * 3600 * 1000);
+      const dateStr = dt.toISOString().slice(0, 10);
+      return {
+        date: dateStr,
+        label: idx === 6 ? 'Today' : dayLabels[dt.getUTCDay()],
+        notesCreated: createdMap.get(dateStr) || 0,
+        notesEdited: editedMap.get(dateStr) || 0,
+        studyMinutes: studyMap.get(dateStr) || 0,
+      };
+    });
+
     res.json({
       folders,
       subjects,
       notebooks,
       recentNotes,
+      recentlyOpenedNotes,
+      recentlyEditedDocuments,
+      favoriteNotes,
+      recentlyUsedFolders,
       trashedCount,
       upcomingTasks,
+      activityOverview: {
+        days,
+        totalWords: Number(noteCounts?.total_words || 0),
+        tasksCompleted: Number(taskCountsRow?.completed_count || 0),
+        tasksPending: Number(taskCountsRow?.pending_count || 0),
+        notesCreatedWeek: days.reduce((sum, d) => sum + d.notesCreated, 0),
+        notesEditedWeek: days.reduce((sum, d) => sum + d.notesEdited, 0),
+      },
       stats: {
         storageUsedBytes: Number(usedRow?.used || 0),
         storageQuotaBytes: req.user!.storage_quota_bytes,
         studyMinutesWeek: Number(studyRow?.total_minutes || 0),
         flashcardCount: Number(flashcardRow?.c || 0),
+        totalNotes: Number(noteCounts?.total_notes || 0),
+        totalDocuments: Number(noteCounts?.total_documents || 0),
+        totalNotebookPages: Number(noteCounts?.total_notebook_pages || 0),
+        totalDrawings: Number(noteCounts?.total_drawings || 0),
+        favoriteCount: Number(noteCounts?.favorite_count || 0),
+        totalFolders: folders.length,
+        totalFiles: Number(filesRow?.c || 0),
       },
     });
   });

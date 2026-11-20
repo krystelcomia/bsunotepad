@@ -160,6 +160,7 @@ export function createDatabase(config: AppConfig): DatabaseSync {
       is_starred INTEGER NOT NULL DEFAULT 0,
       is_trashed INTEGER NOT NULL DEFAULT 0,
       trashed_at TEXT DEFAULT NULL,
+      last_opened_at TEXT DEFAULT NULL,
       share_token TEXT DEFAULT NULL UNIQUE,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
@@ -307,6 +308,7 @@ export function createDatabase(config: AppConfig): DatabaseSync {
   ensureColumn(db, 'sessions', 'refresh_token_hash', 'TEXT');
   ensureColumn(db, 'sessions', 'refresh_expires_at', 'TEXT DEFAULT NULL');
   ensureColumn(db, 'notes', 'folder_id', 'TEXT DEFAULT NULL');
+  ensureColumn(db, 'notes', 'last_opened_at', 'TEXT DEFAULT NULL');
   db.exec('CREATE INDEX IF NOT EXISTS idx_notes_folder ON notes(folder_id)');
 
   return db;

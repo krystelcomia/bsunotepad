@@ -183,6 +183,21 @@ export function createNotesRouter(
   });
 
   notesRouter.get('/:id', (req: AuthenticatedRequest, res) => {
+    const existing = db
+      .prepare('SELECT id FROM notes WHERE id = ? AND user_id = ?')
+      .get(req.params.id, req.user!.id);
+
+    if (!existing) {
+      res.status(404).json({ error: 'Note not found' });
+      return;
+    }
+
+    db.prepare('UPDATE notes SET last_opened_at = ? WHERE id = ? AND user_id = ?').run(
+      new Date().toISOString(),
+      req.params.id,
+      req.user!.id
+    );
+
     const note = db
       .prepare(
         `SELECT n.*, f.name as folder_name, f.color as folder_color,
@@ -194,11 +209,6 @@ export function createNotesRouter(
          WHERE n.id = ? AND n.user_id = ?`
       )
       .get(req.params.id, req.user!.id);
-
-    if (!note) {
-      res.status(404).json({ error: 'Note not found' });
-      return;
-    }
 
     const attachments = db
       .prepare('SELECT * FROM attachments WHERE note_id = ? AND user_id = ? ORDER BY created_at DESC')
@@ -277,12 +287,12 @@ export function createNotesRouter(
       `INSERT INTO notes (
         id, user_id, folder_id, notebook_id, subject_id, title, mode, paper_style, page_size,
         content_json, content_html, plain_text, cornell_cues, cornell_summary,
-        drawing_data, tags_json, word_count, is_pinned, is_starred, is_trashed, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?)`
+        drawing_data, tags_json, word_count, is_pinned, is_starred, is_trashed, last_opened_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?, ?)`
     ).run(
       id, userId, folderId, notebookId, subjectId, title || 'Untitled Note', mode, paperStyle, pageSize,
       contentJson, contentHtml, plainText, cornellCues, cornellSummary,
-      drawingData, tagsJson, wordCount, now, now
+      drawingData, tagsJson, wordCount, now, now, now
     );
 
     syncNoteFts(db, {

@@ -32,6 +32,7 @@ export interface Folder {
   color: string;
   icon: string;
   note_count?: number;
+  last_used_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -160,6 +161,7 @@ export interface Note {
   subject_code?: string | null;
   subject_name?: string | null;
   subject_color?: string | null;
+  last_opened_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -240,18 +242,47 @@ export interface StudySession {
   subject_color?: string | null;
 }
 
+export interface ActivityDay {
+  date: string;
+  label: string;
+  notesCreated: number;
+  notesEdited: number;
+  studyMinutes: number;
+}
+
+export interface ActivityOverview {
+  days: ActivityDay[];
+  totalWords: number;
+  tasksCompleted: number;
+  tasksPending: number;
+  notesCreatedWeek: number;
+  notesEditedWeek: number;
+}
+
 export interface WorkspaceSummary {
   folders: Folder[];
   subjects: Subject[];
   notebooks: Notebook[];
   recentNotes: Note[];
+  recentlyOpenedNotes: Note[];
+  recentlyEditedDocuments: Note[];
+  favoriteNotes: Note[];
+  recentlyUsedFolders: Folder[];
   trashedCount: number;
   upcomingTasks: StudyTask[];
+  activityOverview: ActivityOverview;
   stats: {
     storageUsedBytes: number;
     storageQuotaBytes: number;
     studyMinutesWeek: number;
     flashcardCount: number;
+    totalNotes: number;
+    totalDocuments: number;
+    totalNotebookPages: number;
+    totalDrawings: number;
+    favoriteCount: number;
+    totalFolders: number;
+    totalFiles: number;
   };
 }
 

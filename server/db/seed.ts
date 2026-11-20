@@ -389,8 +389,8 @@ export function ensureDemoUser(db: DatabaseSync): string {
     `INSERT INTO notes (
       id, user_id, folder_id, notebook_id, subject_id, title, mode, paper_style, page_size,
       content_json, content_html, plain_text, cornell_cues, cornell_summary,
-      drawing_data, tags_json, word_count, is_pinned, is_starred, is_trashed, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+      drawing_data, tags_json, word_count, is_pinned, is_starred, is_trashed, last_opened_at, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`
   );
 
   const note1Id = generateId();
@@ -405,7 +405,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
     labContentJson, labHtml, labPlain, '', '',
     JSON.stringify({ version: 1, strokes: [], shapes: [], texts: [], background: 'transparent' }),
     JSON.stringify(['lab-report', 'biochem', 'kinetics']),
-    countWords(labPlain), 1, 1, isoOffset(-18), isoOffset(-2)
+    countWords(labPlain), 1, 1, isoOffset(-1), isoOffset(-18), isoOffset(-2)
   );
 
   insertNote.run(
@@ -415,7 +415,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
     csContentJson, '', csPlain, csCues, csSummary,
     csDrawingData,
     JSON.stringify(['algorithms', 'graphs', 'midterm']),
-    countWords(csPlain), 1, 1, isoOffset(-30), isoOffset(-5)
+    countWords(csPlain), 1, 1, isoOffset(-3), isoOffset(-30), isoOffset(-5)
   );
 
   insertNote.run(
@@ -428,7 +428,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
     '', '',
     cellDrawingData,
     JSON.stringify(['diagram', 'cell-biology', 'sketch']),
-    8, 0, 1, isoOffset(-48), isoOffset(-10)
+    8, 0, 1, isoOffset(-4), isoOffset(-48), isoOffset(-10)
   );
 
   insertNote.run(
@@ -438,7 +438,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
     histContentJson, '', histPlain, '', '',
     JSON.stringify({ version: 1, strokes: [], shapes: [], texts: [], background: 'transparent' }),
     JSON.stringify(['essay', 'thermodynamics']),
-    countWords(histPlain), 0, 0, isoOffset(-72), isoOffset(-24)
+    countWords(histPlain), 0, 0, isoOffset(-12), isoOffset(-72), isoOffset(-24)
   );
 
   syncNoteFts(db, { id: note1Id, user_id: userId, title: 'Lab Report 04: Catalase Enzyme Kinetics', plain_text: labPlain, cornell_cues: '', cornell_summary: '', tags_json: '["lab-report","biochem","kinetics"]', is_trashed: 0 });
