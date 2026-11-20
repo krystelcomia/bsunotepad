@@ -91,7 +91,7 @@ export interface StrokePoint {
 
 export interface DrawingStroke {
   id: string;
-  tool: 'pen' | 'calligraphy' | 'pencil' | 'highlighter';
+  tool: 'pen' | 'calligraphy' | 'pencil' | 'marker' | 'highlighter';
   color: string;
   width: number;
   opacity: number;

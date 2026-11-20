@@ -84,12 +84,16 @@ interface RibbonToolbarProps {
   charCount: number;
   onOpenImagePicker: () => void;
   onOpenMathModal: () => void;
-  onEmbedDrawing: () => void;
+  doodleActive: boolean;
+  onToggleDoodle: () => void;
+  onOpenDoodlePanel: () => void;
   onSaveSnapshot: () => void;
   onOpenVersions: () => void;
   onToggleFind: () => void;
+  onExportDoc: () => void;
   onExportHtml: () => void;
   onExportMarkdown: () => void;
+  onExportTxt: () => void;
   onPrintPdf: () => void;
   onOpenShare: () => void;
 }
@@ -114,12 +118,16 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
   charCount,
   onOpenImagePicker,
   onOpenMathModal,
-  onEmbedDrawing,
+  doodleActive,
+  onToggleDoodle,
+  onOpenDoodlePanel,
   onSaveSnapshot,
   onOpenVersions,
   onToggleFind,
+  onExportDoc,
   onExportHtml,
   onExportMarkdown,
+  onExportTxt,
   onPrintPdf,
   onOpenShare,
 }) => {
@@ -344,6 +352,33 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
             >
               <Eraser className="w-4 h-4" />
             </button>
+
+            <div className="h-5 w-px bg-blue-100 dark:bg-blue-900 mx-0.5" />
+
+            <button
+              type="button"
+              onClick={onOpenImagePicker}
+              className={pillBtn(false)}
+              title="Magdagdag ng larawan sa tala"
+            >
+              <ImageIcon className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" /> Larawan
+            </button>
+            <button
+              type="button"
+              onClick={onToggleDoodle}
+              className={pillBtn(doodleActive)}
+              title="Gumuhit o mag-doodle gamit ang lapis, ballpen, at marker sa pahina"
+            >
+              <PenTool className="w-3.5 h-3.5" /> {doodleActive ? 'Gumuguhit (Isara)' : 'Guhit / Doodle'}
+            </button>
+            <button
+              type="button"
+              onClick={onExportDoc}
+              className={pillBtn(false)}
+              title="I-download ang talang ito bilang Word (.doc)"
+            >
+              <Download className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" /> I-download
+            </button>
           </>
         )}
 
@@ -372,8 +407,11 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
             <button type="button" onClick={onOpenImagePicker} className={pillBtn()}>
               <ImageIcon className="w-3.5 h-3.5" /> Larawan
             </button>
-            <button type="button" onClick={onEmbedDrawing} className={pillBtn()}>
-              <PenTool className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" /> Ilakip ang Guhit
+            <button type="button" onClick={onToggleDoodle} className={pillBtn(doodleActive)}>
+              <PenTool className="w-3.5 h-3.5" /> Guhit sa Pahina
+            </button>
+            <button type="button" onClick={onOpenDoodlePanel} className={pillBtn()}>
+              <PenTool className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" /> Panel ng Guhit (Ilakip)
             </button>
             <button type="button" onClick={onOpenMathModal} className={pillBtn()}>
               <Sigma className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" /> Pormulang Matematika
@@ -515,6 +553,9 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
               <History className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" /> Kasaysayan ng Bersyon
             </button>
             <div className="h-5 w-px bg-blue-100 dark:bg-blue-900 mx-1" />
+            <button type="button" onClick={onExportDoc} className={pillBtn()}>
+              <FileDown className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" /> I-download na Word (.doc)
+            </button>
             <button type="button" onClick={onPrintPdf} className={pillBtn()}>
               <Printer className="w-3.5 h-3.5" /> I-print / I-save na PDF
             </button>
@@ -523,6 +564,9 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
             </button>
             <button type="button" onClick={onExportMarkdown} className={pillBtn()}>
               <Download className="w-3.5 h-3.5" /> I-export na .MD
+            </button>
+            <button type="button" onClick={onExportTxt} className={pillBtn()}>
+              <Download className="w-3.5 h-3.5" /> I-export na .TXT
             </button>
             <button type="button" onClick={onOpenShare} className={pillBtn()}>
               <Share2 className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" /> Ibahagi ang Link

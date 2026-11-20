@@ -22,20 +22,23 @@ import StarterKit from '@tiptap/starter-kit';
 import {
   ArrowLeft,
   Check,
+  ChevronDown,
   Columns2,
   Copy,
   CopyPlus,
+  Download,
   Edit3,
   ExternalLink,
+  FileDown,
   FilePlus2,
-  FileText,
   History,
+  Image as ImageIcon,
   Moon,
-  NotebookPen,
   Palette,
   Paperclip,
   PenTool,
   Pin,
+  Printer,
   Save,
   Share2,
   Star,
@@ -47,10 +50,12 @@ import {
 } from 'lucide-react';
 import { api } from '../../api/client';
 import { useTheme } from '../../context/ThemeContext';
-import { Attachment, DrawingData, Folder, Notebook, Note, NoteMode, PageSize, PaperStyle, Subject } from '../../types';
+import { Attachment, DrawingData, Folder, Notebook, Note, PageSize, PaperStyle, Subject } from '../../types';
 import {
   downloadTextFile,
+  exportNoteAsDoc,
   exportNoteAsHtml,
+  exportNoteAsTxt,
   formatBytes,
   htmlToMarkdownApprox,
   parseDrawingData,
@@ -64,16 +69,15 @@ import { VersionHistoryDrawer } from './VersionHistoryDrawer';
 
 const NOTE_CATEGORIES = [
   'Pangkalahatan',
-  'Mga Tala sa Lektura',
-  'Gabay sa Pag-aaral',
-  'Ulat sa Lab',
-  'Sanaysay',
-  'Takdang-Aralin',
-  'Paghahanda sa Pagsusulit',
-  'Pananaliksik',
+  'Personal',
+  'Mga Ideya',
+  'Mga Tala',
   'Buod',
-  'Pansarili',
-  'Pagsisimula',
+  'Gabay',
+  'Listahan',
+  'Guhit at Sketch',
+  'Proyekto',
+  'Pananaliksik',
 ] as const;
 
 function getPaperStyleLabel(style: PaperStyle): string {
@@ -112,12 +116,9 @@ interface NoteWorkspaceProps {
   onNotify: (type: 'success' | 'error' | 'info', text: string) => void;
 }
 
-type StudioView = 'document' | 'notebook' | 'drawing' | 'split';
-
 export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
   noteId,
   folders,
-  subjects,
   notebooks,
   onBack,
   onOpenNote,
@@ -134,7 +135,6 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Pangkalahatan');
-  const [studioView, setStudioView] = useState<StudioView>('document');
   const [paperStyle, setPaperStyle] = useState<PaperStyle>('plain');
   const [paperBgColor, setPaperBgColor] = useState('');
   const [pageSize, setPageSize] = useState<PageSize>('a4');
@@ -147,6 +147,8 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
   const [drawingData, setDrawingData] = useState<DrawingData>(() => parseDrawingData(''));
   const [drawingPreview, setDrawingPreview] = useState('');
   const [inkOverlayActive, setInkOverlayActive] = useState(false);
+  const [doodlePanelOpen, setDoodlePanelOpen] = useState(false);
+  const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
 
   const [tags, setTags] = useState<string[]>([]);
   const [tagDraft, setTagDraft] = useState('');
@@ -166,8 +168,20 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const imageUploadRef = useRef<HTMLInputElement | null>(null);
   const attachUploadRef = useRef<HTMLInputElement | null>(null);
+  const downloadMenuRef = useRef<HTMLDivElement | null>(null);
   const saveTimerRef = useRef<number | null>(null);
   const latestPayloadRef = useRef<Record<string, unknown>>({});
+
+  useEffect(() => {
+    if (!downloadMenuOpen) return;
+    const onOutside = (e: MouseEvent) => {
+      if (downloadMenuRef.current && !downloadMenuRef.current.contains(e.target as Node)) {
+        setDownloadMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [downloadMenuOpen]);
 
   const editor = useEditor({
     extensions: [
@@ -188,7 +202,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
       TableCell,
       Link.configure({ openOnClick: false }),
       ImageExtension.configure({ inline: false, allowBase64: true }),
-      Placeholder.configure({ placeholder: 'Magsimulang magsulat ng mga tala sa klase, sanaysay, o buod...' }),
+      Placeholder.configure({ placeholder: 'Magsimulang magsulat ng iyong personal na tala, mga ideya, o buod...' }),
       CharacterCount,
       MathFormula,
     ],
@@ -209,7 +223,6 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
       setTitle(loaded.title);
       setDescription(loaded.description || '');
       setCategory(loaded.category || 'Pangkalahatan');
-      setStudioView(loaded.mode as StudioView);
       setPaperStyle((loaded.paper_style || 'plain') as PaperStyle);
       setPaperBgColor(loaded.paper_bg_color || '');
       setPageSize((loaded.page_size || 'a4') as PageSize);
@@ -219,6 +232,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
       setDrawingPreview(loaded.drawing_preview || '');
       setTags(parseTags(loaded.tags_json));
       setInkOverlayActive(false);
+      setDoodlePanelOpen(loaded.mode === 'drawing');
 
       if (editor) {
         try {
@@ -356,26 +370,10 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
     };
   }, [handleManualSave]);
 
-  const handleModeSwitch = (nextView: StudioView) => {
-    setStudioView(nextView);
-    if (nextView === 'notebook' && paperStyle === 'plain') {
-      setPaperStyle('lined');
-      queueSave({ mode: 'notebook', paper_style: 'lined' });
-      return;
-    }
-    if (nextView === 'document' || nextView === 'notebook' || nextView === 'drawing') {
-      queueSave({ mode: nextView as NoteMode });
-    }
-  };
-
   const handleEmbedDrawingIntoDoc = (dataUrl: string) => {
     if (!editor) return;
     editor.chain().focus().setImage({ src: dataUrl, alt: 'Guhit mula sa INKORA' }).run();
-    if (studioView === 'drawing') {
-      setStudioView('document');
-      queueSave({ mode: 'document' });
-    }
-    onNotify('success', 'Naisama ang guhit sa iyong dokumento!');
+    onNotify('success', 'Naisama ang guhit sa loob ng iyong tala!');
   };
 
   const handleUploadInlineImage = async (file: File) => {
@@ -385,8 +383,20 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
       const url = `/api/files/${res.file.id}/content`;
       editor?.chain().focus().setImage({ src: url, alt: res.file.original_name }).run();
       onNotify('success', 'Na-upload at naisingit ang larawan!');
-    } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'Nabigo ang pag-upload ng larawan');
+    } catch {
+      // Fallback: i-embed direkta ang larawan bilang inline data URL upang laging gumana
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = String(reader.result || '');
+        if (dataUrl) {
+          editor?.chain().focus().setImage({ src: dataUrl, alt: file.name }).run();
+          onNotify('success', 'Naisingit ang larawan sa iyong tala!');
+        } else {
+          onNotify('error', 'Hindi mabasa ang napiling larawan.');
+        }
+      };
+      reader.onerror = () => onNotify('error', 'Hindi mabasa ang napiling larawan.');
+      reader.readAsDataURL(file);
     }
   };
 
@@ -580,20 +590,6 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
             </select>
             <span>·</span>
             <select
-              value={note.subject_id || ''}
-              onChange={(e) => queueSave({ subject_id: e.target.value || null })}
-              className="bg-transparent hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded px-1 py-0.5 cursor-pointer"
-              title="Italaga sa Asignatura"
-            >
-              <option value="">Walang Asignatura</option>
-              {subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.code ? `${s.code} · ${s.name}` : s.name}
-                </option>
-              ))}
-            </select>
-            <span>·</span>
-            <select
               value={note.notebook_id || ''}
               onChange={(e) => queueSave({ notebook_id: e.target.value || null })}
               className="bg-transparent hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded px-1 py-0.5 cursor-pointer"
@@ -647,30 +643,136 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
           </div>
         </div>
 
-        {/* Tagapagpalit ng Studio Mode */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-blue-50/80 dark:bg-[#132340]">
-          {(
-            [
-              { id: 'document', label: 'Dokumento', icon: <FileText className="w-3.5 h-3.5" /> },
-              { id: 'notebook', label: 'Kuwaderno', icon: <NotebookPen className="w-3.5 h-3.5" /> },
-              { id: 'drawing', label: 'Guhitan', icon: <PenTool className="w-3.5 h-3.5" /> },
-              { id: 'split', label: 'Hatiin', icon: <Columns2 className="w-3.5 h-3.5" /> },
-            ] as const
-          ).map((m) => (
+        {/* Pinagsamang mga Kagamitan sa Iisang Tala (Larawan, Guhit/Doodle, Panel, I-download) */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => imageUploadRef.current?.click()}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-[#132340] text-blue-800 dark:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-xs font-semibold transition cursor-pointer"
+            title="Magdagdag ng larawan sa dokumento"
+          >
+            <ImageIcon className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+            <span className="hidden sm:inline">Larawan</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setInkOverlayActive((v) => {
+                const next = !v;
+                if (next) setDoodlePanelOpen(false);
+                return next;
+              });
+            }}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              inkOverlayActive
+                ? 'bg-sky-600 text-white shadow-xs'
+                : 'border border-blue-200 dark:border-blue-800 bg-white dark:bg-[#132340] text-blue-800 dark:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/60'
+            }`}
+            title="Gumuhit o mag-doodle gamit ang iba't ibang lapis at panulat direkta sa pahina"
+          >
+            <PenTool className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{inkOverlayActive ? 'Gumuguhit' : 'Guhit / Doodle'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setDoodlePanelOpen((v) => {
+                const next = !v;
+                if (next) setInkOverlayActive(false);
+                return next;
+              });
+            }}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              doodlePanelOpen
+                ? 'bg-blue-700 text-white shadow-xs'
+                : 'border border-blue-200 dark:border-blue-800 bg-white dark:bg-[#132340] text-blue-800 dark:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/60'
+            }`}
+            title="Buksan ang katabing panel ng guhit upang mag-sketch at ilakip sa dokumento"
+          >
+            <Columns2 className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Panel ng Guhit</span>
+          </button>
+
+          <div ref={downloadMenuRef} className="relative">
             <button
-              key={m.id}
               type="button"
-              onClick={() => handleModeSwitch(m.id)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                studioView === m.id
-                  ? 'bg-white dark:bg-[#0D1930] text-blue-700 dark:text-sky-300 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-blue-700'
-              }`}
+              onClick={() => setDownloadMenuOpen((v) => !v)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/80 dark:bg-[#132340] text-blue-800 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-950/70 text-xs font-semibold transition cursor-pointer"
+              title="I-download ang dokumentong ito"
             >
-              {m.icon}
-              <span className="hidden sm:inline">{m.label}</span>
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">I-download</span>
+              <ChevronDown className="w-3 h-3" />
             </button>
-          ))}
+
+            {downloadMenuOpen && (
+              <div className="absolute right-0 mt-1.5 w-56 rounded-2xl bg-white dark:bg-[#0D1930] border border-blue-200 dark:border-blue-800 shadow-xl py-1.5 z-40 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDownloadMenuOpen(false);
+                    exportNoteAsDoc(note, editor?.getHTML() || '', drawingPreview);
+                    onNotify('success', 'Na-download ang dokumento bilang Word (.doc)');
+                  }}
+                  className="w-full px-3.5 py-2 text-left flex items-center gap-2 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer font-medium"
+                >
+                  <FileDown className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+                  Dokumento ng Word (.doc)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDownloadMenuOpen(false);
+                    window.print();
+                  }}
+                  className="w-full px-3.5 py-2 text-left flex items-center gap-2 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer font-medium"
+                >
+                  <Printer className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+                  I-print / I-save na PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDownloadMenuOpen(false);
+                    exportNoteAsHtml(note, editor?.getHTML() || '', drawingPreview);
+                    onNotify('success', 'Na-download ang dokumento bilang HTML (.html)');
+                  }}
+                  className="w-full px-3.5 py-2 text-left flex items-center gap-2 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer font-medium"
+                >
+                  <FileDown className="w-3.5 h-3.5 text-slate-500" />
+                  Pahina ng Web (.html)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDownloadMenuOpen(false);
+                    const md = htmlToMarkdownApprox(note, editor?.getText() || '');
+                    const slug = (title || 'tala').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'tala';
+                    downloadTextFile(`${slug}.md`, md, 'text/markdown;charset=utf-8');
+                    onNotify('success', 'Na-download ang dokumento bilang Markdown (.md)');
+                  }}
+                  className="w-full px-3.5 py-2 text-left flex items-center gap-2 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer font-medium"
+                >
+                  <Download className="w-3.5 h-3.5 text-slate-500" />
+                  Markdown (.md)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDownloadMenuOpen(false);
+                    exportNoteAsTxt(note, editor?.getText() || '');
+                    onNotify('success', 'Na-download ang dokumento bilang Teksto (.txt)');
+                  }}
+                  className="w-full px-3.5 py-2 text-left flex items-center gap-2 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer font-medium"
+                >
+                  <Download className="w-3.5 h-3.5 text-slate-500" />
+                  Simpleng Teksto (.txt)
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Mga Mabilisang Aksyon */}
@@ -796,7 +898,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
               setDescription(e.target.value);
               queueSave({ description: e.target.value });
             }}
-            placeholder="Magdagdag ng maikling paglalarawan, paksa ng lektura, o layunin ng pag-aaral..."
+            placeholder="Magdagdag ng maikling paglalarawan o paalala para sa iyong personal na tala..."
             className="w-full bg-transparent text-xs text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none"
           />
         </div>
@@ -921,55 +1023,74 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
         }}
       />
 
-      {/* Ribbon Toolbar na Parang Word */}
-      {studioView !== 'drawing' && (
-        <RibbonToolbar
-          editor={editor}
-          paperStyle={paperStyle}
-          onChangePaperStyle={(st) => {
-            setPaperStyle(st);
-            queueSave({ paper_style: st });
-          }}
-          paperBgColor={paperBgColor}
-          onChangePaperBgColor={(clr) => {
-            setPaperBgColor(clr);
-            queueSave({ paper_bg_color: clr });
-          }}
-          pageSize={pageSize}
-          onChangePageSize={(sz) => {
-            setPageSize(sz);
-            queueSave({ page_size: sz });
-          }}
-          paperTone={paperTone}
-          onChangePaperTone={setPaperTone}
-          workspaceTheme={workspaceTheme}
-          onToggleWorkspaceTheme={toggleWorkspaceTheme}
-          zoom={zoom}
-          onChangeZoom={setZoom}
-          wordCount={wordCount}
-          charCount={charCount}
-          onOpenImagePicker={() => imageUploadRef.current?.click()}
-          onOpenMathModal={() => setMathOpen(true)}
-          onEmbedDrawing={() => {
-            setStudioView('split');
-            onNotify('info', 'Gumuhit sa kanang panel at pindutin ang Ilakip upang ilagay ito sa dokumento.');
-          }}
-          onSaveSnapshot={handleSaveSnapshot}
-          onOpenVersions={() => setVersionsOpen(true)}
-          onToggleFind={() => setFindOpen((v) => !v)}
-          onExportHtml={() => exportNoteAsHtml(note, editor?.getHTML() || '')}
-          onExportMarkdown={() => {
-            const md = htmlToMarkdownApprox(note, editor?.getText() || '');
-            const slug = (title || 'tala').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'tala';
-            downloadTextFile(`${slug}.md`, md, 'text/markdown;charset=utf-8');
-          }}
-          onPrintPdf={() => window.print()}
-          onOpenShare={() => setShareOpen(true)}
-        />
-      )}
+      {/* Pinagsamang Ribbon Toolbar na Parang Word */}
+      <RibbonToolbar
+        editor={editor}
+        paperStyle={paperStyle}
+        onChangePaperStyle={(st) => {
+          setPaperStyle(st);
+          queueSave({ paper_style: st });
+        }}
+        paperBgColor={paperBgColor}
+        onChangePaperBgColor={(clr) => {
+          setPaperBgColor(clr);
+          queueSave({ paper_bg_color: clr });
+        }}
+        pageSize={pageSize}
+        onChangePageSize={(sz) => {
+          setPageSize(sz);
+          queueSave({ page_size: sz });
+        }}
+        paperTone={paperTone}
+        onChangePaperTone={setPaperTone}
+        workspaceTheme={workspaceTheme}
+        onToggleWorkspaceTheme={toggleWorkspaceTheme}
+        zoom={zoom}
+        onChangeZoom={setZoom}
+        wordCount={wordCount}
+        charCount={charCount}
+        onOpenImagePicker={() => imageUploadRef.current?.click()}
+        onOpenMathModal={() => setMathOpen(true)}
+        doodleActive={inkOverlayActive}
+        onToggleDoodle={() => {
+          setInkOverlayActive((v) => {
+            const next = !v;
+            if (next) setDoodlePanelOpen(false);
+            return next;
+          });
+        }}
+        onOpenDoodlePanel={() => {
+          setDoodlePanelOpen(true);
+          setInkOverlayActive(false);
+          onNotify('info', 'Gumuhit sa katabing panel at pindutin ang Ilakip upang ilagay ang guhit sa iyong dokumento.');
+        }}
+        onSaveSnapshot={handleSaveSnapshot}
+        onOpenVersions={() => setVersionsOpen(true)}
+        onToggleFind={() => setFindOpen((v) => !v)}
+        onExportDoc={() => {
+          exportNoteAsDoc(note, editor?.getHTML() || '', drawingPreview);
+          onNotify('success', 'Na-download ang dokumento bilang Word (.doc)');
+        }}
+        onExportHtml={() => {
+          exportNoteAsHtml(note, editor?.getHTML() || '', drawingPreview);
+          onNotify('success', 'Na-download ang dokumento bilang HTML (.html)');
+        }}
+        onExportMarkdown={() => {
+          const md = htmlToMarkdownApprox(note, editor?.getText() || '');
+          const slug = (title || 'tala').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'tala';
+          downloadTextFile(`${slug}.md`, md, 'text/markdown;charset=utf-8');
+          onNotify('success', 'Na-download ang dokumento bilang Markdown (.md)');
+        }}
+        onExportTxt={() => {
+          exportNoteAsTxt(note, editor?.getText() || '');
+          onNotify('success', 'Na-download ang dokumento bilang Teksto (.txt)');
+        }}
+        onPrintPdf={() => window.print()}
+        onOpenShare={() => setShareOpen(true)}
+      />
 
       {/* Hanapin at Palitan Bar */}
-      {findOpen && studioView !== 'drawing' && (
+      {findOpen && (
         <div className="no-print px-4 py-2 bg-blue-50/90 dark:bg-[#132340] border-b border-blue-200 dark:border-blue-800 flex flex-wrap items-center gap-2 text-xs">
           <input
             type="text"
@@ -1003,207 +1124,198 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
         </div>
       )}
 
-      {/* Pangunahing Katawan ng Studio */}
-      <div className="flex-1 min-h-0 flex overflow-hidden">
-        {/* Lugar ng Dokumento / Kuwaderno */}
-        {studioView !== 'drawing' && (
-          <div
-            className={`flex-1 overflow-y-auto p-4 sm:p-8 flex flex-col items-center ${
-              studioView === 'split' ? 'lg:w-1/2 border-r border-blue-200 dark:border-blue-900' : ''
-            }`}
-          >
-            {/* Bar ng Tinta sa Pahina (Notebook Mode) */}
-            {studioView === 'notebook' && (
-              <div className={`no-print ${pageWidthClass} mb-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/95 dark:bg-[#0D1930]/95 border border-blue-200 dark:border-blue-900 shadow-xs`}>
-                <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                  <span className="font-semibold">Pahina ng Kuwaderno:</span>
-                  <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-[#132340] text-blue-800 dark:text-blue-200 font-medium">
-                    {getPaperStyleLabel(paperStyle)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setInkOverlayActive((v) => !v)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                      inkOverlayActive
-                        ? 'bg-sky-600 text-white shadow-xs'
-                        : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-sky-300 hover:bg-blue-100'
-                    }`}
-                  >
-                    <PenTool className="w-3.5 h-3.5" />
-                    {inkOverlayActive ? 'Gumuguhit ng Tinta (Lumipat sa Pagsulat)' : 'Guhitan ng Tinta ang Papel'}
-                  </button>
-                </div>
+      {/* Pangunahing Katawan ng Iisang Pinagsamang Dokumento */}
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
+        {/* Pinagsamang Pahina ng Tala (Teksto + Larawan + Live na Guhit/Doodle) */}
+        <div
+          className={`flex-1 overflow-y-auto p-4 sm:p-8 flex flex-col items-center ${
+            doodlePanelOpen ? 'lg:w-1/2 border-b lg:border-b-0 lg:border-r border-blue-200 dark:border-blue-900' : ''
+          }`}
+        >
+          {/* Aktibong Banner kapag naka-on ang Guhit sa Pahina */}
+          {inkOverlayActive && (
+            <div className={`no-print ${pageWidthClass} mb-3 flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-blue-700 text-white shadow-sm`}>
+              <div className="flex items-center gap-2 text-xs font-medium">
+                <PenTool className="w-3.5 h-3.5" />
+                <span>Mode ng Guhit / Doodle sa Pahina — pumili ng Ballpen, Lapis, Fountain Pen, Marker, o Highlighter sa ibaba.</span>
               </div>
-            )}
+              <button
+                type="button"
+                onClick={() => setInkOverlayActive(false)}
+                className="px-2.5 py-1 rounded-lg bg-white text-blue-800 text-xs font-bold hover:bg-blue-50 cursor-pointer"
+              >
+                Bumalik sa Pagsulat
+              </button>
+            </div>
+          )}
 
-            {/* Pahina ng Papel */}
-            <div
-              className={`print-sheet relative ${pageWidthClass} rounded-2xl shadow-lg border border-blue-200/80 dark:border-blue-800/70 overflow-hidden transition-all ${paperBgClass} ${
-                isDarkPaper ? 'text-slate-100' : 'text-slate-900'
-              }`}
-              style={{
-                backgroundColor: paperBgColor || undefined,
-                transform: `scale(${zoom / 100})`,
-                transformOrigin: 'top center',
-              }}
-            >
-              {/* Dekorasyong Spiral sa Kuwaderno */}
-              {studioView === 'notebook' && (
-                <div className="no-print h-4 bg-gradient-to-b from-blue-100/70 to-transparent dark:from-blue-950/70 flex items-center justify-around px-6 border-b border-blue-200/60 dark:border-blue-800/50">
-                  {Array.from({ length: 18 }).map((_, i) => (
-                    <span
-                      key={i}
-                      className="w-2.5 h-2.5 rounded-full bg-blue-300/70 dark:bg-blue-700 ring-1 ring-white/50"
+          {/* Pahina ng Papel */}
+          <div
+            className={`print-sheet relative ${pageWidthClass} rounded-2xl shadow-lg border border-blue-200/80 dark:border-blue-800/70 overflow-hidden transition-all ${paperBgClass} ${
+              isDarkPaper ? 'text-slate-100' : 'text-slate-900'
+            }`}
+            style={{
+              backgroundColor: paperBgColor || undefined,
+              transform: `scale(${zoom / 100})`,
+              transformOrigin: 'top center',
+            }}
+          >
+            {/* Katawan ng Papel (Cornell o Karaniwan) */}
+            <div className={`relative ${paperStyle === 'lined' || paperStyle === 'wide_ruled' ? 'pl-20 pr-8 py-8' : 'px-8 sm:px-12 py-9'}`}>
+              {paperStyle === 'cornell' ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-[210px_1fr] gap-6 border-b-2 border-blue-200/80 dark:border-blue-800/60 pb-6">
+                    <div className="md:border-r-2 md:border-sky-300/80 md:pr-5">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 mb-2">
+                        Mga Gabay at Tanong
+                      </div>
+                      <textarea
+                        value={cornellCues}
+                        onChange={(e) => {
+                          setCornellCues(e.target.value);
+                          queueSave({ cornell_cues: e.target.value });
+                        }}
+                        rows={16}
+                        placeholder="Mga pangunahing tanong, pormula, o mabilisang paalala..."
+                        className="w-full bg-transparent text-sm leading-7 resize-none focus:outline-none text-current placeholder:text-slate-400"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300 mb-2">
+                        Mga Pangunahing Tala
+                      </div>
+                      <div className="inkora-prose">
+                        <EditorContent editor={editor} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-sky-400 mb-1.5">
+                      Buod ng Pahina
+                    </div>
+                    <textarea
+                      value={cornellSummary}
+                      onChange={(e) => {
+                        setCornellSummary(e.target.value);
+                        queueSave({ cornell_summary: e.target.value });
+                      }}
+                      rows={3}
+                      placeholder="Ibuod ang mahahalagang ideya ng pahinang ito sa 2–3 pangungusap..."
+                      className="w-full bg-transparent text-sm leading-relaxed resize-none focus:outline-none text-current placeholder:text-slate-400"
                     />
-                  ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="inkora-prose">
+                  <EditorContent editor={editor} />
                 </div>
               )}
 
-              {/* Katawan ng Papel (Cornell o Karaniwan) */}
-              <div className={`relative ${paperStyle === 'lined' || paperStyle === 'wide_ruled' ? 'pl-20 pr-8 py-8' : 'px-8 sm:px-12 py-9'}`}>
-                {paperStyle === 'cornell' ? (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-[210px_1fr] gap-6 border-b-2 border-blue-200/80 dark:border-blue-800/60 pb-6">
-                      <div className="md:border-r-2 md:border-sky-300/80 md:pr-5">
-                        <div className="text-[11px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 mb-2">
-                          Mga Gabay at Tanong
-                        </div>
-                        <textarea
-                          value={cornellCues}
-                          onChange={(e) => {
-                            setCornellCues(e.target.value);
-                            queueSave({ cornell_cues: e.target.value });
-                          }}
-                          rows={16}
-                          placeholder="Mga pangunahing tanong, pormula, gabay sa pagsusulit..."
-                          className="w-full bg-transparent text-sm leading-7 resize-none focus:outline-none text-current placeholder:text-slate-400"
-                        />
-                      </div>
-                      <div>
-                        <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300 mb-2">
-                          Mga Tala sa Lektura
-                        </div>
-                        <div className="inkora-prose">
-                          <EditorContent editor={editor} />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-sky-400 mb-1.5">
-                        Buod ng Pahina
-                      </div>
-                      <textarea
-                        value={cornellSummary}
-                        onChange={(e) => {
-                          setCornellSummary(e.target.value);
-                          queueSave({ cornell_summary: e.target.value });
-                        }}
-                        rows={3}
-                        placeholder="Ibuod ang mahahalagang ideya ng pahinang ito sa 2–3 pangungusap..."
-                        className="w-full bg-transparent text-sm leading-relaxed resize-none focus:outline-none text-current placeholder:text-slate-400"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="inkora-prose">
-                    <EditorContent editor={editor} />
-                  </div>
-                )}
-
-                {/* Transparenteng Ink Annotation Layer sa Notebook Mode */}
-                {studioView === 'notebook' &&
-                  (inkOverlayActive ||
-                    drawingData.strokes.length > 0 ||
-                    drawingData.shapes.length > 0 ||
-                    drawingData.texts.length > 0) && (
-                    <div
-                      className={`absolute inset-0 z-10 ${
-                        inkOverlayActive ? 'pointer-events-auto' : 'pointer-events-none'
-                      }`}
-                    >
-                      <DrawingCanvas
-                        value={{ ...drawingData, background: 'transparent' }}
-                        overlayMode
-                        readOnly={!inkOverlayActive}
-                        compactToolbar
-                        canvasWidth={800}
-                        canvasHeight={900}
-                        onChange={(next, preview) => {
-                          setDrawingData(next);
-                          if (preview) setDrawingPreview(preview);
-                          queueSave({
-                            drawing_data: JSON.stringify(next),
-                            drawing_preview: preview ?? drawingPreview,
-                          });
-                        }}
-                      />
-                    </div>
-                  )}
-              </div>
-            </div>
-
-            {/* Footer ng mga Tag */}
-            <div className="no-print w-full max-w-[794px] mt-5 flex flex-wrap items-center gap-2 px-2">
-              <Tag className="w-3.5 h-3.5 text-slate-400" />
-              {tags.map((t) => (
-                <span
-                  key={t}
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white dark:bg-[#0D1930] border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-200"
+              {/* Pinagsamang Transparenteng Doodle / Ink Layer direkta sa Dokumento */}
+              {(inkOverlayActive ||
+                drawingData.strokes.length > 0 ||
+                drawingData.shapes.length > 0 ||
+                drawingData.texts.length > 0) && (
+                <div
+                  className={`absolute inset-0 z-10 ${
+                    inkOverlayActive ? 'pointer-events-auto' : 'pointer-events-none'
+                  }`}
                 >
-                  #{t}
-                  <button
-                    type="button"
-                    onClick={() => removeTag(t)}
-                    className="text-slate-400 hover:text-rose-500 cursor-pointer"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-              <input
-                type="text"
-                value={tagDraft}
-                onChange={(e) => setTagDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ',') {
-                    e.preventDefault();
-                    addTag();
-                  }
-                }}
-                placeholder="Magdagdag ng tag + Enter..."
-                className="text-xs bg-transparent px-2 py-1 text-slate-600 dark:text-slate-300 focus:outline-none placeholder:text-slate-400"
-              />
+                  <DrawingCanvas
+                    value={{ ...drawingData, background: 'transparent' }}
+                    overlayMode
+                    readOnly={!inkOverlayActive}
+                    compactToolbar
+                    canvasWidth={800}
+                    canvasHeight={900}
+                    onChange={(next, preview) => {
+                      setDrawingData(next);
+                      if (preview) setDrawingPreview(preview);
+                      queueSave({
+                        drawing_data: JSON.stringify(next),
+                        drawing_preview: preview ?? drawingPreview,
+                      });
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
-        )}
 
-        {/* Nakalaang Guhitan (Buo o Kalahating Studio) */}
-        {(studioView === 'drawing' || studioView === 'split') && (
-          <div className={studioView === 'split' ? 'hidden lg:flex lg:w-1/2 flex-col min-h-0' : 'flex-1 flex flex-col min-h-0'}>
-            <DrawingCanvas
-              value={{
-                ...drawingData,
-                background:
-                  drawingData.background === 'transparent'
-                    ? paperStyle === 'dark_board'
-                      ? 'dark_board'
-                      : 'grid'
-                    : drawingData.background,
+          {/* Footer ng mga Tag */}
+          <div className="no-print w-full max-w-[794px] mt-5 flex flex-wrap items-center gap-2 px-2">
+            <Tag className="w-3.5 h-3.5 text-slate-400" />
+            {tags.map((t) => (
+              <span
+                key={t}
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white dark:bg-[#0D1930] border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-200"
+              >
+                #{t}
+                <button
+                  type="button"
+                  onClick={() => removeTag(t)}
+                  className="text-slate-400 hover:text-rose-500 cursor-pointer"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            <input
+              type="text"
+              value={tagDraft}
+              onChange={(e) => setTagDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                  e.preventDefault();
+                  addTag();
+                }
               }}
-              compactToolbar={studioView === 'split'}
-              onInsertIntoDocument={studioView === 'split' || editor ? handleEmbedDrawingIntoDoc : undefined}
-              onChange={(next, preview) => {
-                setDrawingData(next);
-                if (preview) setDrawingPreview(preview);
-                queueSave({
-                  drawing_data: JSON.stringify(next),
-                  drawing_preview: preview ?? drawingPreview,
-                });
-              }}
+              placeholder="Magdagdag ng tag + Enter..."
+              className="text-xs bg-transparent px-2 py-1 text-slate-600 dark:text-slate-300 focus:outline-none placeholder:text-slate-400"
             />
+          </div>
+        </div>
+
+        {/* Katabing Panel ng Guhit (Doodle Pad na maaaring ilakip sa dokumento) */}
+        {doodlePanelOpen && (
+          <div className="flex flex-col min-h-[380px] lg:min-h-0 lg:w-1/2 bg-white dark:bg-[#0D1930]">
+            <div className="no-print px-3 py-1.5 border-b border-blue-100 dark:border-blue-900 flex items-center justify-between text-xs bg-blue-50/70 dark:bg-[#132340]">
+              <span className="font-bold text-blue-800 dark:text-sky-300">
+                Panel ng Guhit / Doodle — gumuhit at pindutin ang &ldquo;Ilakip&rdquo; upang isingit sa tala
+              </span>
+              <button
+                type="button"
+                onClick={() => setDoodlePanelOpen(false)}
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-white cursor-pointer"
+                aria-label="Isara ang panel ng guhit"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <DrawingCanvas
+                value={{
+                  ...drawingData,
+                  background:
+                    drawingData.background === 'transparent'
+                      ? paperStyle === 'dark_board'
+                        ? 'dark_board'
+                        : 'plain'
+                      : drawingData.background,
+                }}
+                compactToolbar
+                onInsertIntoDocument={editor ? handleEmbedDrawingIntoDoc : undefined}
+                onChange={(next, preview) => {
+                  setDrawingData(next);
+                  if (preview) setDrawingPreview(preview);
+                  queueSave({
+                    drawing_data: JSON.stringify(next),
+                    drawing_preview: preview ?? drawingPreview,
+                  });
+                }}
+              />
+            </div>
           </div>
         )}
 
@@ -1349,7 +1461,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         title="Ibahagi ang Tala"
-        subtitle="Gumawa ng pampublikong read-only link para sa mga kaklase o guro"
+        subtitle="Gumawa ng pampublikong read-only link upang maibahagi ang iyong personal na tala"
       >
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 rounded-xl bg-blue-50/70 dark:bg-[#132340] border border-blue-200 dark:border-blue-800">

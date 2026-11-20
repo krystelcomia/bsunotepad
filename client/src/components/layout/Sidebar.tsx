@@ -5,7 +5,6 @@ import {
   FileText,
   Folder as FolderIcon,
   FolderOpen,
-  GraduationCap,
   Home,
   LogOut,
   NotebookPen,
@@ -17,7 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { Folder, Notebook, Subject } from '../../types';
+import { Folder, Notebook } from '../../types';
 import { formatBytes } from '../../utils/format';
 import { BrandLogo } from '../common/BrandLogo';
 
@@ -30,8 +29,7 @@ export type NavSection =
       subjectId?: string;
       notebookId?: string;
     }
-  | { kind: 'files' }
-  | { kind: 'study' };
+  | { kind: 'files' };
 
 interface SidebarProps {
   openMobile: boolean;
@@ -39,15 +37,12 @@ interface SidebarProps {
   activeNav: NavSection;
   onNavigate: (nav: NavSection) => void;
   folders: Folder[];
-  subjects: Subject[];
   notebooks: Notebook[];
   trashedCount: number;
   onOpenSearch: () => void;
   onNewNote: (opts?: { folderId?: string; notebookId?: string; subjectId?: string }) => void;
   onNewFolder: () => void;
   onEditFolder: (folder: Folder) => void;
-  onNewSubject: () => void;
-  onEditSubject: (subject: Subject) => void;
   onNewNotebook: () => void;
   onEditNotebook: (notebook: Notebook) => void;
   onOpenAccount: () => void;
@@ -59,22 +54,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeNav,
   onNavigate,
   folders,
-  subjects,
   notebooks,
   trashedCount,
   onOpenSearch,
   onNewNote,
   onNewFolder,
   onEditFolder,
-  onNewSubject,
-  onEditSubject,
   onNewNotebook,
   onEditNotebook,
   onOpenAccount,
 }) => {
   const { user, storageUsedBytes, logout } = useAuth();
   const [foldersExpanded, setFoldersExpanded] = useState(true);
-  const [coursesExpanded, setCoursesExpanded] = useState(true);
   const [notebooksExpanded, setNotebooksExpanded] = useState(true);
 
   const quota = user?.storage_quota_bytes || 262144000;
@@ -140,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className={`w-full py-2.5 px-3.5 rounded-xl bg-gradient-to-r ${accentGradient} hover:brightness-110 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md transition cursor-pointer`}
         >
           <Plus className="w-4 h-4" />
-          Bagong Tala / Dokumento
+          Bagong Tala
         </button>
 
         <button
@@ -195,18 +186,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <Star className="w-4 h-4 shrink-0" />
             <span>May Bituin</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              onNavigate({ kind: 'study' });
-              onCloseMobile();
-            }}
-            className={navBtn(isNavActive({ kind: 'study' }))}
-          >
-            <GraduationCap className="w-4 h-4 shrink-0" />
-            <span>Sentro ng Pag-aaral</span>
           </button>
 
           <button
@@ -297,71 +276,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               })}
               {folders.length === 0 && (
                 <p className="px-3 py-1.5 text-xs text-slate-400 italic">Wala pang folder</p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Mga Asignatura */}
-        <div>
-          <div className="flex items-center justify-between px-2 mb-1.5">
-            <button
-              type="button"
-              onClick={() => setCoursesExpanded((v) => !v)}
-              className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-blue-300/75 hover:text-blue-800 cursor-pointer"
-            >
-              {coursesExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-              Mga Asignatura ({subjects.length})
-            </button>
-            <button
-              type="button"
-              onClick={onNewSubject}
-              className="p-1 rounded-md text-slate-500 hover:bg-blue-200/60 dark:hover:bg-blue-900/50 hover:text-blue-700 cursor-pointer"
-              title="Magdagdag ng Asignatura"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          {coursesExpanded && (
-            <div className="space-y-0.5">
-              {subjects.map((sub) => {
-                const active = isNavActive({ kind: 'notes', subjectId: sub.id });
-                return (
-                  <div key={sub.id} className="group flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onNavigate({ kind: 'notes', subjectId: sub.id });
-                        onCloseMobile();
-                      }}
-                      className={`flex-1 min-w-0 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
-                        active
-                          ? 'bg-blue-700 text-white'
-                          : 'text-slate-700 dark:text-blue-100/85 hover:bg-blue-100/80 dark:hover:bg-blue-950/60'
-                      }`}
-                    >
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: active ? '#FFFFFF' : sub.color }}
-                      />
-                      <span className="truncate flex-1 text-left">
-                        {sub.code ? `${sub.code} · ${sub.name}` : sub.name}
-                      </span>
-                      <span className="text-[10px] opacity-70">{sub.note_count ?? 0}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onEditSubject(sub)}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-400 hover:text-blue-700 dark:hover:text-blue-200 cursor-pointer"
-                      title="I-edit ang asignatura"
-                    >
-                      <Settings className="w-3 h-3" />
-                    </button>
-                  </div>
-                );
-              })}
-              {subjects.length === 0 && (
-                <p className="px-3 py-1.5 text-xs text-slate-400 italic">Wala pang asignatura</p>
               )}
             </div>
           )}

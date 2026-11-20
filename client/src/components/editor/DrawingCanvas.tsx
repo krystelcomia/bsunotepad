@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowUpRight,
+  Brush,
   Circle,
   Download,
   Eraser,
@@ -29,6 +30,7 @@ export type CanvasTool =
   | 'pen'
   | 'calligraphy'
   | 'pencil'
+  | 'marker'
   | 'highlighter'
   | 'eraser'
   | 'line'
@@ -68,6 +70,8 @@ function drawSmoothStroke(ctx: CanvasRenderingContext2D, stroke: DrawingStroke) 
     ctx.globalAlpha = Math.min(0.45, stroke.opacity);
   } else if (stroke.tool === 'pencil') {
     ctx.globalAlpha = stroke.opacity * 0.72;
+  } else if (stroke.tool === 'marker') {
+    ctx.globalAlpha = Math.min(0.88, stroke.opacity);
   } else {
     ctx.globalAlpha = stroke.opacity;
   }
@@ -580,7 +584,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       id: makeId('st'),
       tool: tool as DrawingStroke['tool'],
       color,
-      width: tool === 'highlighter' ? Math.max(14, strokeWidth * 3) : strokeWidth,
+      width:
+        tool === 'highlighter'
+          ? Math.max(14, strokeWidth * 3)
+          : tool === 'marker'
+            ? Math.max(6, strokeWidth * 1.8)
+            : strokeWidth,
       opacity,
       points: [pt],
     });
@@ -788,19 +797,23 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     onInsertIntoDocument(off.toDataURL('image/png'));
   };
 
-  const toolButtons: Array<{ id: CanvasTool; label: string; icon: React.ReactNode }> = [
-    { id: 'select', label: 'Piliin at Ilipat', icon: <MousePointer2 className="w-4 h-4" /> },
-    { id: 'pen', label: 'Panulat na Tinta', icon: <PenTool className="w-4 h-4" /> },
-    { id: 'calligraphy', label: 'Fountain Pen', icon: <Feather className="w-4 h-4" /> },
-    { id: 'pencil', label: 'Lapis', icon: <Pencil className="w-4 h-4" /> },
-    { id: 'highlighter', label: 'Highlighter', icon: <Highlighter className="w-4 h-4" /> },
-    { id: 'eraser', label: 'Pambura', icon: <Eraser className="w-4 h-4" /> },
-    { id: 'line', label: 'Linya', icon: <Minus className="w-4 h-4" /> },
-    { id: 'arrow', label: 'Palaso', icon: <ArrowUpRight className="w-4 h-4" /> },
-    { id: 'rect', label: 'Parihaba', icon: <Square className="w-4 h-4" /> },
-    { id: 'circle', label: 'Bilog / Biluhaba', icon: <Circle className="w-4 h-4" /> },
-    { id: 'triangle', label: 'Tatsulok', icon: <Triangle className="w-4 h-4" /> },
-    { id: 'text', label: 'Teksto / Label', icon: <Type className="w-4 h-4" /> },
+  const pencilTools: Array<{ id: CanvasTool; label: string; defaultWidth?: number; icon: React.ReactNode }> = [
+    { id: 'pen', label: 'Ballpen', defaultWidth: 2.5, icon: <PenTool className="w-3.5 h-3.5" /> },
+    { id: 'pencil', label: 'Lapis', defaultWidth: 3, icon: <Pencil className="w-3.5 h-3.5" /> },
+    { id: 'calligraphy', label: 'Fountain Pen', defaultWidth: 4, icon: <Feather className="w-3.5 h-3.5" /> },
+    { id: 'marker', label: 'Marker', defaultWidth: 6, icon: <Brush className="w-3.5 h-3.5" /> },
+    { id: 'highlighter', label: 'Highlighter', defaultWidth: 5, icon: <Highlighter className="w-3.5 h-3.5" /> },
+    { id: 'eraser', label: 'Pambura', icon: <Eraser className="w-3.5 h-3.5" /> },
+  ];
+
+  const shapeTools: Array<{ id: CanvasTool; label: string; icon: React.ReactNode }> = [
+    { id: 'select', label: 'Piliin at Ilipat', icon: <MousePointer2 className="w-3.5 h-3.5" /> },
+    { id: 'line', label: 'Linya', icon: <Minus className="w-3.5 h-3.5" /> },
+    { id: 'arrow', label: 'Palaso', icon: <ArrowUpRight className="w-3.5 h-3.5" /> },
+    { id: 'rect', label: 'Parihaba', icon: <Square className="w-3.5 h-3.5" /> },
+    { id: 'circle', label: 'Bilog / Biluhaba', icon: <Circle className="w-3.5 h-3.5" /> },
+    { id: 'triangle', label: 'Tatsulok', icon: <Triangle className="w-3.5 h-3.5" /> },
+    { id: 'text', label: 'Teksto / Label', icon: <Type className="w-3.5 h-3.5" /> },
   ];
 
   return (
@@ -811,9 +824,32 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             compactToolbar ? 'text-xs' : ''
           }`}
         >
-          {/* Mga Kagamitan sa Pagguhit */}
-          <div className="flex flex-wrap items-center gap-0.5 p-1 rounded-xl bg-blue-50/80 dark:bg-[#132340]">
-            {toolButtons.map((tb) => (
+          {/* Mga Opsyon ng Lapis at Panulat */}
+          <div className="flex flex-wrap items-center gap-1 p-1 rounded-xl bg-blue-50/80 dark:bg-[#132340]">
+            {pencilTools.map((tb) => (
+              <button
+                key={tb.id}
+                type="button"
+                onClick={() => {
+                  setTool(tb.id);
+                  if (tb.defaultWidth) setStrokeWidth(tb.defaultWidth);
+                }}
+                title={tb.label}
+                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold transition cursor-pointer ${
+                  tool === tb.id
+                    ? 'bg-blue-700 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-blue-950'
+                }`}
+              >
+                {tb.icon}
+                <span className="hidden sm:inline">{tb.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Mga Hugis at Teksto */}
+          <div className="flex flex-wrap items-center gap-0.5 p-1 rounded-xl bg-blue-50/60 dark:bg-[#132340]">
+            {shapeTools.map((tb) => (
               <button
                 key={tb.id}
                 type="button"

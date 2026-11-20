@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { BookOpen, File, FileText, Folder as FolderIcon, NotebookPen, PenTool, Search, X } from 'lucide-react';
+import { File, FileText, Folder as FolderIcon, NotebookPen, PenTool, Search, X } from 'lucide-react';
 import { api } from '../../api/client';
-import { Attachment, Folder, Notebook, Note, Subject } from '../../types';
+import { Attachment, Folder, Notebook, Note } from '../../types';
 import { formatBytes, formatRelativeTime } from '../../utils/format';
 
 interface CommandPaletteProps {
@@ -10,7 +10,6 @@ interface CommandPaletteProps {
   onSelectNote: (noteId: string) => void;
   onSelectFolder: (folderId: string) => void;
   onSelectNotebook: (notebookId: string) => void;
-  onSelectSubject: (subjectId: string) => void;
   onOpenFiles: () => void;
 }
 
@@ -20,7 +19,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onSelectNote,
   onSelectFolder,
   onSelectNotebook,
-  onSelectSubject,
   onOpenFiles,
 }) => {
   const [query, setQuery] = useState('');
@@ -29,9 +27,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     notes: Note[];
     folders: Folder[];
     notebooks: Notebook[];
-    subjects: Subject[];
     files: Attachment[];
-  }>({ notes: [], folders: [], notebooks: [], subjects: [], files: [] });
+  }>({ notes: [], folders: [], notebooks: [], files: [] });
 
   useEffect(() => {
     if (!open) {
@@ -40,7 +37,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     }
     const timer = window.setTimeout(async () => {
       if (!query.trim()) {
-        setResults({ notes: [], folders: [], notebooks: [], subjects: [], files: [] });
+        setResults({ notes: [], folders: [], notebooks: [], files: [] });
         return;
       }
       setLoading(true);
@@ -63,7 +60,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     results.notes.length > 0 ||
     results.folders.length > 0 ||
     results.notebooks.length > 0 ||
-    results.subjects.length > 0 ||
     results.files.length > 0;
 
   return (
@@ -81,7 +77,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Maghanap ng mga tala, folder, pormula, gabay na Cornell, asignatura, kuwaderno, o file..."
+            placeholder="Maghanap ng mga tala, folder, kuwaderno, tag, o file..."
             className="flex-1 bg-transparent text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none"
           />
           {loading && <span className="text-xs text-slate-400">Naghahanap...</span>}
@@ -214,32 +210,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                             <div className="text-xs text-slate-400 truncate">{nb.description}</div>
                           )}
                         </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {results.subjects.length > 0 && (
-                <div>
-                  <div className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Mga Asignatura
-                  </div>
-                  <div className="space-y-1">
-                    {results.subjects.map((sub) => (
-                      <button
-                        key={sub.id}
-                        type="button"
-                        onClick={() => {
-                          onSelectSubject(sub.id);
-                          onClose();
-                        }}
-                        className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/50 transition cursor-pointer"
-                      >
-                        <BookOpen className="w-4 h-4 shrink-0" style={{ color: sub.color }} />
-                        <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                          {sub.code ? `${sub.code} — ${sub.name}` : sub.name}
-                        </span>
                       </button>
                     ))}
                   </div>

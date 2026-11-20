@@ -404,7 +404,7 @@ export const AuthPage: React.FC = () => {
           {view === 'home' ? (
             <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600 dark:text-blue-100/80">
               <a href="#studios" className="hover:text-blue-700 dark:hover:text-sky-300 transition">
-                Mga Studio
+                Mga Tampok
               </a>
               <a href="#organization" className="hover:text-blue-700 dark:hover:text-sky-300 transition">
                 Espasyo
@@ -472,7 +472,7 @@ export const AuthPage: React.FC = () => {
               <div className="text-center max-w-3xl mx-auto space-y-6">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-800/70 text-xs font-semibold text-blue-800 dark:text-blue-200 shadow-xs">
                   <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-                  Beripikadong Espasyo ng Mag-aaral · Ligtas na Gmail Authentication
+                  Personal na Talaan ng Mag-aaral · Ligtas na Gmail Authentication
                 </div>
 
                 <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.06] text-slate-950 dark:text-white">
@@ -485,9 +485,9 @@ export const AuthPage: React.FC = () => {
                 </h1>
 
                 <p className="text-base sm:text-lg text-slate-600 dark:text-blue-100/80 max-w-2xl mx-auto leading-relaxed">
-                  Pinagsasama ng INKORA ang ginhawa ng tradisyunal na may linyang kuwaderno, isang makinis na
-                  digital na guhitan, at editor ng dokumentong parang Word—nakaayos gamit ang mga folder,
-                  mabilisang paghahanap, at pribadong lalagyan ng file.
+                  Ang INKORA ay iyong sariling personal na kuwaderno at talaan. Lahat ng kagamitan ay pinagsama sa
+                  iisang dokumento—magsulat nang may format na parang Word, magsingit ng larawan, gumuhit gamit ang
+                  iba&apos;t ibang lapis at panulat, at i-download ang iyong file anumang oras.
                 </p>
 
                 {error && (
@@ -527,35 +527,36 @@ export const AuthPage: React.FC = () => {
                       <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
                       <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
                       <span className="ml-2 text-xs font-semibold text-slate-500 dark:text-blue-200/70">
-                        BIO 204 · Studio ng Lektura at Lab
+                        Personal na Tala · Pinagsamang Dokumento
                       </span>
                     </div>
                     <div className="flex items-center gap-1 text-[11px] font-semibold">
                       <span className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200">
-                        Dokumento
+                        Teksto
                       </span>
-                      <span className="px-2.5 py-1 rounded-lg text-slate-400">Kuwaderno</span>
-                      <span className="px-2.5 py-1 rounded-lg text-slate-400">Guhitan</span>
+                      <span className="px-2.5 py-1 rounded-lg text-slate-400">Larawan</span>
+                      <span className="px-2.5 py-1 rounded-lg text-slate-400">Guhit / Doodle</span>
+                      <span className="px-2.5 py-1 rounded-lg text-slate-400">I-download</span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-white dark:from-[#132340] dark:to-[#0D1930] border border-blue-100 dark:border-blue-800/50 p-4 space-y-2">
                       <div className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-sky-300">
-                        Dokumentong Word + Cornell
+                        Teksto at Larawan
                       </div>
                       <div className="text-sm font-bold text-slate-900 dark:text-white">
-                        Kinetika ng Ensaym na Katalase
+                        Pag-format na Parang Word
                       </div>
                       <p className="text-xs text-slate-500 dark:text-blue-200/75 leading-relaxed">
-                        Mag-ayos ng talahanayan ng lab, checklist, sanggunian, at mga pormulang KaTeX nang may malinis na A4 export.
+                        Bold, italic, pamagat, listahan, talahanayan, at pagsingit ng larawan sa loob ng iisang pahina.
                       </p>
                     </div>
 
                     <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-white dark:from-[#10254A] dark:to-[#0D1930] border border-blue-100 dark:border-blue-900/50 p-4 flex flex-col justify-between">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-sky-300">
-                          Live na Guhitang Tinta
+                          Guhit / Doodle Tool
                         </span>
                         <PenTool className="w-4 h-4 text-blue-600 dark:text-sky-300" />
                       </div>
@@ -570,15 +571,15 @@ export const AuthPage: React.FC = () => {
                     <div className="rounded-2xl bg-gradient-to-br from-blue-50/70 to-white dark:from-[#132340] dark:to-[#0D1930] border border-blue-100 dark:border-blue-800/50 p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-sky-300">
-                          Folder at Baul ng File
+                          Instant na Pag-download
                         </span>
                         <FolderKanban className="w-4 h-4 text-blue-600 dark:text-sky-300" />
                       </div>
                       <div className="text-sm font-bold text-slate-900 dark:text-white">
-                        Pribadong Aklatan ng Pag-aaral
+                        Word, PDF, HTML at Teksto
                       </div>
                       <p className="text-xs text-slate-500 dark:text-blue-200/75 leading-relaxed">
-                        Mag-imbak ng mga PDF, slide ng klase, at flashcards na may agarang paghahanap at protektadong access.
+                        I-download agad ang iyong mga personal na tala kasama ang mga larawan at guhit sa isang pindot.
                       </p>
                     </div>
                   </div>
@@ -587,29 +588,29 @@ export const AuthPage: React.FC = () => {
             </div>
           </section>
 
-          {/* Pagpapakita ng Tatlong Studio */}
+          {/* Pinagsamang mga Tampok sa Iisang Tala */}
           <section id="studios" className="max-w-7xl mx-auto px-4 sm:px-8 py-14">
             <div className="text-center max-w-2xl mx-auto mb-10">
               <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-950 dark:text-white">
-                Tatlong Malikhaing Studio. Isang Daloy ng Pag-aaral.
+                Lahat ng Kailangan Mo sa Iisang Personal na Dokumento.
               </h2>
               <p className="text-sm text-slate-600 dark:text-blue-200/75 mt-2">
-                Madaling lumipat sa pagitan ng pagsusulat ng pormal na dokumento, pagkuha ng tala sa
-                kuwaderno, o pagguhit ng mga dayagram nang magkatabi.
+                Walang nakakalitong palipat-lipat ng pahina—pagkagawa mo ng bagong tala, handa na agad ang lahat ng
+                kagamitan sa pagsusulat, larawan, pagguhit, at pag-download.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="rounded-3xl bg-white dark:bg-[#0D1930] border border-blue-200/70 dark:border-blue-800/60 p-6 shadow-lg shadow-blue-950/5 hover:-translate-y-0.5 transition">
                 <div className="w-11 h-11 rounded-2xl bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-200 flex items-center justify-center mb-4">
-                  <BookOpen className="w-5 h-5" />
+                  <FileText className="w-5 h-5" />
                 </div>
                 <h3 className="font-display font-bold text-lg text-slate-950 dark:text-white">
-                  Tradisyonal at Cornell na Kuwaderno
+                  Pag-format ng Teksto at Larawan
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-blue-200/70 mt-2 leading-relaxed">
-                  Magsulat sa Linyado, Malawak na Linya, Tuldok, Grid, o 3-bahaging pahinang Cornell na
-                  may live na layer ng tintang panulat mismo sa papel.
+                  Gumamit ng Bold, Italic, Salungguhit, mga Pamagat, Font, Checklist, Talahanayan, at magsingit ng
+                  larawan direkta sa iyong personal na tala.
                 </p>
               </div>
 
@@ -618,24 +619,24 @@ export const AuthPage: React.FC = () => {
                   <PenTool className="w-5 h-5" />
                 </div>
                 <h3 className="font-display font-bold text-lg text-slate-950 dark:text-white">
-                  Digital na Guhitan
+                  Doodle Tool na May Iba&apos;t Ibang Lapis
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-blue-200/70 mt-2 leading-relaxed">
-                  Gumuhit ng mga dayagram sa biyolohiya, daloy ng sirkito, at mga graph gamit ang Panulat,
-                  Fountain Pen, Lapis, Highlighter, Mga Hugis, Grid Snap, PNG/SVG export, at Split View.
+                  Gumuhit direkta sa pahina o sa katabing panel gamit ang Ballpen, Lapis, Fountain Pen, Marker,
+                  Highlighter, Pambura, mga hugis, at kulay.
                 </p>
               </div>
 
               <div className="rounded-3xl bg-white dark:bg-[#0D1930] border border-blue-200/70 dark:border-blue-800/60 p-6 shadow-lg shadow-blue-950/5 hover:-translate-y-0.5 transition">
                 <div className="w-11 h-11 rounded-2xl bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 flex items-center justify-center mb-4">
-                  <FileText className="w-5 h-5" />
+                  <BookOpen className="w-5 h-5" />
                 </div>
                 <h3 className="font-display font-bold text-lg text-slate-950 dark:text-white">
-                  Editor ng Dokumentong Parang Word
+                  Pribadong Talaan at Madaling Pag-download
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-blue-200/70 mt-2 leading-relaxed">
-                  May Ribbon toolbar na may font, mga pamagat, checklist, nababagong talahanayan, mga
-                  pormulang KaTeX, Hanapin at Palitan, kasaysayan ng bersyon, at PDF/HTML/Markdown export.
+                  Isaayos ang iyong mga tala sa mga Folder at Kuwaderno, hanapin nang mabilis, at i-download bilang
+                  Word (.doc), PDF, HTML, Markdown, o Teksto.
                 </p>
               </div>
             </div>
@@ -654,7 +655,7 @@ export const AuthPage: React.FC = () => {
                   </h2>
                   <p className="text-sm sm:text-base text-blue-100/90 leading-relaxed">
                     Bawat account ng mag-aaral ay nangangailangan ng natatangi at beripikadong Gmail
-                    address. Pangkatin ang mga tala sa mga Folder, Asignatura, at Kuwaderno, hanapin ang
+                    address. Pangkatin ang iyong mga personal na tala sa mga Folder at Kuwaderno, hanapin ang
                     anumang tala agad, at panatilihing ganap na pribado ang iyong mga gawa.
                   </p>
                 </div>
@@ -662,7 +663,7 @@ export const AuthPage: React.FC = () => {
                 <div id="privacy" className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   {[
                     { icon: <ShieldCheck className="w-4 h-4 text-sky-200" />, title: 'Beripikadong Gmail Lamang', desc: 'Isang natatanging account bawat beripikadong @gmail.com gamit ang OTP at link.' },
-                    { icon: <FolderKanban className="w-4 h-4 text-blue-100" />, title: 'Mga Folder at Kuwaderno', desc: 'Ayusin ang mga tala sa sariling mga folder, asignatura, at tag.' },
+                    { icon: <FolderKanban className="w-4 h-4 text-blue-100" />, title: 'Mga Folder at Kuwaderno', desc: 'Ayusin ang iyong mga personal na tala sa sariling mga folder, kuwaderno, at tag.' },
                     { icon: <Search className="w-4 h-4 text-sky-200" />, title: 'Agarang Buong-Tekstong Paghahanap', desc: 'Hanapin ang mga pormula, salita, at file sa loob lamang ng ilang milisegundo.' },
                     { icon: <UploadCloud className="w-4 h-4 text-white" />, title: 'Pribadong Baul ng File', desc: 'Tinitiyak ng mahigpit na kontrol na pribado ang mga tala—maging sa mga admin.' },
                     { icon: <CheckCircle2 className="w-4 h-4 text-white" />, title: 'Ligtas na mga Session', desc: 'Tuloy-tuloy na HttpOnly session na may awtomatikong pag-ikot ng refresh token.' },

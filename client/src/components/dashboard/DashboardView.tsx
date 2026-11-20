@@ -4,20 +4,14 @@ import {
   ArrowRight,
   ArrowUpDown,
   BookOpen,
-  CalendarClock,
   Check,
-  CheckCircle2,
-  Circle,
   Clock,
   Copy,
   Edit3,
-  FilePlus2,
   FileText,
-  FlaskConical,
   Folder as FolderIcon,
   FolderOpen,
   FolderPlus,
-  GraduationCap,
   LayoutGrid,
   List as ListIcon,
   Mail,
@@ -27,7 +21,6 @@ import {
   Pin,
   Plus,
   RotateCcw,
-  ScrollText,
   Search,
   ShieldCheck,
   Sparkles,
@@ -44,11 +37,10 @@ import {
   Notebook,
   Note,
   NoteSortOption,
-  StudyTask,
   Subject,
   WorkspaceSummary,
 } from '../../types';
-import { formatBytes, formatDueDate, formatRelativeTime, parseTags } from '../../utils/format';
+import { formatBytes, formatRelativeTime, parseTags } from '../../utils/format';
 
 interface DashboardViewProps {
   mode: 'dashboard' | 'list';
@@ -66,7 +58,6 @@ interface DashboardViewProps {
   onOpenNote: (noteId: string) => void;
   onCreateFromTemplate: (template: string) => void;
   onRefresh: () => void;
-  onOpenStudyHub: () => void;
   onOpenFiles: () => void;
   onSelectNotebook: (nbId: string) => void;
   onNewFolder: () => void;
@@ -120,7 +111,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenNote,
   onCreateFromTemplate,
   onRefresh,
-  onOpenStudyHub,
   onOpenFiles,
   onSelectNotebook,
   onNewFolder,
@@ -190,15 +180,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const categoryOptions = useMemo(() => {
     const base = new Set<string>([
-      'Mga Tala sa Lektura',
-      'Gabay sa Pag-aaral',
-      'Ulat sa Lab',
-      'Sanaysay',
-      'Takdang-Aralin',
-      'Paghahanda sa Pagsusulit',
-      'Buod',
-      'Pansarili',
       'Pangkalahatan',
+      'Personal',
+      'Mga Ideya',
+      'Mga Tala',
+      'Buod',
+      'Gabay',
+      'Listahan',
+      'Guhit at Sketch',
+      'Proyekto',
+      'Pananaliksik',
     ]);
     notes.forEach((n) => {
       if (n.category) base.add(n.category);
@@ -246,15 +237,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       onRefresh();
     } catch (err) {
       onNotify('error', err instanceof Error ? err.message : 'Nabigo ang pagpapalit ng pamagat');
-    }
-  };
-
-  const toggleTaskDone = async (task: StudyTask) => {
-    try {
-      await api.updateTask(task.id, { status: task.status === 'done' ? 'todo' : 'done' });
-      onRefresh();
-    } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'Nabigo ang pag-update ng gawain');
     }
   };
 
@@ -325,51 +307,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
   };
 
-  const templates = [
-    {
-      id: 'blank',
-      title: 'Dokumentong Word',
-      desc: 'A4 na teksto at talahanayan',
-      icon: <FileText className="w-5 h-5 text-blue-700" />,
-      bg: 'bg-blue-50 dark:bg-blue-950/50',
-    },
-    {
-      id: 'cornell',
-      title: 'Lekturang Cornell',
-      desc: 'Mga gabay, tala at buod',
-      icon: <NotebookPen className="w-5 h-5 text-sky-600" />,
-      bg: 'bg-sky-50 dark:bg-sky-950/50',
-    },
-    {
-      id: 'lined-notebook',
-      title: 'Linyado + Tinta',
-      desc: 'Tradisyonal na papel + panulat',
-      icon: <BookOpen className="w-5 h-5 text-blue-600" />,
-      bg: 'bg-blue-50 dark:bg-blue-950/50',
-    },
-    {
-      id: 'lab-report',
-      title: 'Ulat sa Laboratoryo',
-      desc: 'Talahanayan ng datos at hipotesis',
-      icon: <FlaskConical className="w-5 h-5 text-cyan-600" />,
-      bg: 'bg-cyan-50 dark:bg-cyan-950/50',
-    },
-    {
-      id: 'essay',
-      title: 'Balangkas ng Sanaysay',
-      desc: 'Tesis at mga sanggunian',
-      icon: <ScrollText className="w-5 h-5 text-blue-800" />,
-      bg: 'bg-blue-100/70 dark:bg-blue-950/60',
-    },
-    {
-      id: 'sketchpad',
-      title: 'Guhit-Kamay',
-      desc: 'Mga dayagram at malayang guhit',
-      icon: <PenTool className="w-5 h-5 text-sky-600" />,
-      bg: 'bg-sky-50 dark:bg-sky-950/50',
-    },
-  ];
-
   const storagePct = Math.min(
     100,
     Math.round((summary.stats.storageUsedBytes / (summary.stats.storageQuotaBytes || 1)) * 100)
@@ -415,17 +352,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="space-y-1.5">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-xs text-[11px] font-semibold tracking-wide text-blue-100">
                   <Sparkles className="w-3.5 h-3.5 text-sky-200" />
-                  Espasyo ng Mag-aaral sa INKORA
+                  Personal na Talaan sa INKORA
                 </div>
                 <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
                   {getTimeGreeting()}, {firstName}!
                 </h1>
                 <p className="text-sm text-blue-100/95 max-w-2xl">
-                  Handa ka na bang itala ang iyong mga ideya ngayon? Mayroon kang{' '}
-                  <span className="font-bold text-white">{summary.stats.totalNotes} mga tala</span> at{' '}
-                  <span className="font-bold text-white">{summary.stats.totalDocuments} dokumento</span> na nakaayos
-                  sa{' '}
-                  <span className="font-bold text-white">{summary.stats.totalFolders} folder</span>.
+                  Handa ka na bang isulat o iguhit ang iyong mga ideya ngayon? Mayroon kang{' '}
+                  <span className="font-bold text-white">{summary.stats.totalNotes} mga tala</span> na nakaayos sa{' '}
+                  <span className="font-bold text-white">{summary.stats.totalFolders} folder</span> — lahat ng teksto,
+                  larawan, guhit, at pag-download ay nasa loob ng iisang dokumento.
                 </p>
               </div>
 
@@ -594,51 +530,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             </div>
 
-            {/* 5 Mabilisang Aksyon */}
+            {/* Mabilisang Aksyon sa Personal na Talaan */}
             <div className="mt-6 pt-5 border-t border-white/15">
               <div className="text-[11px] font-bold uppercase tracking-wider text-blue-100 mb-3">
-                Mabilisang Aksyon at Paggawa
+                Mabilisang Aksyon
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-                <button
-                  type="button"
-                  onClick={() => onCreateFromTemplate('lined-notebook')}
-                  className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/12 hover:bg-white/22 backdrop-blur-xs border border-white/15 text-left transition cursor-pointer group"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
-                    <Plus className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-white truncate">Gumawa ng Bagong Tala</div>
-                    <div className="text-[11px] text-blue-100 truncate">Kuwaderno + keyboard</div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onCreateFromTemplate('sketchpad')}
-                  className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/12 hover:bg-white/22 backdrop-blur-xs border border-white/15 text-left transition cursor-pointer group"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-sky-400/25 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
-                    <PenTool className="w-5 h-5 text-sky-100" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-white truncate">Buksan ang Guhitan</div>
-                    <div className="text-[11px] text-blue-100 truncate">Panulat, hugis at tinta</div>
-                  </div>
-                </button>
-
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => onCreateFromTemplate('blank')}
-                  className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/12 hover:bg-white/22 backdrop-blur-xs border border-white/15 text-left transition cursor-pointer group"
+                  className="flex items-center gap-3 p-3.5 rounded-2xl bg-white text-blue-950 hover:bg-blue-50 shadow-md text-left transition cursor-pointer group"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-blue-300/25 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
-                    <FilePlus2 className="w-5 h-5 text-blue-100" />
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
+                    <Plus className="w-5 h-5 text-blue-700" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs font-bold text-white truncate">Gumawa ng Dokumento</div>
-                    <div className="text-[11px] text-blue-100 truncate">Teksto at talahanayan</div>
+                    <div className="text-xs font-extrabold truncate">Gumawa ng Bagong Tala</div>
+                    <div className="text-[11px] text-blue-700/80 truncate">Teksto, larawan, guhit at download</div>
                   </div>
                 </button>
 
@@ -652,7 +560,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs font-bold text-white truncate">Gumawa ng Folder</div>
-                    <div className="text-[11px] text-blue-100 truncate">Ayusin ayon sa paksa</div>
+                    <div className="text-[11px] text-blue-100 truncate">Ayusin ang iyong mga tala</div>
                   </div>
                 </button>
 
@@ -660,16 +568,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingFile}
-                  className="col-span-2 sm:col-span-1 flex items-center gap-3 p-3.5 rounded-2xl bg-white text-blue-950 hover:bg-blue-50 shadow-md text-left transition cursor-pointer group disabled:opacity-70"
+                  className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/12 hover:bg-white/22 backdrop-blur-xs border border-white/15 text-left transition cursor-pointer group disabled:opacity-70"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
-                    <Upload className="w-5 h-5 text-blue-700" />
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
+                    <Upload className="w-5 h-5 text-white" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs font-extrabold truncate">
+                    <div className="text-xs font-bold text-white truncate">
                       {uploadingFile ? 'Ina-upload...' : 'Mag-upload ng File'}
                     </div>
-                    <div className="text-[11px] text-blue-700/80 truncate">PDF, DOCX, larawan</div>
+                    <div className="text-[11px] text-blue-100 truncate">PDF, DOCX, larawan</div>
                   </div>
                 </button>
               </div>
@@ -784,20 +692,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     {summary.stats.totalNotes}
                   </div>
                   <div className="text-[11px] text-blue-600 dark:text-sky-400 mt-1 font-medium">
-                    {summary.stats.totalNotebookPages} kuwaderno · {summary.stats.totalDrawings} guhit
+                    Personal na mga tala
                   </div>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70 shadow-xs">
                   <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    <span>Mga Dokumento</span>
+                    <span>Naisulat na Salita</span>
                     <FileText className="w-4 h-4 text-blue-700 dark:text-blue-400" />
                   </div>
                   <div className="font-display text-2xl font-extrabold text-slate-900 dark:text-white mt-1.5">
-                    {summary.stats.totalDocuments}
+                    {summary.activityOverview.totalWords.toLocaleString()}
                   </div>
                   <div className="text-[11px] text-blue-700 dark:text-blue-400 mt-1 font-medium">
-                    {summary.activityOverview.totalWords.toLocaleString()} salita ang naisulat
+                    Sa lahat ng iyong tala
                   </div>
                 </div>
 
@@ -815,18 +723,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
 
                 <div
-                  onClick={onOpenStudyHub}
+                  onClick={onOpenFiles}
                   className="p-4 rounded-2xl bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70 shadow-xs cursor-pointer hover:border-blue-400 transition"
                 >
                   <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    <span>Pokus sa Pag-aaral</span>
-                    <GraduationCap className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                    <span>Baul ng File</span>
+                    <Paperclip className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                   </div>
                   <div className="font-display text-2xl font-extrabold text-slate-900 dark:text-white mt-1.5">
-                    {summary.stats.studyMinutesWeek}m
+                    {summary.stats.totalFiles}
                   </div>
                   <div className="text-[11px] text-sky-600 dark:text-sky-400 mt-1 font-medium">
-                    {summary.stats.flashcardCount} flashcards · {summary.upcomingTasks.length} nakatakda
+                    {summary.notebooks.length} kuwaderno · {formatBytes(summary.stats.storageUsedBytes)}
                   </div>
                 </div>
               </div>
@@ -842,7 +750,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </h2>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Araw-araw na ginawang tala, na-edit, at oras ng pag-aaral
+                      Araw-araw na ginawang tala at na-edit sa iyong personal na talaan
                     </p>
                   </div>
 
@@ -902,19 +810,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {/* Pang-ibabang Buod ng Aktibidad */}
                 <div className="mt-4 pt-3 border-t border-blue-100 dark:border-blue-900/60 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
                   <span>
-                    Katayuan ng mga Gawain:{' '}
+                    Kabuuang salitang naisulat:{' '}
                     <strong className="text-slate-800 dark:text-slate-200">
-                      {summary.activityOverview.tasksCompleted} tapos
-                    </strong>{' '}
-                    · {summary.activityOverview.tasksPending} nakabinbin
+                      {summary.activityOverview.totalWords.toLocaleString()}
+                    </strong>
                   </span>
-                  <button
-                    type="button"
-                    onClick={onOpenStudyHub}
-                    className="text-xs font-semibold text-blue-600 dark:text-sky-400 hover:underline cursor-pointer"
-                  >
-                    Buksan ang Sentro ng Pag-aaral at Timer &rarr;
-                  </button>
+                  {onOpenAllNotes && (
+                    <button
+                      type="button"
+                      onClick={onOpenAllNotes}
+                      className="text-xs font-semibold text-blue-600 dark:text-sky-400 hover:underline cursor-pointer"
+                    >
+                      Tingnan ang Lahat ng Tala &rarr;
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1125,7 +1034,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               {summary.recentlyUsedFolders.length === 0 ? (
                 <div className="py-10 text-center text-xs text-slate-400 border border-dashed border-blue-200 dark:border-blue-800 rounded-xl">
-                  Gumawa ng mga folder upang isaayos ang iyong mga tala sa lektura, takdang-aralin, at gabay.
+                  Gumawa ng mga folder upang isaayos ang iyong mga personal na tala at ideya.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -1158,40 +1067,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </section>
 
-          {/* Mga Template ng Studio */}
-          <section>
-            <h2 className="font-display text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
-              Magsimula sa Template ng Studio
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-              {templates.map((tpl) => (
-                <button
-                  key={tpl.id}
-                  type="button"
-                  onClick={() => onCreateFromTemplate(tpl.id)}
-                  className="text-left p-3.5 rounded-2xl bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70 hover:border-blue-400 hover:shadow-md transition group cursor-pointer"
-                >
-                  <div
-                    className={`w-10 h-10 rounded-xl ${tpl.bg} flex items-center justify-center mb-2.5 group-hover:scale-105 transition`}
-                  >
-                    {tpl.icon}
-                  </div>
-                  <div className="font-semibold text-xs text-slate-900 dark:text-white">{tpl.title}</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">{tpl.desc}</div>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* Iyong mga Kuwaderno + Mga Paparating na Takdang-Aralin */}
-          <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-2">
+          {/* Iyong mga Kuwaderno */}
+          {summary.notebooks.length > 0 && (
+            <section>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-display text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Iyong mga Kuwaderno
                 </h2>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                 {summary.notebooks.slice(0, 6).map((nb: Notebook) => (
                   <button
                     key={nb.id}
@@ -1208,10 +1092,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         {nb.is_pinned === 1 && <Pin className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />}
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-1 min-h-[32px]">
-                        {nb.description || 'Akademikong kuwaderno'}
+                        {nb.description || 'Personal na kuwaderno'}
                       </p>
                       <div className="mt-3 pt-2.5 border-t border-blue-100 dark:border-blue-900/60 flex items-center justify-between text-[11px] text-slate-400">
-                        <span>{nb.subject_code || 'Pangkalahatan'}</span>
+                        <span>Kuwaderno</span>
                         <span className="font-semibold text-slate-600 dark:text-slate-300">
                           {nb.note_count ?? 0} pahina
                         </span>
@@ -1220,74 +1104,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </button>
                 ))}
               </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Mga Paparating na Takdang-Aralin
-                </h2>
-                <button
-                  type="button"
-                  onClick={onOpenStudyHub}
-                  className="text-xs font-semibold text-blue-600 dark:text-sky-400 hover:underline cursor-pointer"
-                >
-                  Tingnan lahat
-                </button>
-              </div>
-              <div className="rounded-2xl bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70 p-3 space-y-2">
-                {summary.upcomingTasks.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-8">
-                    Tapos na ang lahat! Magdagdag ng mga gawain sa Sentro ng Pag-aaral.
-                  </p>
-                ) : (
-                  summary.upcomingTasks.map((t) => {
-                    const due = formatDueDate(t.due_date);
-                    return (
-                      <div
-                        key={t.id}
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-blue-50/50 dark:hover:bg-[#132340] transition"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => toggleTaskDone(t)}
-                          className="mt-0.5 text-slate-400 hover:text-emerald-600 cursor-pointer"
-                        >
-                          {t.status === 'done' ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          ) : (
-                            <Circle className="w-4 h-4" />
-                          )}
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
-                            {t.title}
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5 text-[11px]">
-                            {t.subject_code && (
-                              <span
-                                className="font-bold px-1.5 py-0.5 rounded text-white text-[10px]"
-                                style={{ backgroundColor: t.subject_color || '#2563EB' }}
-                              >
-                                {t.subject_code}
-                              </span>
-                            )}
-                            <span
-                              className={`flex items-center gap-1 ${
-                                due.urgent ? 'text-rose-600 dark:text-rose-400 font-semibold' : 'text-slate-400'
-                              }`}
-                            >
-                              <CalendarClock className="w-3 h-3" /> {due.label}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </section>
+            </section>
+          )}
         </>
       ) : (
         /* Naka-filter na Listahan ng mga Tala / Header ng Basurahan */
@@ -1444,16 +1262,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {filteredNotes.length === 0 ? (
           <div className="rounded-2xl bg-white dark:bg-[#0D1930] border border-dashed border-blue-300 dark:border-blue-800 p-12 text-center">
-            <GraduationCap className="w-10 h-10 text-blue-300 dark:text-blue-700 mx-auto mb-3" />
+            <NotebookPen className="w-10 h-10 text-blue-300 dark:text-blue-700 mx-auto mb-3" />
             <h3 className="font-display font-bold text-slate-800 dark:text-white">
-              {isTrashView ? 'Walang laman ang Basurahan' : 'Walang nahanap na tugmang tala'}
+              {isTrashView ? 'Walang laman ang Basurahan' : 'Wala pang nahanap na tala'}
             </h3>
             <p className="text-xs text-slate-400 mt-1">
               {isTrashView
                 ? 'Lumilitaw rito ang mga binurang tala bago tuluyang mabura.'
                 : noteListQuery || noteCategoryFilter !== 'all'
                   ? 'Subukang burahin ang iyong hinahanap o ang napiling kategorya.'
-                  : 'Gumawa ng bagong dokumentong Word, talang Cornell, o guhit upang makapagsimula.'}
+                  : 'Gumawa ng bagong tala upang magsulat, magsingit ng larawan, gumuhit, at mag-download ng file.'}
             </p>
           </div>
         ) : viewLayout === 'grid' ? (

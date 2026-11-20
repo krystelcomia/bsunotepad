@@ -75,7 +75,7 @@ export function downloadTextFile(filename: string, content: string, mime = 'text
   URL.revokeObjectURL(url);
 }
 
-export function exportNoteAsHtml(note: Note, renderedHtml: string): void {
+function buildExportDocumentHtml(note: Note, renderedHtml: string, drawingPreview?: string): string {
   const safeTitle = (note.title || 'tala').replace(/[<>]/g, '');
   const cornellSection =
     note.paper_style === 'cornell' && (note.cornell_cues || note.cornell_summary)
@@ -92,7 +92,14 @@ export function exportNoteAsHtml(note: Note, renderedHtml: string): void {
         </div>`
       : renderedHtml;
 
-  const doc = `<!doctype html>
+  const doodleSection = drawingPreview
+    ? `<section style="margin-top:28px;padding-top:16px;border-top:1px solid #dbeafe;">
+        <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.06em;color:#1d4ed8;margin:0 0 12px;">Mga Guhit / Doodle</h3>
+        <img src="${drawingPreview}" alt="Guhit sa Tala" style="max-width:100%;border:1px solid #dbeafe;border-radius:10px;" />
+      </section>`
+    : '';
+
+  return `<!doctype html>
 <html lang="tl">
 <head>
   <meta charset="utf-8" />
@@ -100,6 +107,7 @@ export function exportNoteAsHtml(note: Note, renderedHtml: string): void {
   <style>
     body { font-family: 'Inter', system-ui, sans-serif; max-width: 820px; margin: 40px auto; padding: 0 24px; color: #0f172a; line-height: 1.7; }
     h1,h2,h3 { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+    img { max-width: 100%; height: auto; border-radius: 8px; }
     table { border-collapse: collapse; width: 100%; margin: 16px 0; }
     td, th { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
     th { background: #eff6ff; }
@@ -109,28 +117,48 @@ export function exportNoteAsHtml(note: Note, renderedHtml: string): void {
 </head>
 <body>
   <header style="border-bottom:1px solid #dbeafe;padding-bottom:12px;margin-bottom:24px;">
-    <div style="font-size:12px;color:#1d4ed8;font-weight:700;letter-spacing:0.08em;">DOKUMENTONG PANG-AKADEMIKO NG INKORA</div>
+    <div style="font-size:12px;color:#1d4ed8;font-weight:700;letter-spacing:0.08em;">PERSONAL NA TALA NG INKORA</div>
     <h1 style="margin:6px 0 4px;">${safeTitle}</h1>
-    <div style="font-size:13px;color:#64748b;">Na-export noong ${new Date().toLocaleString('tl-PH')}</div>
+    ${note.description ? `<p style="margin:4px 0 6px;color:#475569;font-size:14px;">${note.description.replace(/[<>]/g, '')}</p>` : ''}
+    <div style="font-size:13px;color:#64748b;">Na-download noong ${new Date().toLocaleString('tl-PH')}</div>
   </header>
   ${cornellSection}
+  ${doodleSection}
 </body>
 </html>`;
+}
 
-  const slug = safeTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'inkora-tala';
-  downloadTextFile(`${slug}.html`, doc, 'text/html;charset=utf-8');
+function makeNoteSlug(title?: string): string {
+  const safeTitle = (title || 'tala').replace(/[<>]/g, '');
+  return safeTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'inkora-tala';
+}
+
+export function exportNoteAsHtml(note: Note, renderedHtml: string, drawingPreview?: string): void {
+  const doc = buildExportDocumentHtml(note, renderedHtml, drawingPreview);
+  downloadTextFile(`${makeNoteSlug(note.title)}.html`, doc, 'text/html;charset=utf-8');
+}
+
+export function exportNoteAsDoc(note: Note, renderedHtml: string, drawingPreview?: string): void {
+  const doc = buildExportDocumentHtml(note, renderedHtml, drawingPreview);
+  downloadTextFile(`${makeNoteSlug(note.title)}.doc`, `\ufeff${doc}`, 'application/msword;charset=utf-8');
+}
+
+export function exportNoteAsTxt(note: Note, plainText: string): void {
+  const parts = [note.title || 'Walang Pamagat na Tala'];
+  if (note.description) parts.push(note.description);
+  parts.push('', plainText || '');
+  downloadTextFile(`${makeNoteSlug(note.title)}.txt`, parts.join('\n'), 'text/plain;charset=utf-8');
 }
 
 export function htmlToMarkdownApprox(note: Note, plainText: string): string {
   const lines: string[] = [`# ${note.title || 'Walang Pamagat na Tala'}`, ''];
-  if (note.subject_code || note.subject_name) {
-    lines.push(`**Kurso:** ${[note.subject_code, note.subject_name].filter(Boolean).join(' — ')}`);
-    lines.push('');
+  if (note.description) {
+    lines.push(`> ${note.description}`, '');
   }
   if (note.cornell_cues) {
     lines.push('## Mga Gabay at Tanong', '', note.cornell_cues, '');
   }
-  lines.push('## Mga Tala', '', plainText || '');
+  lines.push(plainText || '');
   if (note.cornell_summary) {
     lines.push('', '## Buod', '', note.cornell_summary);
   }

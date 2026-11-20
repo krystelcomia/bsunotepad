@@ -18,12 +18,10 @@ import { FileVaultView } from './components/files/FileVaultView';
 import { CommandPalette } from './components/layout/CommandPalette';
 import { NavSection, Sidebar } from './components/layout/Sidebar';
 import { SharedNoteView } from './components/shared/SharedNoteView';
-import { PomodoroWidget } from './components/study/PomodoroWidget';
-import { StudyHubView } from './components/study/StudyHubView';
-import { FolderModal, NotebookModal, SubjectModal } from './components/workspace/Modals';
+import { FolderModal, NotebookModal } from './components/workspace/Modals';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
-import { Folder, Notebook, Note, NoteSortOption, Subject, WorkspaceSummary } from './types';
+import { Folder, Notebook, Note, NoteSortOption, WorkspaceSummary } from './types';
 
 function parseShareToken(pathname: string, search: string): string | null {
   const qs = new URLSearchParams(search);
@@ -43,7 +41,6 @@ function parseWorkspaceLocation(pathname: string): { nav: NavSection; noteId: st
     return { nav: { kind: 'notes', filter: 'all' }, noteId: id || null };
   }
   if (clean === '/files') return { nav: { kind: 'files' }, noteId: null };
-  if (clean === '/study') return { nav: { kind: 'study' }, noteId: null };
   if (clean === '/notes/starred') return { nav: { kind: 'notes', filter: 'starred' }, noteId: null };
   if (clean === '/notes/trash') return { nav: { kind: 'notes', filter: 'trash' }, noteId: null };
   if (clean.startsWith('/notes/folder/')) {
@@ -71,7 +68,6 @@ function parseWorkspaceLocation(pathname: string): { nav: NavSection; noteId: st
 function buildWorkspacePath(nav: NavSection, noteId: string | null): string {
   if (noteId) return `/studio/${encodeURIComponent(noteId)}`;
   if (nav.kind === 'files') return '/files';
-  if (nav.kind === 'study') return '/study';
   if (nav.kind === 'notes') {
     if (nav.filter === 'starred') return '/notes/starred';
     if (nav.filter === 'trash') return '/notes/trash';
@@ -105,10 +101,6 @@ const WorkspaceShell: React.FC = () => {
   const [accountOpen, setAccountOpen] = useState(false);
 
   const [folderModal, setFolderModal] = useState<{ open: boolean; editing: Folder | null }>({
-    open: false,
-    editing: null,
-  });
-  const [subjectModal, setSubjectModal] = useState<{ open: boolean; editing: Subject | null }>({
     open: false,
     editing: null,
   });
@@ -310,7 +302,10 @@ const WorkspaceShell: React.FC = () => {
         subtitle: [sub?.instructor, sub?.semester].filter(Boolean).join(' · '),
       };
     }
-    return { title: 'Lahat ng Akademikong Tala', subtitle: 'Mga dokumento, kuwadernong Cornell, at guhit-kamay' };
+    return {
+      title: 'Lahat ng Aking mga Tala',
+      subtitle: 'Personal na talaan — teksto, larawan, guhit, at pag-download sa iisang dokumento',
+    };
   }, [activeNav, summary]);
 
   if (shareToken) {
@@ -375,15 +370,12 @@ const WorkspaceShell: React.FC = () => {
         activeNav={activeNav}
         onNavigate={(nav) => navigateTo(nav, null)}
         folders={folders}
-        subjects={subjects}
         notebooks={notebooks}
         trashedCount={summary?.trashedCount || 0}
         onOpenSearch={() => setSearchOpen(true)}
         onNewNote={(opts) => handleCreateNote(opts)}
         onNewFolder={() => setFolderModal({ open: true, editing: null })}
         onEditFolder={(fld) => setFolderModal({ open: true, editing: fld })}
-        onNewSubject={() => setSubjectModal({ open: true, editing: null })}
-        onEditSubject={(sub) => setSubjectModal({ open: true, editing: sub })}
         onNewNotebook={() => setNotebookModal({ open: true, editing: null })}
         onEditNotebook={(nb) => setNotebookModal({ open: true, editing: nb })}
         onOpenAccount={() => setAccountOpen(true)}
@@ -403,7 +395,7 @@ const WorkspaceShell: React.FC = () => {
             </button>
 
             <div className="text-sm font-semibold text-slate-700 dark:text-blue-100 truncate">
-              {activeNoteId ? 'Studio ng Tala' : activeNav.kind === 'dashboard' ? 'Dashboard ng Mag-aaral' : viewHeaderInfo.title}
+              {activeNoteId ? 'Editor ng Tala' : activeNav.kind === 'dashboard' ? 'Personal na Talaan' : viewHeaderInfo.title}
             </div>
           </div>
 
@@ -415,12 +407,6 @@ const WorkspaceShell: React.FC = () => {
             >
               <Search className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" /> Maghanap
             </button>
-
-            <PomodoroWidget
-              activeNoteId={activeNoteId}
-              onSessionLogged={refreshWorkspace}
-              onNotify={notify}
-            />
 
             <button
               type="button"
@@ -468,7 +454,7 @@ const WorkspaceShell: React.FC = () => {
               openNoteStudio(id);
               refreshWorkspace();
             }}
-            onNewNote={() => handleCreateNote({ template: 'lined-notebook' })}
+            onNewNote={() => handleCreateNote({ template: 'blank' })}
             onNoteUpdated={() => refreshWorkspace()}
             onNoteDeleted={() => {
               navigateTo(activeNav, null, true);
@@ -478,12 +464,6 @@ const WorkspaceShell: React.FC = () => {
           />
         ) : activeNav.kind === 'files' ? (
           <FileVaultView subjects={subjects} onNotify={notify} />
-        ) : activeNav.kind === 'study' ? (
-          <StudyHubView
-            subjects={subjects}
-            onRefreshSummary={refreshWorkspace}
-            onNotify={notify}
-          />
         ) : summary ? (
           <DashboardView
             mode={activeNav.kind === 'dashboard' ? 'dashboard' : 'list'}
@@ -501,7 +481,6 @@ const WorkspaceShell: React.FC = () => {
             onOpenNote={(id) => openNoteStudio(id)}
             onCreateFromTemplate={(tpl) => handleCreateNote({ template: tpl })}
             onRefresh={refreshWorkspace}
-            onOpenStudyHub={() => navigateTo({ kind: 'study' })}
             onOpenFiles={() => navigateTo({ kind: 'files' })}
             onOpenAllNotes={() => navigateTo({ kind: 'notes', filter: 'all' })}
             onSelectNotebook={(nbId) => navigateTo({ kind: 'notes', notebookId: nbId })}
@@ -524,7 +503,6 @@ const WorkspaceShell: React.FC = () => {
         onSelectNote={(id) => openNoteStudio(id)}
         onSelectFolder={(fldId) => navigateTo({ kind: 'notes', folderId: fldId })}
         onSelectNotebook={(nbId) => navigateTo({ kind: 'notes', notebookId: nbId })}
-        onSelectSubject={(subId) => navigateTo({ kind: 'notes', subjectId: subId })}
         onOpenFiles={() => navigateTo({ kind: 'files' })}
       />
 
@@ -532,14 +510,6 @@ const WorkspaceShell: React.FC = () => {
         open={folderModal.open}
         editing={folderModal.editing}
         onClose={() => setFolderModal({ open: false, editing: null })}
-        onSaved={refreshWorkspace}
-        onNotify={notify}
-      />
-
-      <SubjectModal
-        open={subjectModal.open}
-        editing={subjectModal.editing}
-        onClose={() => setSubjectModal({ open: false, editing: null })}
         onSaved={refreshWorkspace}
         onNotify={notify}
       />
