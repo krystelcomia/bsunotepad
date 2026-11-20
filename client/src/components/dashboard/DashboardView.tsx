@@ -131,7 +131,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 }) => {
   const { user } = useAuth();
   const [viewLayout, setViewLayout] = useState<'grid' | 'list'>('grid');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'document' | 'notebook' | 'drawing'>('all');
   const [renamingNoteId, setRenamingNoteId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
 
@@ -211,7 +210,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     const q = noteListQuery.trim().toLowerCase();
     return notes
       .filter((n) => {
-        if (typeFilter !== 'all' && n.mode !== typeFilter) return false;
         if (noteCategoryFilter !== 'all' && (n.category || 'Pangkalahatan') !== noteCategoryFilter) return false;
         if (q) {
           const hay = [n.title, n.description, n.excerpt, n.tags_json, n.category, n.folder_name, n.subject_code]
@@ -230,7 +228,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         if (noteSort === 'updated_asc') return a.updated_at.localeCompare(b.updated_at);
         return b.updated_at.localeCompare(a.updated_at);
       });
-  }, [notes, typeFilter, noteCategoryFilter, noteListQuery, noteSort]);
+  }, [notes, noteCategoryFilter, noteListQuery, noteSort]);
 
   const startRename = (e: React.MouseEvent, note: Note) => {
     e.stopPropagation();
@@ -1318,72 +1316,47 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Grid / Listahan ng mga Tala sa Workspace */}
       <section>
         <div className="flex flex-col gap-3 mb-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              {mode === 'dashboard' && (
-                <div className="flex items-center gap-2.5">
-                  <h2 className="font-display text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Lahat ng Tala at Pahina
-                  </h2>
-                  {onOpenAllNotes && (
-                    <button
-                      type="button"
-                      onClick={onOpenAllNotes}
-                      className="text-xs font-semibold text-blue-600 dark:text-sky-400 hover:underline cursor-pointer"
-                    >
-                      Buksan ang Aklatan &rarr;
-                    </button>
-                  )}
-                </div>
-              )}
-              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70">
-                {(
-                  [
-                    { id: 'all', label: 'Lahat ng Uri' },
-                    { id: 'document', label: 'Mga Dokumento' },
-                    { id: 'notebook', label: 'Mga Kuwaderno' },
-                    { id: 'drawing', label: 'Mga Guhit' },
-                  ] as const
-                ).map((f) => (
+          {mode === 'dashboard' && (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Lahat ng Tala at Pahina
+                </h2>
+                {onOpenAllNotes && (
                   <button
-                    key={f.id}
                     type="button"
-                    onClick={() => setTypeFilter(f.id)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                      typeFilter === f.id
-                        ? 'bg-blue-700 text-white'
-                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                    }`}
+                    onClick={onOpenAllNotes}
+                    className="text-xs font-semibold text-blue-600 dark:text-sky-400 hover:underline cursor-pointer"
                   >
-                    {f.label}
+                    Buksan ang Aklatan &rarr;
                   </button>
-                ))}
+                )}
+              </div>
+
+              <div className="flex items-center gap-1 bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setViewLayout('grid')}
+                  className={`p-1.5 rounded-lg cursor-pointer ${
+                    viewLayout === 'grid' ? 'bg-blue-50 dark:bg-[#132340] text-blue-600 dark:text-sky-400' : 'text-slate-400'
+                  }`}
+                  title="Grid view"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewLayout('list')}
+                  className={`p-1.5 rounded-lg cursor-pointer ${
+                    viewLayout === 'list' ? 'bg-blue-50 dark:bg-[#132340] text-blue-600 dark:text-sky-400' : 'text-slate-400'
+                  }`}
+                  title="List view"
+                >
+                  <ListIcon className="w-4 h-4" />
+                </button>
               </div>
             </div>
-
-            <div className="flex items-center gap-1 bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70 p-1 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setViewLayout('grid')}
-                className={`p-1.5 rounded-lg cursor-pointer ${
-                  viewLayout === 'grid' ? 'bg-blue-50 dark:bg-[#132340] text-blue-600 dark:text-sky-400' : 'text-slate-400'
-                }`}
-                title="Grid view"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewLayout('list')}
-                className={`p-1.5 rounded-lg cursor-pointer ${
-                  viewLayout === 'list' ? 'bg-blue-50 dark:bg-[#132340] text-blue-600 dark:text-sky-400' : 'text-slate-400'
-                }`}
-                title="List view"
-              >
-                <ListIcon className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          )}
 
           {/* Maghanap ayon sa Pamagat/Nilalaman + Salain sa Kategorya + Ayusin */}
           <div className="flex flex-wrap items-center gap-2.5 p-2.5 rounded-2xl bg-white dark:bg-[#0D1930] border border-blue-200/80 dark:border-blue-800/70">
@@ -1441,6 +1414,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <option value="title_desc">Alpabetikal (Z → A)</option>
               </select>
             </div>
+
+            {mode !== 'dashboard' && (
+              <div className="flex items-center gap-1 bg-blue-50/50 dark:bg-[#132340] border border-blue-200/80 dark:border-blue-800/70 p-0.5 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setViewLayout('grid')}
+                  className={`p-1.5 rounded-lg cursor-pointer ${
+                    viewLayout === 'grid' ? 'bg-white dark:bg-[#0D1930] text-blue-600 dark:text-sky-400 shadow-xs' : 'text-slate-400'
+                  }`}
+                  title="Grid view"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewLayout('list')}
+                  className={`p-1.5 rounded-lg cursor-pointer ${
+                    viewLayout === 'list' ? 'bg-white dark:bg-[#0D1930] text-blue-600 dark:text-sky-400 shadow-xs' : 'text-slate-400'
+                  }`}
+                  title="List view"
+                >
+                  <ListIcon className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
