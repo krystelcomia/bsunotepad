@@ -36,19 +36,22 @@ function isValidGmailFrontend(raw: string): boolean {
   return /^[a-z0-9._+-]+$/.test(local);
 }
 
-type AuthPanelView = 'login' | 'register' | 'verify' | 'forgot' | 'reset';
+type AuthPanelView = 'home' | 'login' | 'register' | 'verify' | 'forgot' | 'reset';
 
 function authPathToView(pathname: string): AuthPanelView {
   const clean = pathname.replace(/\/+$/, '') || '/';
+  if (clean === '/login') return 'login';
   if (clean === '/register' || clean === '/signup') return 'register';
   if (clean === '/verify-email') return 'verify';
   if (clean === '/forgot-password') return 'forgot';
   if (clean === '/reset-password') return 'reset';
-  return 'login';
+  return 'home';
 }
 
 function authViewToPath(view: AuthPanelView): string {
   switch (view) {
+    case 'login':
+      return '/login';
     case 'register':
       return '/register';
     case 'verify':
@@ -58,7 +61,7 @@ function authViewToPath(view: AuthPanelView): string {
     case 'reset':
       return '/reset-password';
     default:
-      return '/login';
+      return '/';
   }
 }
 
@@ -138,8 +141,7 @@ export const AuthPage: React.FC = () => {
     setError('');
     setInfoMsg('');
     setLockedAccountStatus(null);
-    const el = document.getElementById('inkora-auth-card');
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectAvatar = (file: File | null) => {
@@ -386,32 +388,42 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-[#F4F8FF] to-[#EFF6FF] dark:from-[#071021] dark:via-[#0B172E] dark:to-[#0F1F3D] text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-white via-[#F4F8FF] to-[#EFF6FF] dark:from-[#071021] dark:via-[#0B172E] dark:to-[#0F1F3D] text-slate-900 dark:text-slate-100">
       {/* Tuktok na Navbar */}
       <header className="sticky top-0 z-30 backdrop-blur-md bg-white/90 dark:bg-[#091326]/90 border-b border-blue-200/70 dark:border-blue-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
           <button
             type="button"
-            onClick={() => focusAuth('login')}
+            onClick={() => focusAuth('home')}
             className="text-left cursor-pointer"
             aria-label="Home ng INKORA"
           >
             <BrandLogo size="md" />
           </button>
 
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600 dark:text-blue-100/80">
-            <a href="#studios" className="hover:text-blue-700 dark:hover:text-sky-300 transition">
-              Mga Studio
-            </a>
-            <a href="#organization" className="hover:text-blue-700 dark:hover:text-sky-300 transition">
-              Espasyo
-            </a>
-            <a href="#privacy" className="hover:text-blue-700 dark:hover:text-sky-300 transition">
-              Pribasiya at Tungkulin
-            </a>
-          </nav>
+          {view === 'home' ? (
+            <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600 dark:text-blue-100/80">
+              <a href="#studios" className="hover:text-blue-700 dark:hover:text-sky-300 transition">
+                Mga Studio
+              </a>
+              <a href="#organization" className="hover:text-blue-700 dark:hover:text-sky-300 transition">
+                Espasyo
+              </a>
+              <a href="#privacy" className="hover:text-blue-700 dark:hover:text-sky-300 transition">
+                Pribasiya at Tungkulin
+              </a>
+            </nav>
+          ) : (
+            <button
+              type="button"
+              onClick={() => focusAuth('home')}
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-blue-200/80 hover:text-blue-700 dark:hover:text-sky-300 transition cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Bumalik sa Tahanan
+            </button>
+          )}
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={toggleTheme}
@@ -423,14 +435,18 @@ export const AuthPage: React.FC = () => {
             <button
               type="button"
               onClick={() => focusAuth('login')}
-              className="hidden sm:inline-flex px-4 py-2 rounded-xl text-sm font-semibold text-blue-800 dark:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/40 transition cursor-pointer"
+              className={`px-3.5 sm:px-4 py-2 rounded-xl text-sm font-semibold transition cursor-pointer ${
+                view === 'login'
+                  ? 'bg-blue-100 dark:bg-blue-900/60 text-blue-900 dark:text-white'
+                  : 'text-blue-800 dark:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/40'
+              }`}
             >
               Mag-sign In
             </button>
             <button
               type="button"
               onClick={() => focusAuth('register')}
-              className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-800 via-blue-700 to-sky-600 hover:brightness-110 shadow-md shadow-blue-700/20 transition cursor-pointer"
+              className="px-3.5 sm:px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-800 via-blue-700 to-sky-600 hover:brightness-110 shadow-md shadow-blue-700/20 transition cursor-pointer"
             >
               Magsimula
             </button>
@@ -438,117 +454,255 @@ export const AuthPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Pangunahing Bahagi (Hero) */}
-      <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none opacity-45 dark:opacity-20"
-          style={{
-            backgroundImage: 'radial-gradient(rgba(37, 99, 235, 0.16) 1px, transparent 1px)',
-            backgroundSize: '24px 24px',
-          }}
-        />
-        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-blue-400/20 blur-3xl pointer-events-none" />
-        <div className="absolute top-20 right-0 w-96 h-96 rounded-full bg-sky-400/20 blur-3xl pointer-events-none" />
+      {view === 'home' ? (
+        <>
+          {/* Pangunahing Bahagi (Home Hero — Walang Login Form) */}
+          <section className="relative overflow-hidden">
+            <div
+              className="absolute inset-0 pointer-events-none opacity-45 dark:opacity-20"
+              style={{
+                backgroundImage: 'radial-gradient(rgba(37, 99, 235, 0.16) 1px, transparent 1px)',
+                backgroundSize: '24px 24px',
+              }}
+            />
+            <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-blue-400/20 blur-3xl pointer-events-none" />
+            <div className="absolute top-20 right-0 w-96 h-96 rounded-full bg-sky-400/20 blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 pt-12 pb-16 lg:py-20 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
-          {/* Mensahe at Preview */}
-          <div className="lg:col-span-7 space-y-6 pt-2">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-800/70 text-xs font-semibold text-blue-800 dark:text-blue-200 shadow-xs">
-              <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-              Beripikadong Espasyo ng Mag-aaral · Ligtas na Gmail Authentication
-            </div>
-
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.06] text-slate-950 dark:text-white">
-              Iyong mga Ideya.{' '}
-              <span className="bg-gradient-to-r from-blue-800 via-blue-600 to-sky-500 dark:from-blue-300 dark:via-sky-300 dark:to-cyan-200 bg-clip-text text-transparent">
-                Iyong Espasyo.
-              </span>{' '}
-              <br />
-              Iyong Tinta.
-            </h1>
-
-            <p className="text-base sm:text-lg text-slate-600 dark:text-blue-100/80 max-w-2xl leading-relaxed">
-              Pinagsasama ng INKORA ang ginhawa ng tradisyunal na may linyang kuwaderno, isang makinis na
-              digital na guhitan, at editor ng dokumentong parang Word—nakaayos gamit ang mga folder,
-              mabilisang paghahanap, at pribadong lalagyan ng file.
-            </p>
-
-            <div className="flex flex-wrap items-center gap-3 pt-1">
-              <button
-                type="button"
-                onClick={handleDemoStudent}
-                disabled={submitting}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-800 via-blue-700 to-sky-600 hover:brightness-110 text-white text-sm font-bold shadow-lg shadow-blue-800/25 transition cursor-pointer"
-              >
-                <GraduationCap className="w-4 h-4" />
-                Subukan ang Demo ng Mag-aaral
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => focusAuth('register')}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/95 dark:bg-[#0D1930] border border-blue-200 dark:border-blue-800/80 text-blue-900 dark:text-blue-200 text-sm font-semibold hover:border-blue-400 transition cursor-pointer"
-              >
-                Gumawa ng Libreng Account
-              </button>
-            </div>
-
-            {/* Malikhaing Studio Preview */}
-            <div className="pt-4">
-              <div className="rounded-3xl bg-white/95 dark:bg-[#0D1930]/95 border border-blue-200/80 dark:border-blue-800/70 shadow-2xl shadow-blue-950/10 p-4 sm:p-5 backdrop-blur-sm">
-                <div className="flex items-center justify-between border-b border-blue-100 dark:border-blue-900/60 pb-3 mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-300" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
-                    <span className="ml-2 text-xs font-semibold text-slate-500 dark:text-blue-200/70">
-                      BIO 204 · Studio ng Lektura at Lab
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px] font-semibold">
-                    <span className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200">
-                      Dokumento
-                    </span>
-                    <span className="px-2.5 py-1 rounded-lg text-slate-400">Kuwaderno</span>
-                    <span className="px-2.5 py-1 rounded-lg text-slate-400">Guhitan</span>
-                  </div>
+            <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-8 pt-14 pb-16 lg:py-20">
+              <div className="text-center max-w-3xl mx-auto space-y-6">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-800/70 text-xs font-semibold text-blue-800 dark:text-blue-200 shadow-xs">
+                  <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+                  Beripikadong Espasyo ng Mag-aaral · Ligtas na Gmail Authentication
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-white dark:from-[#132340] dark:to-[#0D1930] border border-blue-100 dark:border-blue-800/50 p-4 space-y-2">
-                    <div className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-sky-300">
-                      Dokumentong Word + Cornell
+                <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.06] text-slate-950 dark:text-white">
+                  Iyong mga Ideya.{' '}
+                  <span className="bg-gradient-to-r from-blue-800 via-blue-600 to-sky-500 dark:from-blue-300 dark:via-sky-300 dark:to-cyan-200 bg-clip-text text-transparent">
+                    Iyong Espasyo.
+                  </span>{' '}
+                  <br />
+                  Iyong Tinta.
+                </h1>
+
+                <p className="text-base sm:text-lg text-slate-600 dark:text-blue-100/80 max-w-2xl mx-auto leading-relaxed">
+                  Pinagsasama ng INKORA ang ginhawa ng tradisyunal na may linyang kuwaderno, isang makinis na
+                  digital na guhitan, at editor ng dokumentong parang Word—nakaayos gamit ang mga folder,
+                  mabilisang paghahanap, at pribadong lalagyan ng file.
+                </p>
+
+                {error && (
+                  <div className="max-w-md mx-auto px-4 py-2.5 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-200 text-xs font-medium">
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleDemoStudent}
+                    disabled={submitting}
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-800 via-blue-700 to-sky-600 hover:brightness-110 text-white text-sm font-bold shadow-lg shadow-blue-800/25 transition cursor-pointer"
+                  >
+                    <GraduationCap className="w-4 h-4" />
+                    {submitting ? 'Binubuksan ang Demo...' : 'Subukan ang Demo ng Mag-aaral'}
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => focusAuth('register')}
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/95 dark:bg-[#0D1930] border border-blue-200 dark:border-blue-800/80 text-blue-900 dark:text-blue-200 text-sm font-semibold hover:border-blue-400 transition cursor-pointer"
+                  >
+                    Gumawa ng Libreng Account
+                  </button>
+                </div>
+              </div>
+
+              {/* Malikhaing Studio Preview */}
+              <div className="mt-12 max-w-5xl mx-auto">
+                <div className="rounded-3xl bg-white/95 dark:bg-[#0D1930]/95 border border-blue-200/80 dark:border-blue-800/70 shadow-2xl shadow-blue-950/10 p-4 sm:p-6 backdrop-blur-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-100 dark:border-blue-900/60 pb-3 mb-5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-300" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                      <span className="ml-2 text-xs font-semibold text-slate-500 dark:text-blue-200/70">
+                        BIO 204 · Studio ng Lektura at Lab
+                      </span>
                     </div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-white">
-                      Kinetika ng Ensaym na Katalase
+                    <div className="flex items-center gap-1 text-[11px] font-semibold">
+                      <span className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200">
+                        Dokumento
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg text-slate-400">Kuwaderno</span>
+                      <span className="px-2.5 py-1 rounded-lg text-slate-400">Guhitan</span>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-blue-200/75 leading-relaxed">
-                      Mag-ayos ng talahanayan ng lab, checklist, sanggunian, at mga pormulang KaTeX nang may malinis na A4 export.
-                    </p>
                   </div>
 
-                  <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-white dark:from-[#10254A] dark:to-[#0D1930] border border-blue-100 dark:border-blue-900/50 p-4 flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-sky-300">
-                        Live na Guhitang Tinta
-                      </span>
-                      <PenTool className="w-4 h-4 text-blue-600 dark:text-sky-300" />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-white dark:from-[#132340] dark:to-[#0D1930] border border-blue-100 dark:border-blue-800/50 p-4 space-y-2">
+                      <div className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-sky-300">
+                        Dokumentong Word + Cornell
+                      </div>
+                      <div className="text-sm font-bold text-slate-900 dark:text-white">
+                        Kinetika ng Ensaym na Katalase
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-blue-200/75 leading-relaxed">
+                        Mag-ayos ng talahanayan ng lab, checklist, sanggunian, at mga pormulang KaTeX nang may malinis na A4 export.
+                      </p>
                     </div>
-                    <svg viewBox="0 0 220 72" className="w-full h-16 mt-2">
-                      <ellipse cx="75" cy="36" rx="46" ry="24" stroke="#1D4ED8" strokeWidth="2.4" fill="rgba(59,130,246,0.14)" />
-                      <circle cx="75" cy="36" r="10" stroke="#0284C7" strokeWidth="2.2" fill="rgba(96,165,250,0.24)" />
-                      <path d="M126 36H170M162 29L170 36L162 43" stroke="#1E40AF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                      <rect x="176" y="20" width="32" height="32" rx="8" stroke="#3B82F6" strokeWidth="2.2" fill="rgba(59,130,246,0.12)" />
-                    </svg>
+
+                    <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-white dark:from-[#10254A] dark:to-[#0D1930] border border-blue-100 dark:border-blue-900/50 p-4 flex flex-col justify-between">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-sky-300">
+                          Live na Guhitang Tinta
+                        </span>
+                        <PenTool className="w-4 h-4 text-blue-600 dark:text-sky-300" />
+                      </div>
+                      <svg viewBox="0 0 220 72" className="w-full h-16 mt-2">
+                        <ellipse cx="75" cy="36" rx="46" ry="24" stroke="#1D4ED8" strokeWidth="2.4" fill="rgba(59,130,246,0.14)" />
+                        <circle cx="75" cy="36" r="10" stroke="#0284C7" strokeWidth="2.2" fill="rgba(96,165,250,0.24)" />
+                        <path d="M126 36H170M162 29L170 36L162 43" stroke="#1E40AF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                        <rect x="176" y="20" width="32" height="32" rx="8" stroke="#3B82F6" strokeWidth="2.2" fill="rgba(59,130,246,0.12)" />
+                      </svg>
+                    </div>
+
+                    <div className="rounded-2xl bg-gradient-to-br from-blue-50/70 to-white dark:from-[#132340] dark:to-[#0D1930] border border-blue-100 dark:border-blue-800/50 p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-sky-300">
+                          Folder at Baul ng File
+                        </span>
+                        <FolderKanban className="w-4 h-4 text-blue-600 dark:text-sky-300" />
+                      </div>
+                      <div className="text-sm font-bold text-slate-900 dark:text-white">
+                        Pribadong Aklatan ng Pag-aaral
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-blue-200/75 leading-relaxed">
+                        Mag-imbak ng mga PDF, slide ng klase, at flashcards na may agarang paghahanap at protektadong access.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </section>
+
+          {/* Pagpapakita ng Tatlong Studio */}
+          <section id="studios" className="max-w-7xl mx-auto px-4 sm:px-8 py-14">
+            <div className="text-center max-w-2xl mx-auto mb-10">
+              <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-950 dark:text-white">
+                Tatlong Malikhaing Studio. Isang Daloy ng Pag-aaral.
+              </h2>
+              <p className="text-sm text-slate-600 dark:text-blue-200/75 mt-2">
+                Madaling lumipat sa pagitan ng pagsusulat ng pormal na dokumento, pagkuha ng tala sa
+                kuwaderno, o pagguhit ng mga dayagram nang magkatabi.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="rounded-3xl bg-white dark:bg-[#0D1930] border border-blue-200/70 dark:border-blue-800/60 p-6 shadow-lg shadow-blue-950/5 hover:-translate-y-0.5 transition">
+                <div className="w-11 h-11 rounded-2xl bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-200 flex items-center justify-center mb-4">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <h3 className="font-display font-bold text-lg text-slate-950 dark:text-white">
+                  Tradisyonal at Cornell na Kuwaderno
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-blue-200/70 mt-2 leading-relaxed">
+                  Magsulat sa Linyado, Malawak na Linya, Tuldok, Grid, o 3-bahaging pahinang Cornell na
+                  may live na layer ng tintang panulat mismo sa papel.
+                </p>
+              </div>
+
+              <div className="rounded-3xl bg-white dark:bg-[#0D1930] border border-blue-200/70 dark:border-blue-800/60 p-6 shadow-lg shadow-blue-950/5 hover:-translate-y-0.5 transition">
+                <div className="w-11 h-11 rounded-2xl bg-sky-100 dark:bg-sky-900/50 text-blue-600 dark:text-sky-300 flex items-center justify-center mb-4">
+                  <PenTool className="w-5 h-5" />
+                </div>
+                <h3 className="font-display font-bold text-lg text-slate-950 dark:text-white">
+                  Digital na Guhitan
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-blue-200/70 mt-2 leading-relaxed">
+                  Gumuhit ng mga dayagram sa biyolohiya, daloy ng sirkito, at mga graph gamit ang Panulat,
+                  Fountain Pen, Lapis, Highlighter, Mga Hugis, Grid Snap, PNG/SVG export, at Split View.
+                </p>
+              </div>
+
+              <div className="rounded-3xl bg-white dark:bg-[#0D1930] border border-blue-200/70 dark:border-blue-800/60 p-6 shadow-lg shadow-blue-950/5 hover:-translate-y-0.5 transition">
+                <div className="w-11 h-11 rounded-2xl bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 flex items-center justify-center mb-4">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <h3 className="font-display font-bold text-lg text-slate-950 dark:text-white">
+                  Editor ng Dokumentong Parang Word
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-blue-200/70 mt-2 leading-relaxed">
+                  May Ribbon toolbar na may font, mga pamagat, checklist, nababagong talahanayan, mga
+                  pormulang KaTeX, Hanapin at Palitan, kasaysayan ng bersyon, at PDF/HTML/Markdown export.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Seksyon ng Organisasyon at Pribasiya */}
+          <section id="organization" className="max-w-7xl mx-auto px-4 sm:px-8 pb-16">
+            <div className="rounded-3xl bg-gradient-to-br from-[#0F275C] via-[#1D4ED8] to-[#0284C7] text-white p-8 sm:p-12 shadow-2xl">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div className="space-y-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-xs font-semibold text-blue-100">
+                    <FolderKanban className="w-3.5 h-3.5" /> Ayusin · Beripikahin · Protektahan
+                  </div>
+                  <h2 className="font-display text-2xl sm:text-3xl font-extrabold leading-tight">
+                    Beripikadong Access sa Gmail at Mahigpit na Pribasiya ng Mag-aaral
+                  </h2>
+                  <p className="text-sm sm:text-base text-blue-100/90 leading-relaxed">
+                    Bawat account ng mag-aaral ay nangangailangan ng natatangi at beripikadong Gmail
+                    address. Pangkatin ang mga tala sa mga Folder, Asignatura, at Kuwaderno, hanapin ang
+                    anumang tala agad, at panatilihing ganap na pribado ang iyong mga gawa.
+                  </p>
+                </div>
+
+                <div id="privacy" className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {[
+                    { icon: <ShieldCheck className="w-4 h-4 text-sky-200" />, title: 'Beripikadong Gmail Lamang', desc: 'Isang natatanging account bawat beripikadong @gmail.com gamit ang OTP at link.' },
+                    { icon: <FolderKanban className="w-4 h-4 text-blue-100" />, title: 'Mga Folder at Kuwaderno', desc: 'Ayusin ang mga tala sa sariling mga folder, asignatura, at tag.' },
+                    { icon: <Search className="w-4 h-4 text-sky-200" />, title: 'Agarang Buong-Tekstong Paghahanap', desc: 'Hanapin ang mga pormula, salita, at file sa loob lamang ng ilang milisegundo.' },
+                    { icon: <UploadCloud className="w-4 h-4 text-white" />, title: 'Pribadong Baul ng File', desc: 'Tinitiyak ng mahigpit na kontrol na pribado ang mga tala—maging sa mga admin.' },
+                    { icon: <CheckCircle2 className="w-4 h-4 text-white" />, title: 'Ligtas na mga Session', desc: 'Tuloy-tuloy na HttpOnly session na may awtomatikong pag-ikot ng refresh token.' },
+                  ].slice(0, 4).map((item) => (
+                    <div key={item.title} className="rounded-2xl bg-white/10 border border-white/15 p-4 backdrop-blur-xs">
+                      <div className="flex items-center gap-2 font-semibold text-sm">
+                        {item.icon}
+                        {item.title}
+                      </div>
+                      <p className="text-xs text-blue-100/80 mt-1.5 leading-relaxed">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        </>
+      ) : (
+        /* Nakahiwalay na Pahina ng Pag-sign In / Pagpaparehistro */
+        <main className="relative flex-1 flex items-center justify-center px-4 sm:px-8 py-10 sm:py-14 overflow-hidden">
+          <div
+            className="absolute inset-0 pointer-events-none opacity-45 dark:opacity-20"
+            style={{
+              backgroundImage: 'radial-gradient(rgba(37, 99, 235, 0.16) 1px, transparent 1px)',
+              backgroundSize: '24px 24px',
+            }}
+          />
+          <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-blue-400/20 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-sky-400/20 blur-3xl pointer-events-none" />
 
           {/* Interaktibong Auth Card */}
-          <div id="inkora-auth-card" className="lg:col-span-5">
+          <div id="inkora-auth-card" className="relative z-10 w-full max-w-md space-y-4">
+            <button
+              type="button"
+              onClick={() => focusAuth('home')}
+              className="sm:hidden inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-blue-200/80 hover:text-blue-700 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Bumalik sa Tahanan
+            </button>
+
             <div className="bg-white/95 dark:bg-[#0D1930]/95 backdrop-blur-md rounded-3xl border border-blue-200/80 dark:border-blue-800/70 shadow-2xl shadow-blue-950/15 p-6 sm:p-8">
               {(view === 'login' || view === 'register') && (
                 <>
@@ -1014,101 +1168,8 @@ export const AuthPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Pagpapakita ng Tatlong Studio */}
-      <section id="studios" className="max-w-7xl mx-auto px-4 sm:px-8 py-14">
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-950 dark:text-white">
-            Tatlong Malikhaing Studio. Isang Daloy ng Pag-aaral.
-          </h2>
-          <p className="text-sm text-slate-600 dark:text-blue-200/75 mt-2">
-            Madaling lumipat sa pagitan ng pagsusulat ng pormal na dokumento, pagkuha ng tala sa
-            kuwaderno, o pagguhit ng mga dayagram nang magkatabi.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="rounded-3xl bg-white dark:bg-[#0D1930] border border-blue-200/70 dark:border-blue-800/60 p-6 shadow-lg shadow-blue-950/5 hover:-translate-y-0.5 transition">
-            <div className="w-11 h-11 rounded-2xl bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-200 flex items-center justify-center mb-4">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <h3 className="font-display font-bold text-lg text-slate-950 dark:text-white">
-              Tradisyonal at Cornell na Kuwaderno
-            </h3>
-            <p className="text-sm text-slate-500 dark:text-blue-200/70 mt-2 leading-relaxed">
-              Magsulat sa Linyado, Malawak na Linya, Tuldok, Grid, o 3-bahaging pahinang Cornell na
-              may live na layer ng tintang panulat mismo sa papel.
-            </p>
-          </div>
-
-          <div className="rounded-3xl bg-white dark:bg-[#0D1930] border border-blue-200/70 dark:border-blue-800/60 p-6 shadow-lg shadow-blue-950/5 hover:-translate-y-0.5 transition">
-            <div className="w-11 h-11 rounded-2xl bg-sky-100 dark:bg-sky-900/50 text-blue-600 dark:text-sky-300 flex items-center justify-center mb-4">
-              <PenTool className="w-5 h-5" />
-            </div>
-            <h3 className="font-display font-bold text-lg text-slate-950 dark:text-white">
-              Digital na Guhitan
-            </h3>
-            <p className="text-sm text-slate-500 dark:text-blue-200/70 mt-2 leading-relaxed">
-              Gumuhit ng mga dayagram sa biyolohiya, daloy ng sirkito, at mga graph gamit ang Panulat,
-              Fountain Pen, Lapis, Highlighter, Mga Hugis, Grid Snap, PNG/SVG export, at Split View.
-            </p>
-          </div>
-
-          <div className="rounded-3xl bg-white dark:bg-[#0D1930] border border-blue-200/70 dark:border-blue-800/60 p-6 shadow-lg shadow-blue-950/5 hover:-translate-y-0.5 transition">
-            <div className="w-11 h-11 rounded-2xl bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 flex items-center justify-center mb-4">
-              <FileText className="w-5 h-5" />
-            </div>
-            <h3 className="font-display font-bold text-lg text-slate-950 dark:text-white">
-              Editor ng Dokumentong Parang Word
-            </h3>
-            <p className="text-sm text-slate-500 dark:text-blue-200/70 mt-2 leading-relaxed">
-              May Ribbon toolbar na may font, mga pamagat, checklist, nababagong talahanayan, mga
-              pormulang KaTeX, Hanapin at Palitan, kasaysayan ng bersyon, at PDF/HTML/Markdown export.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Seksyon ng Organisasyon at Pribasiya */}
-      <section id="organization" className="max-w-7xl mx-auto px-4 sm:px-8 pb-16">
-        <div className="rounded-3xl bg-gradient-to-br from-[#0F275C] via-[#1D4ED8] to-[#0284C7] text-white p-8 sm:p-12 shadow-2xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-xs font-semibold text-blue-100">
-                <FolderKanban className="w-3.5 h-3.5" /> Ayusin · Beripikahin · Protektahan
-              </div>
-              <h2 className="font-display text-2xl sm:text-3xl font-extrabold leading-tight">
-                Beripikadong Access sa Gmail at Mahigpit na Pribasiya ng Mag-aaral
-              </h2>
-              <p className="text-sm sm:text-base text-blue-100/90 leading-relaxed">
-                Bawat account ng mag-aaral ay nangangailangan ng natatangi at beripikadong Gmail
-                address. Pangkatin ang mga tala sa mga Folder, Asignatura, at Kuwaderno, hanapin ang
-                anumang tala agad, at panatilihing ganap na pribado ang iyong mga gawa.
-              </p>
-            </div>
-
-            <div id="privacy" className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {[
-                { icon: <ShieldCheck className="w-4 h-4 text-sky-200" />, title: 'Beripikadong Gmail Lamang', desc: 'Isang natatanging account bawat beripikadong @gmail.com gamit ang OTP at link.' },
-                { icon: <FolderKanban className="w-4 h-4 text-blue-100" />, title: 'Mga Folder at Kuwaderno', desc: 'Ayusin ang mga tala sa sariling mga folder, asignatura, at tag.' },
-                { icon: <Search className="w-4 h-4 text-sky-200" />, title: 'Agarang Buong-Tekstong Paghahanap', desc: 'Hanapin ang mga pormula, salita, at file sa loob lamang ng ilang milisegundo.' },
-                { icon: <UploadCloud className="w-4 h-4 text-white" />, title: 'Pribadong Baul ng File', desc: 'Tinitiyak ng mahigpit na kontrol na pribado ang mga tala—maging sa mga admin.' },
-                { icon: <CheckCircle2 className="w-4 h-4 text-white" />, title: 'Ligtas na mga Session', desc: 'Tuloy-tuloy na HttpOnly session na may awtomatikong pag-ikot ng refresh token.' },
-              ].slice(0, 4).map((item) => (
-                <div key={item.title} className="rounded-2xl bg-white/10 border border-white/15 p-4 backdrop-blur-xs">
-                  <div className="flex items-center gap-2 font-semibold text-sm">
-                    {item.icon}
-                    {item.title}
-                  </div>
-                  <p className="text-xs text-blue-100/80 mt-1.5 leading-relaxed">{item.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+        </main>
+      )}
 
       <footer className="border-t border-blue-200/70 dark:border-blue-900/50 py-6 px-4 sm:px-8 text-center text-xs text-slate-500 dark:text-blue-200/60">
         INKORA — &quot;Iyong mga Ideya. Iyong Espasyo. Iyong Tinta.&quot; · Beripikadong Espasyo ng Mag-aaral at Platform ng Admin

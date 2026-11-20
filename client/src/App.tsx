@@ -327,7 +327,7 @@ const WorkspaceShell: React.FC = () => {
             ? user.role === 'admin'
               ? '/admin'
               : buildWorkspacePath(activeNav, null)
-            : '/login';
+            : '/';
           window.history.replaceState({}, '', nextPath);
         }}
       />
