@@ -125,6 +125,14 @@ function getTemplatePayload(templateId: string | undefined): TemplateData {
   }
 }
 
+const ALLOWED_PAGE_SIZES = new Set(['compact', 'a4', 'letter', 'wide', 'fluid']);
+
+function sanitizeBgColor(value: unknown): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw.toUpperCase() : '';
+}
+
 export function createNotesRouter(
   db: DatabaseSync,
   requireAuth: (req: AuthenticatedRequest, res: Response, next: () => void) => void
@@ -141,12 +149,16 @@ export function createNotesRouter(
     const notebookId = req.query.notebookId ? String(req.query.notebookId) : null;
     const subjectId = req.query.subjectId ? String(req.query.subjectId) : null;
     const mode = req.query.mode ? String(req.query.mode) : null;
+    const category = req.query.category ? String(req.query.category).trim() : null;
+    const q = req.query.q ? String(req.query.q).trim() : '';
+    const sort = req.query.sort ? String(req.query.sort) : '';
 
     let sql = `
-      SELECT n.id, n.folder_id, n.notebook_id, n.subject_id, n.title, n.mode, n.paper_style, n.page_size,
+      SELECT n.id, n.folder_id, n.notebook_id, n.subject_id, n.title, n.description, n.category,
+             n.mode, n.paper_style, n.paper_bg_color, n.page_size,
              substr(n.plain_text, 1, 220) as excerpt, n.drawing_preview, n.tags_json,
              n.word_count, n.is_pinned, n.is_starred, n.is_trashed, n.trashed_at, n.share_token,
-             n.created_at, n.updated_at,
+             n.last_opened_at, n.created_at, n.updated_at,
              f.name as folder_name, f.color as folder_color,
              nb.title as notebook_title, s.code as subject_code, s.name as subject_name, s.color as subject_color
       FROM notes n
@@ -176,8 +188,41 @@ export function createNotesRouter(
       sql += ' AND n.mode = ?';
       params.push(mode);
     }
+    if (category && category !== 'all') {
+      sql += ' AND n.category = ?';
+      params.push(category);
+    }
+    if (q) {
+      const like = `%${q}%`;
+      sql +=
+        ' AND (n.title LIKE ? OR n.description LIKE ? OR n.plain_text LIKE ? OR n.cornell_cues LIKE ? OR n.cornell_summary LIKE ? OR n.tags_json LIKE ? OR n.category LIKE ?)';
+      params.push(like, like, like, like, like, like, like);
+    }
 
-    sql += ' ORDER BY n.is_pinned DESC, n.updated_at DESC';
+    switch (sort) {
+      case 'updated_asc':
+        sql += ' ORDER BY n.updated_at ASC';
+        break;
+      case 'created_desc':
+        sql += ' ORDER BY n.created_at DESC';
+        break;
+      case 'created_asc':
+        sql += ' ORDER BY n.created_at ASC';
+        break;
+      case 'title_asc':
+        sql += ' ORDER BY n.title COLLATE NOCASE ASC, n.updated_at DESC';
+        break;
+      case 'title_desc':
+        sql += ' ORDER BY n.title COLLATE NOCASE DESC, n.updated_at DESC';
+        break;
+      case 'updated_desc':
+        sql += ' ORDER BY n.updated_at DESC';
+        break;
+      default:
+        sql += ' ORDER BY n.is_pinned DESC, n.updated_at DESC';
+        break;
+    }
+
     const notes = db.prepare(sql).all(...params);
     res.json({ notes });
   });
@@ -230,12 +275,20 @@ export function createNotesRouter(
     const tpl = getTemplatePayload(req.body?.template ? String(req.body.template) : undefined);
 
     const title = req.body?.title ? String(req.body.title).trim() : tpl.title;
+    const description =
+      req.body?.description !== undefined ? String(req.body.description).trim().slice(0, 500) : '';
+    const category =
+      req.body?.category !== undefined
+        ? String(req.body.category).trim().slice(0, 60) || 'General'
+        : 'General';
     const mode = req.body?.mode && ['document', 'notebook', 'drawing'].includes(String(req.body.mode))
       ? String(req.body.mode)
       : tpl.mode;
     const paperStyle = req.body?.paper_style ? String(req.body.paper_style) : tpl.paper_style;
-    const pageSize = req.body?.page_size && ['a4', 'letter', 'fluid'].includes(String(req.body.page_size))
-      ? String(req.body.page_size)
+    const paperBgColor = sanitizeBgColor(req.body?.paper_bg_color);
+    const reqPageSize = req.body?.page_size ? String(req.body.page_size) : '';
+    const pageSize = ALLOWED_PAGE_SIZES.has(reqPageSize)
+      ? reqPageSize
       : (mode === 'drawing' ? 'fluid' : 'a4');
 
     let folderId = req.body?.folder_id ? String(req.body.folder_id) : null;
@@ -285,20 +338,24 @@ export function createNotesRouter(
 
     db.prepare(
       `INSERT INTO notes (
-        id, user_id, folder_id, notebook_id, subject_id, title, mode, paper_style, page_size,
+        id, user_id, folder_id, notebook_id, subject_id, title, description, category,
+        mode, paper_style, paper_bg_color, page_size,
         content_json, content_html, plain_text, cornell_cues, cornell_summary,
         drawing_data, tags_json, word_count, is_pinned, is_starred, is_trashed, last_opened_at, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?)`
     ).run(
-      id, userId, folderId, notebookId, subjectId, title || 'Untitled Note', mode, paperStyle, pageSize,
+      id, userId, folderId, notebookId, subjectId, title || 'Untitled Note', description, category,
+      mode, paperStyle, paperBgColor, pageSize,
       contentJson, contentHtml, plainText, cornellCues, cornellSummary,
-      drawingData, tagsJson, wordCount, now, now, now
+      drawingData, tagsJson, wordCount, req.body?.is_starred ? 1 : 0, now, now, now
     );
 
     syncNoteFts(db, {
       id,
       user_id: userId,
       title: title || 'Untitled Note',
+      description,
+      category,
       plain_text: plainText,
       cornell_cues: cornellCues,
       cornell_summary: cornellSummary,
@@ -333,12 +390,25 @@ export function createNotesRouter(
     }
 
     const title = req.body?.title !== undefined ? String(req.body.title).trim() || 'Untitled Note' : String(existing.title);
+    const description =
+      req.body?.description !== undefined
+        ? String(req.body.description).trim().slice(0, 500)
+        : String(existing.description || '');
+    const category =
+      req.body?.category !== undefined
+        ? String(req.body.category).trim().slice(0, 60) || 'General'
+        : String(existing.category || 'General');
     const mode = req.body?.mode && ['document', 'notebook', 'drawing'].includes(String(req.body.mode))
       ? String(req.body.mode)
       : String(existing.mode);
     const paperStyle = req.body?.paper_style !== undefined ? String(req.body.paper_style) : String(existing.paper_style);
-    const pageSize = req.body?.page_size && ['a4', 'letter', 'fluid'].includes(String(req.body.page_size))
-      ? String(req.body.page_size)
+    const paperBgColor =
+      req.body?.paper_bg_color !== undefined
+        ? sanitizeBgColor(req.body.paper_bg_color)
+        : String(existing.paper_bg_color || '');
+    const reqPageSize = req.body?.page_size ? String(req.body.page_size) : '';
+    const pageSize = ALLOWED_PAGE_SIZES.has(reqPageSize)
+      ? reqPageSize
       : String(existing.page_size);
 
     let folderId = req.body?.folder_id !== undefined
@@ -381,13 +451,15 @@ export function createNotesRouter(
 
     db.prepare(
       `UPDATE notes
-       SET folder_id = ?, notebook_id = ?, subject_id = ?, title = ?, mode = ?, paper_style = ?, page_size = ?,
+       SET folder_id = ?, notebook_id = ?, subject_id = ?, title = ?, description = ?, category = ?,
+           mode = ?, paper_style = ?, paper_bg_color = ?, page_size = ?,
            content_json = ?, content_html = ?, plain_text = ?, cornell_cues = ?, cornell_summary = ?,
            drawing_data = ?, drawing_preview = ?, tags_json = ?, word_count = ?,
            is_pinned = ?, is_starred = ?, updated_at = ?
        WHERE id = ? AND user_id = ?`
     ).run(
-      folderId, notebookId, subjectId, title, mode, paperStyle, pageSize,
+      folderId, notebookId, subjectId, title, description, category,
+      mode, paperStyle, paperBgColor, pageSize,
       contentJson, contentHtml, plainText, cornellCues, cornellSummary,
       drawingData, drawingPreview, tagsJson, wordCount,
       isPinned, isStarred, now, req.params.id, userId
@@ -397,6 +469,8 @@ export function createNotesRouter(
       id: req.params.id,
       user_id: userId,
       title,
+      description,
+      category,
       plain_text: plainText,
       cornell_cues: cornellCues,
       cornell_summary: cornellSummary,
@@ -444,11 +518,13 @@ export function createNotesRouter(
     }
 
     const row = db
-      .prepare('SELECT id, user_id, title, plain_text, cornell_cues, cornell_summary, tags_json, is_trashed FROM notes WHERE id = ?')
+      .prepare('SELECT id, user_id, title, description, category, plain_text, cornell_cues, cornell_summary, tags_json, is_trashed FROM notes WHERE id = ?')
       .get(req.params.id) as {
       id: string;
       user_id: string;
       title: string;
+      description: string;
+      category: string;
       plain_text: string;
       cornell_cues: string;
       cornell_summary: string;
@@ -485,13 +561,17 @@ export function createNotesRouter(
     const newId = generateId();
     const now = new Date().toISOString();
     const newTitle = `${String(src.title)} (Copy)`;
+    const description = String(src.description || '');
+    const category = String(src.category || 'General');
+    const paperBgColor = String(src.paper_bg_color || '');
 
     db.prepare(
       `INSERT INTO notes (
-        id, user_id, folder_id, notebook_id, subject_id, title, mode, paper_style, page_size,
+        id, user_id, folder_id, notebook_id, subject_id, title, description, category,
+        mode, paper_style, paper_bg_color, page_size,
         content_json, content_html, plain_text, cornell_cues, cornell_summary,
-        drawing_data, drawing_preview, tags_json, word_count, is_pinned, is_starred, is_trashed, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?)`
+        drawing_data, drawing_preview, tags_json, word_count, is_pinned, is_starred, is_trashed, last_opened_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?)`
     ).run(
       newId,
       req.user!.id,
@@ -499,8 +579,11 @@ export function createNotesRouter(
       src.notebook_id as string | null,
       src.subject_id as string | null,
       newTitle,
+      description,
+      category,
       String(src.mode),
       String(src.paper_style),
+      paperBgColor,
       String(src.page_size),
       String(src.content_json),
       String(src.content_html),
@@ -513,6 +596,7 @@ export function createNotesRouter(
       Number(src.word_count),
       Number(src.is_starred),
       now,
+      now,
       now
     );
 
@@ -520,6 +604,8 @@ export function createNotesRouter(
       id: newId,
       user_id: req.user!.id,
       title: newTitle,
+      description,
+      category,
       plain_text: String(src.plain_text),
       cornell_cues: String(src.cornell_cues),
       cornell_summary: String(src.cornell_summary),
@@ -527,7 +613,17 @@ export function createNotesRouter(
       is_trashed: 0,
     });
 
-    const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(newId);
+    const note = db
+      .prepare(
+        `SELECT n.*, f.name as folder_name, f.color as folder_color,
+                nb.title as notebook_title, s.code as subject_code, s.name as subject_name, s.color as subject_color
+         FROM notes n
+         LEFT JOIN folders f ON f.id = n.folder_id
+         LEFT JOIN notebooks nb ON nb.id = n.notebook_id
+         LEFT JOIN subjects s ON s.id = n.subject_id
+         WHERE n.id = ?`
+      )
+      .get(newId);
     res.status(201).json({ note });
   });
 

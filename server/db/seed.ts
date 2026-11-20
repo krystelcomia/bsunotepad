@@ -387,10 +387,10 @@ export function ensureDemoUser(db: DatabaseSync): string {
 
   const insertNote = db.prepare(
     `INSERT INTO notes (
-      id, user_id, folder_id, notebook_id, subject_id, title, mode, paper_style, page_size,
+      id, user_id, folder_id, notebook_id, subject_id, title, description, category, mode, paper_style, paper_bg_color, page_size,
       content_json, content_html, plain_text, cornell_cues, cornell_summary,
       drawing_data, tags_json, word_count, is_pinned, is_starred, is_trashed, last_opened_at, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`
   );
 
   const note1Id = generateId();
@@ -401,7 +401,9 @@ export function ensureDemoUser(db: DatabaseSync): string {
   insertNote.run(
     note1Id, userId, folderLabsId, bioNbId, bioId,
     'Lab Report 04: Catalase Enzyme Kinetics',
-    'document', 'plain', 'a4',
+    'Experimental reaction velocity measurements and Lineweaver-Burk linearization for BIO 204.',
+    'Lab Report',
+    'document', 'plain', '', 'a4',
     labContentJson, labHtml, labPlain, '', '',
     JSON.stringify({ version: 1, strokes: [], shapes: [], texts: [], background: 'transparent' }),
     JSON.stringify(['lab-report', 'biochem', 'kinetics']),
@@ -411,7 +413,9 @@ export function ensureDemoUser(db: DatabaseSync): string {
   insertNote.run(
     note2Id, userId, folderFallId, csNbId, csId,
     'Lecture 08: Graph Traversal (BFS, DFS & Dijkstra)',
-    'notebook', 'cornell', 'a4',
+    'Cornell cues, traversal pseudocode, and annotated graph diagram for CS 301 algorithms.',
+    'Lecture Notes',
+    'notebook', 'cornell', '#FFFDF5', 'a4',
     csContentJson, '', csPlain, csCues, csSummary,
     csDrawingData,
     JSON.stringify(['algorithms', 'graphs', 'midterm']),
@@ -421,7 +425,9 @@ export function ensureDemoUser(db: DatabaseSync): string {
   insertNote.run(
     note3Id, userId, folderLabsId, bioNbId, bioId,
     'Eukaryotic Cell Organelle Sketch',
-    'drawing', 'grid', 'fluid',
+    'Hand-drawn vector membrane, nucleus, and mitochondrion reference diagram.',
+    'Study Guide',
+    'drawing', 'grid', '#EFF6FF', 'fluid',
     JSON.stringify({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Visual reference sketch for Chapter 4 Organelle Structure.' }] }] }),
     '<p>Visual reference sketch for Chapter 4 Organelle Structure.</p>',
     'Visual reference sketch for Chapter 4 Organelle Structure.',
@@ -434,17 +440,19 @@ export function ensureDemoUser(db: DatabaseSync): string {
   insertNote.run(
     note4Id, userId, folderExamsId, histNbId, histId,
     'Midterm Essay: Thermodynamics & Determinism',
-    'document', 'plain', 'letter',
+    'Outline and primary scholarly sources from Carnot to Boltzmann.',
+    'Essay',
+    'document', 'plain', '#FFFFFF', 'letter',
     histContentJson, '', histPlain, '', '',
     JSON.stringify({ version: 1, strokes: [], shapes: [], texts: [], background: 'transparent' }),
     JSON.stringify(['essay', 'thermodynamics']),
     countWords(histPlain), 0, 0, isoOffset(-12), isoOffset(-72), isoOffset(-24)
   );
 
-  syncNoteFts(db, { id: note1Id, user_id: userId, title: 'Lab Report 04: Catalase Enzyme Kinetics', plain_text: labPlain, cornell_cues: '', cornell_summary: '', tags_json: '["lab-report","biochem","kinetics"]', is_trashed: 0 });
-  syncNoteFts(db, { id: note2Id, user_id: userId, title: 'Lecture 08: Graph Traversal (BFS, DFS & Dijkstra)', plain_text: csPlain, cornell_cues: csCues, cornell_summary: csSummary, tags_json: '["algorithms","graphs","midterm"]', is_trashed: 0 });
-  syncNoteFts(db, { id: note3Id, user_id: userId, title: 'Eukaryotic Cell Organelle Sketch', plain_text: 'Visual reference sketch for Chapter 4 Organelle Structure.', cornell_cues: '', cornell_summary: '', tags_json: '["diagram","cell-biology","sketch"]', is_trashed: 0 });
-  syncNoteFts(db, { id: note4Id, user_id: userId, title: 'Midterm Essay: Thermodynamics & Determinism', plain_text: histPlain, cornell_cues: '', cornell_summary: '', tags_json: '["essay","thermodynamics"]', is_trashed: 0 });
+  syncNoteFts(db, { id: note1Id, user_id: userId, title: 'Lab Report 04: Catalase Enzyme Kinetics', description: 'Experimental reaction velocity measurements and Lineweaver-Burk linearization for BIO 204.', category: 'Lab Report', plain_text: labPlain, cornell_cues: '', cornell_summary: '', tags_json: '["lab-report","biochem","kinetics"]', is_trashed: 0 });
+  syncNoteFts(db, { id: note2Id, user_id: userId, title: 'Lecture 08: Graph Traversal (BFS, DFS & Dijkstra)', description: 'Cornell cues, traversal pseudocode, and annotated graph diagram for CS 301 algorithms.', category: 'Lecture Notes', plain_text: csPlain, cornell_cues: csCues, cornell_summary: csSummary, tags_json: '["algorithms","graphs","midterm"]', is_trashed: 0 });
+  syncNoteFts(db, { id: note3Id, user_id: userId, title: 'Eukaryotic Cell Organelle Sketch', description: 'Hand-drawn vector membrane, nucleus, and mitochondrion reference diagram.', category: 'Study Guide', plain_text: 'Visual reference sketch for Chapter 4 Organelle Structure.', cornell_cues: '', cornell_summary: '', tags_json: '["diagram","cell-biology","sketch"]', is_trashed: 0 });
+  syncNoteFts(db, { id: note4Id, user_id: userId, title: 'Midterm Essay: Thermodynamics & Determinism', description: 'Outline and primary scholarly sources from Carnot to Boltzmann.', category: 'Essay', plain_text: histPlain, cornell_cues: '', cornell_summary: '', tags_json: '["essay","thermodynamics"]', is_trashed: 0 });
 
   db.prepare(
     `INSERT INTO note_versions (id, note_id, user_id, label, title, mode, paper_style, content_json, content_html, cornell_cues, cornell_summary, drawing_data, word_count, created_at)
@@ -592,21 +600,24 @@ export function seedStarterWorkspaceForNewUser(db: DatabaseSync, userId: string)
 
   db.prepare(
     `INSERT INTO notes (
-      id, user_id, folder_id, notebook_id, subject_id, title, mode, paper_style, page_size,
+      id, user_id, folder_id, notebook_id, subject_id, title, description, category, mode, paper_style, paper_bg_color, page_size,
       content_json, content_html, plain_text, cornell_cues, cornell_summary,
-      drawing_data, tags_json, word_count, is_pinned, is_starred, is_trashed, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, 'document', 'plain', 'a4', ?, '', ?, '', '', ?, '["getting-started"]', ?, 1, 0, 0, ?, ?)`
+      drawing_data, tags_json, word_count, is_pinned, is_starred, is_trashed, last_opened_at, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Getting Started', 'document', 'plain', '', 'a4', ?, '', ?, '', '', ?, '["getting-started"]', ?, 1, 0, 0, ?, ?, ?)`
   ).run(
     noteId, userId, folderId, notebookId, subjectId, 'Welcome to INKORA',
+    'Quick orientation note covering documents, digital notebooks, drawings, and file storage.',
     welcomeJson, plain,
     JSON.stringify({ version: 1, strokes: [], shapes: [], texts: [], background: 'transparent' }),
-    countWords(plain), now, now
+    countWords(plain), now, now, now
   );
 
   syncNoteFts(db, {
     id: noteId,
     user_id: userId,
     title: 'Welcome to INKORA',
+    description: 'Quick orientation note covering documents, digital notebooks, drawings, and file storage.',
+    category: 'Getting Started',
     plain_text: plain,
     cornell_cues: '',
     cornell_summary: '',

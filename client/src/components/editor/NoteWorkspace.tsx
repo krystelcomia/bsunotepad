@@ -24,22 +24,29 @@ import {
   Check,
   Columns2,
   Copy,
+  CopyPlus,
+  Edit3,
   ExternalLink,
+  FilePlus2,
   FileText,
   History,
+  Moon,
   NotebookPen,
+  Palette,
   Paperclip,
   PenTool,
   Pin,
   Save,
   Share2,
   Star,
+  Sun,
   Tag,
   Trash2,
   Upload,
   X,
 } from 'lucide-react';
 import { api } from '../../api/client';
+import { useTheme } from '../../context/ThemeContext';
 import { Attachment, DrawingData, Folder, Notebook, Note, NoteMode, PageSize, PaperStyle, Subject } from '../../types';
 import {
   downloadTextFile,
@@ -52,8 +59,22 @@ import {
 import { Modal } from '../common/Modal';
 import { DrawingCanvas } from './DrawingCanvas';
 import { MathFormula } from './MathExtension';
-import { RibbonToolbar } from './RibbonToolbar';
+import { PAPER_BG_SWATCHES, RibbonToolbar } from './RibbonToolbar';
 import { VersionHistoryDrawer } from './VersionHistoryDrawer';
+
+const NOTE_CATEGORIES = [
+  'General',
+  'Lecture Notes',
+  'Study Guide',
+  'Lab Report',
+  'Essay',
+  'Assignment',
+  'Exam Prep',
+  'Research',
+  'Summary',
+  'Personal',
+  'Getting Started',
+] as const;
 
 interface NoteWorkspaceProps {
   noteId: string;
@@ -61,6 +82,8 @@ interface NoteWorkspaceProps {
   subjects: Subject[];
   notebooks: Notebook[];
   onBack: () => void;
+  onOpenNote?: (noteId: string) => void;
+  onNewNote?: () => void;
   onNoteUpdated: (note: Note) => void;
   onNoteDeleted: () => void;
   onNotify: (type: 'success' | 'error' | 'info', text: string) => void;
@@ -74,20 +97,27 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
   subjects,
   notebooks,
   onBack,
+  onOpenNote,
+  onNewNote,
   onNoteUpdated,
   onNoteDeleted,
   onNotify,
 }) => {
+  const { resolved: workspaceTheme, toggle: toggleWorkspaceTheme } = useTheme();
   const [note, setNote] = useState<Note | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('General');
   const [studioView, setStudioView] = useState<StudioView>('document');
   const [paperStyle, setPaperStyle] = useState<PaperStyle>('plain');
+  const [paperBgColor, setPaperBgColor] = useState('');
   const [pageSize, setPageSize] = useState<PageSize>('a4');
   const [paperTone, setPaperTone] = useState<'light' | 'cream' | 'adaptive'>('light');
   const [zoom, setZoom] = useState<number>(100);
+  const [customizerOpen, setCustomizerOpen] = useState(false);
 
   const [cornellCues, setCornellCues] = useState('');
   const [cornellSummary, setCornellSummary] = useState('');
@@ -98,7 +128,9 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
   const [tags, setTags] = useState<string[]>([]);
   const [tagDraft, setTagDraft] = useState('');
 
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'dirty'>('saved');
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [attachmentsOpen, setAttachmentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -108,6 +140,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
   const [findTerm, setFindTerm] = useState('');
   const [replaceTerm, setReplaceTerm] = useState('');
 
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
   const imageUploadRef = useRef<HTMLInputElement | null>(null);
   const attachUploadRef = useRef<HTMLInputElement | null>(null);
   const saveTimerRef = useRef<number | null>(null);
@@ -144,12 +177,18 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
     },
   });
 
+  const autoSaveRef = useRef(true);
+  autoSaveRef.current = autoSaveEnabled;
+
   const hydrateFromNote = useCallback(
     (loaded: Note) => {
       setNote(loaded);
       setTitle(loaded.title);
+      setDescription(loaded.description || '');
+      setCategory(loaded.category || 'General');
       setStudioView(loaded.mode as StudioView);
       setPaperStyle((loaded.paper_style || 'plain') as PaperStyle);
+      setPaperBgColor(loaded.paper_bg_color || '');
       setPageSize((loaded.page_size || 'a4') as PageSize);
       setCornellCues(loaded.cornell_cues || '');
       setCornellSummary(loaded.cornell_summary || '');
@@ -167,6 +206,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
         }
       }
       setSaveState('saved');
+      setLastSavedAt(loaded.updated_at || new Date().toISOString());
     },
     [editor]
   );
@@ -207,28 +247,79 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
       setNote(res.note);
       onNoteUpdated(res.note);
       setSaveState('saved');
+      setLastSavedAt(new Date().toISOString());
     } catch {
+      latestPayloadRef.current = { ...pending, ...latestPayloadRef.current };
       setSaveState('dirty');
     }
   }, [noteId, onNoteUpdated]);
+
+  const handleManualSave = useCallback(async () => {
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const pending: Record<string, unknown> = {
+      ...latestPayloadRef.current,
+      title: title.trim() || 'Untitled Note',
+      description,
+      category,
+      paper_style: paperStyle,
+      paper_bg_color: paperBgColor,
+      page_size: pageSize,
+    };
+    if (editor) {
+      pending.content_json = JSON.stringify(editor.getJSON());
+      pending.content_html = editor.getHTML();
+    }
+    latestPayloadRef.current = {};
+    setSaveState('saving');
+    try {
+      const res = await api.updateNote(noteId, pending);
+      setNote(res.note);
+      onNoteUpdated(res.note);
+      setSaveState('saved');
+      setLastSavedAt(new Date().toISOString());
+      onNotify('success', 'Note saved manually');
+    } catch (err) {
+      setSaveState('dirty');
+      onNotify('error', err instanceof Error ? err.message : 'Save failed');
+    }
+  }, [noteId, title, description, category, paperStyle, paperBgColor, pageSize, editor, onNoteUpdated, onNotify]);
 
   const queueSave = useCallback(
     (patch: Record<string, unknown>) => {
       latestPayloadRef.current = { ...latestPayloadRef.current, ...patch };
       setSaveState('dirty');
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = window.setTimeout(() => {
-        flushSaveNow();
-      }, 650);
+      if (autoSaveRef.current) {
+        saveTimerRef.current = window.setTimeout(() => {
+          flushSaveNow();
+        }, 650);
+      }
     },
     [flushSaveNow]
   );
+
+  const handleDuplicateInStudio = async () => {
+    try {
+      await flushSaveNow();
+      const res = await api.duplicateNote(noteId);
+      onNoteUpdated(res.note);
+      onNotify('success', `Duplicated as "${res.note.title}"`);
+      if (onOpenNote) {
+        onOpenNote(res.note.id);
+      }
+    } catch (err) {
+      onNotify('error', err instanceof Error ? err.message : 'Failed to duplicate note');
+    }
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        flushSaveNow();
+        handleManualSave();
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault();
@@ -240,7 +331,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
       window.removeEventListener('keydown', onKey);
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     };
-  }, [flushSaveNow]);
+  }, [handleManualSave]);
 
   const handleModeSwitch = (nextView: StudioView) => {
     setStudioView(nextView);
@@ -340,15 +431,26 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
   };
 
   const pageWidthClass = useMemo(() => {
-    if (pageSize === 'fluid') return 'max-w-none w-full';
+    if (pageSize === 'compact') return 'max-w-[640px] w-full';
     if (pageSize === 'letter') return 'max-w-[816px] w-full';
+    if (pageSize === 'wide') return 'max-w-[1024px] w-full';
+    if (pageSize === 'fluid') return 'max-w-none w-full';
     return 'max-w-[794px] w-full';
   }, [pageSize]);
 
+  const isDarkPaper = useMemo(
+    () =>
+      paperStyle === 'dark_board' ||
+      paperBgColor === '#1E293B' ||
+      paperBgColor === '#13111C',
+    [paperStyle, paperBgColor]
+  );
+
   const paperBgClass = useMemo(() => {
-    const toneClass = paperTone === 'adaptive' ? 'paper-adaptive' : '';
-    return `paper-${paperStyle} ${toneClass}`;
-  }, [paperStyle, paperTone]);
+    const toneClass = !paperBgColor && paperTone === 'adaptive' ? 'paper-adaptive' : '';
+    const darkSheetClass = isDarkPaper && paperStyle !== 'dark_board' ? 'paper-dark-sheet' : '';
+    return `paper-${paperStyle} ${toneClass} ${darkSheetClass}`;
+  }, [paperStyle, paperTone, paperBgColor, isDarkPaper]);
 
   const wordCount = editor?.storage.characterCount?.words() ?? note?.word_count ?? 0;
   const charCount = editor?.storage.characterCount?.characters() ?? 0;
@@ -379,7 +481,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 bg-[#EFECE5] dark:bg-[#0B0F17]">
       {/* Studio Top Bar */}
-      <div className="no-print px-3 sm:px-5 py-2.5 bg-white dark:bg-slate-900 border-b border-stone-200 dark:border-slate-800 flex flex-wrap items-center gap-3">
+      <div className="no-print px-3 sm:px-5 py-2.5 bg-white dark:bg-slate-900 border-b border-stone-200 dark:border-slate-800 flex flex-wrap items-center gap-2.5">
         <button
           type="button"
           onClick={() => {
@@ -391,18 +493,48 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
           <ArrowLeft className="w-4 h-4" />
         </button>
 
-        <div className="flex-1 min-w-[180px]">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              queueSave({ title: e.target.value });
-            }}
-            placeholder="Untitled Note"
-            className="w-full font-display font-bold text-base sm:text-lg text-slate-900 dark:text-white bg-transparent focus:outline-none truncate"
-          />
+        <div className="flex-1 min-w-[200px]">
+          <div className="flex items-center gap-1.5">
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                queueSave({ title: e.target.value });
+              }}
+              placeholder="Untitled Note"
+              className="w-full font-display font-bold text-base sm:text-lg text-slate-900 dark:text-white bg-transparent focus:outline-none truncate"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                titleInputRef.current?.focus();
+                titleInputRef.current?.select();
+              }}
+              className="p-1 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-slate-800 cursor-pointer shrink-0"
+              title="Rename note"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+            </button>
+          </div>
           <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+            <select
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                queueSave({ category: e.target.value });
+              }}
+              className="bg-violet-50/80 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-semibold rounded px-1.5 py-0.5 cursor-pointer"
+              title="Note Category"
+            >
+              {NOTE_CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <span>·</span>
             <select
               value={note.folder_id || ''}
               onChange={(e) => queueSave({ folder_id: e.target.value || null })}
@@ -445,6 +577,25 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
               ))}
             </select>
             <span>·</span>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !autoSaveEnabled;
+                setAutoSaveEnabled(next);
+                onNotify('info', next ? 'Auto-save enabled' : 'Auto-save paused (use Save button)');
+                if (next && saveState === 'dirty') {
+                  flushSaveNow();
+                }
+              }}
+              className={`px-1.5 py-0.5 rounded font-semibold cursor-pointer ${
+                autoSaveEnabled
+                  ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-stone-100 dark:bg-slate-800 text-slate-500'
+              }`}
+              title="Toggle automatic saving"
+            >
+              Auto: {autoSaveEnabled ? 'ON' : 'OFF'}
+            </button>
             <span
               className={`font-medium ${
                 saveState === 'saving'
@@ -453,8 +604,15 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
                     ? 'text-amber-600'
                     : 'text-emerald-600 dark:text-emerald-400'
               }`}
+              title={lastSavedAt ? `Last saved ${new Date(lastSavedAt).toLocaleTimeString()}` : undefined}
             >
-              {saveState === 'saving' ? 'Saving...' : saveState === 'dirty' ? 'Unsaved changes' : 'Saved'}
+              {saveState === 'saving'
+                ? 'Saving...'
+                : saveState === 'dirty'
+                  ? 'Unsaved changes'
+                  : lastSavedAt
+                    ? `Saved ${new Date(lastSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                    : 'Saved'}
             </span>
           </div>
         </div>
@@ -489,11 +647,43 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
         <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={flushSaveNow}
-            className="p-2 rounded-xl text-slate-500 hover:bg-stone-100 dark:hover:bg-slate-800 hover:text-indigo-600 cursor-pointer"
-            title="Save now (Ctrl+S)"
+            onClick={handleManualSave}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-violet-700 hover:bg-violet-800 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+            title="Manual Save (Ctrl+S)"
           >
-            <Save className="w-4 h-4" />
+            <Save className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Save</span>
+          </button>
+          {onNewNote && (
+            <button
+              type="button"
+              onClick={async () => {
+                await flushSaveNow();
+                onNewNote();
+              }}
+              className="p-2 rounded-xl text-slate-500 hover:bg-stone-100 dark:hover:bg-slate-800 hover:text-violet-600 cursor-pointer"
+              title="Create New Note"
+            >
+              <FilePlus2 className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleDuplicateInStudio}
+            className="p-2 rounded-xl text-slate-500 hover:bg-stone-100 dark:hover:bg-slate-800 hover:text-violet-600 cursor-pointer"
+            title="Duplicate Note"
+          >
+            <CopyPlus className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setCustomizerOpen((v) => !v)}
+            className={`p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer ${
+              customizerOpen ? 'text-violet-700 bg-violet-50 dark:bg-violet-950/60' : 'text-slate-500'
+            }`}
+            title="Customize Paper Style, Colors, Size & Theme"
+          >
+            <Palette className="w-4 h-4" />
           </button>
           <button
             type="button"
@@ -501,7 +691,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
             className={`p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer ${
               note.is_starred ? 'text-amber-500' : 'text-slate-400'
             }`}
-            title="Star note"
+            title="Favorite note"
           >
             <Star className="w-4 h-4" fill={note.is_starred ? 'currentColor' : 'none'} />
           </button>
@@ -556,12 +746,137 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
               onNoteDeleted();
             }}
             className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
-            title="Move to Trash"
+            title="Delete Note (Move to Trash)"
           >
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
+
+      {/* Compact Note Description & Quick Paper/Theme Customizer Strip */}
+      <div className="no-print px-3 sm:px-5 py-1.5 bg-stone-50/90 dark:bg-slate-900/75 border-b border-stone-200/80 dark:border-slate-800 flex flex-wrap items-center gap-3 text-xs">
+        <div className="flex-1 min-w-[220px] flex items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 shrink-0">
+            Description:
+          </span>
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              queueSave({ description: e.target.value });
+            }}
+            placeholder="Add a brief description, lecture topic, or learning objective..."
+            className="w-full bg-transparent text-xs text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setCustomizerOpen((v) => !v)}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:border-violet-400 cursor-pointer"
+        >
+          <Palette className="w-3 h-3 text-violet-600" />
+          {paperStyle === 'plain' ? 'Blank Paper' : paperStyle === 'dot' ? 'Dotted Paper' : `${paperStyle.replace('_', ' ')}`}
+          <span className="text-slate-400">·</span>
+          <span className="uppercase">{pageSize}</span>
+        </button>
+      </div>
+
+      {/* Expandable Note Customization Panel (Page Styles, Colors, Sizes, Workspace Theme) */}
+      {customizerOpen && (
+        <div className="no-print px-4 sm:px-6 py-3 bg-violet-50/70 dark:bg-[#161229] border-b border-violet-200/70 dark:border-violet-900/60 flex flex-wrap items-center gap-x-5 gap-y-2.5 text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-slate-600 dark:text-slate-300">Page Style:</span>
+            <div className="flex flex-wrap items-center gap-1">
+              {(
+                [
+                  { id: 'plain', label: 'Blank' },
+                  { id: 'lined', label: 'Lined' },
+                  { id: 'grid', label: 'Grid' },
+                  { id: 'dot', label: 'Dotted' },
+                  { id: 'cornell', label: 'Cornell' },
+                  { id: 'wide_ruled', label: 'Wide Ruled' },
+                  { id: 'dark_board', label: 'Chalkboard' },
+                ] as const
+              ).map((ps) => (
+                <button
+                  key={ps.id}
+                  type="button"
+                  onClick={() => {
+                    setPaperStyle(ps.id);
+                    queueSave({ paper_style: ps.id });
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                    paperStyle === ps.id
+                      ? 'bg-violet-700 text-white shadow-xs'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-stone-200 dark:border-slate-700'
+                  }`}
+                >
+                  {ps.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-slate-600 dark:text-slate-300">Background:</span>
+            <div className="flex items-center gap-1">
+              {PAPER_BG_SWATCHES.map((sw) => (
+                <button
+                  key={sw.value || 'auto'}
+                  type="button"
+                  onClick={() => {
+                    setPaperBgColor(sw.value);
+                    queueSave({ paper_bg_color: sw.value });
+                  }}
+                  title={sw.label}
+                  className={`w-5 h-5 rounded-full border transition cursor-pointer ${
+                    paperBgColor === sw.value
+                      ? 'ring-2 ring-violet-600 ring-offset-1 border-violet-600 scale-110'
+                      : 'border-stone-300 dark:border-slate-600'
+                  }`}
+                  style={'preview' in sw ? { background: sw.preview } : { backgroundColor: sw.value }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-slate-600 dark:text-slate-300">Page Size:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                const sz = e.target.value as PageSize;
+                setPageSize(sz);
+                queueSave({ page_size: sz });
+              }}
+              className="px-2.5 py-1 rounded-lg border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+            >
+              <option value="compact">Compact (B5)</option>
+              <option value="a4">A4 Standard</option>
+              <option value="letter">US Letter</option>
+              <option value="wide">Wide Studio</option>
+              <option value="fluid">Full Fluid Width</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={toggleWorkspaceTheme}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
+          >
+            {workspaceTheme === 'dark' ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-400" /> Switch to Light Theme
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-violet-600" /> Switch to Dark Theme
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Hidden inline image upload input */}
       <input
@@ -585,6 +900,11 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
             setPaperStyle(st);
             queueSave({ paper_style: st });
           }}
+          paperBgColor={paperBgColor}
+          onChangePaperBgColor={(clr) => {
+            setPaperBgColor(clr);
+            queueSave({ paper_bg_color: clr });
+          }}
           pageSize={pageSize}
           onChangePageSize={(sz) => {
             setPageSize(sz);
@@ -592,6 +912,8 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
           }}
           paperTone={paperTone}
           onChangePaperTone={setPaperTone}
+          workspaceTheme={workspaceTheme}
+          onToggleWorkspaceTheme={toggleWorkspaceTheme}
           zoom={zoom}
           onChangeZoom={setZoom}
           wordCount={wordCount}
@@ -661,11 +983,11 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
           >
             {/* Notebook Overlay Ink Toggle Bar */}
             {studioView === 'notebook' && (
-              <div className="no-print w-full max-w-[794px] mb-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/90 dark:bg-slate-900/90 border border-stone-200 dark:border-slate-800 shadow-xs">
+              <div className={`no-print ${pageWidthClass} mb-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/90 dark:bg-slate-900/90 border border-stone-200 dark:border-slate-800 shadow-xs`}>
                 <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                   <span className="font-semibold">Notebook Sheet:</span>
                   <span className="capitalize px-2 py-0.5 rounded bg-stone-100 dark:bg-slate-800 font-medium">
-                    {paperStyle.replace('_', ' ')}
+                    {paperStyle === 'plain' ? 'Blank Paper' : paperStyle === 'dot' ? 'Dotted Paper' : paperStyle.replace('_', ' ')}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -688,9 +1010,10 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
             {/* Paper Sheet */}
             <div
               className={`print-sheet relative ${pageWidthClass} rounded-2xl shadow-lg border border-stone-300/80 dark:border-slate-700/80 overflow-hidden transition-all ${paperBgClass} ${
-                paperStyle === 'dark_board' ? 'text-slate-100' : 'text-slate-900'
+                isDarkPaper ? 'text-slate-100' : 'text-slate-900'
               }`}
               style={{
+                backgroundColor: paperBgColor || undefined,
                 transform: `scale(${zoom / 100})`,
                 transformOrigin: 'top center',
               }}

@@ -355,6 +355,9 @@ export const api = {
     notebookId?: string;
     subjectId?: string;
     mode?: string;
+    category?: string;
+    q?: string;
+    sort?: string;
     starred?: boolean;
     trashed?: boolean;
   }) => {
@@ -363,6 +366,9 @@ export const api = {
     if (params?.notebookId) qs.set('notebookId', params.notebookId);
     if (params?.subjectId) qs.set('subjectId', params.subjectId);
     if (params?.mode) qs.set('mode', params.mode);
+    if (params?.category) qs.set('category', params.category);
+    if (params?.q) qs.set('q', params.q);
+    if (params?.sort) qs.set('sort', params.sort);
     if (params?.starred) qs.set('starred', '1');
     if (params?.trashed) qs.set('trashed', '1');
     const qStr = qs.toString();
@@ -372,14 +378,18 @@ export const api = {
     request<{ note: Note; attachments: Attachment[]; versionCount: number }>(`/api/notes/${id}`),
   createNote: (payload: {
     title?: string;
+    description?: string;
+    category?: string;
     mode?: string;
     paper_style?: string;
+    paper_bg_color?: string;
     page_size?: string;
     folder_id?: string | null;
     notebook_id?: string | null;
     subject_id?: string | null;
     template?: string;
     tags?: string[];
+    is_starred?: number;
   }) =>
     request<{ note: Note }>('/api/notes', {
       method: 'POST',

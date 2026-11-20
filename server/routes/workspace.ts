@@ -49,7 +49,8 @@ export function createWorkspaceRouter(
       .all(userId);
 
     const noteCardSelect = `
-      SELECT n.id, n.folder_id, n.notebook_id, n.subject_id, n.title, n.mode, n.paper_style, n.page_size,
+      SELECT n.id, n.folder_id, n.notebook_id, n.subject_id, n.title, n.description, n.category,
+             n.mode, n.paper_style, n.paper_bg_color, n.page_size,
              substr(n.plain_text, 1, 220) as excerpt, n.drawing_preview, n.tags_json,
              n.word_count, n.is_pinned, n.is_starred, n.share_token, n.last_opened_at, n.created_at, n.updated_at,
              f.name as folder_name, f.color as folder_color,
@@ -280,7 +281,7 @@ export function createWorkspaceRouter(
         const ftsExpr = tokens.join(' AND ');
         notes = db
           .prepare(
-            `SELECT n.id, n.title, n.mode, n.paper_style, n.notebook_id, n.subject_id,
+            `SELECT n.id, n.title, n.description, n.category, n.mode, n.paper_style, n.paper_bg_color, n.notebook_id, n.subject_id,
                     substr(n.plain_text, 1, 180) as excerpt, n.word_count, n.updated_at,
                     nb.title as notebook_title, s.code as subject_code, s.color as subject_color
              FROM notes_fts f
@@ -301,18 +302,18 @@ export function createWorkspaceRouter(
       const likePattern = `%${rawQuery}%`;
       notes = db
         .prepare(
-          `SELECT n.id, n.title, n.mode, n.paper_style, n.notebook_id, n.subject_id,
+          `SELECT n.id, n.title, n.description, n.category, n.mode, n.paper_style, n.paper_bg_color, n.notebook_id, n.subject_id,
                   substr(n.plain_text, 1, 180) as excerpt, n.word_count, n.updated_at,
                   nb.title as notebook_title, s.code as subject_code, s.color as subject_color
            FROM notes n
            LEFT JOIN notebooks nb ON nb.id = n.notebook_id
            LEFT JOIN subjects s ON s.id = n.subject_id
            WHERE n.user_id = ? AND n.is_trashed = 0
-             AND (n.title LIKE ? OR n.plain_text LIKE ? OR n.tags_json LIKE ?)
+             AND (n.title LIKE ? OR n.description LIKE ? OR n.plain_text LIKE ? OR n.tags_json LIKE ? OR n.category LIKE ?)
            ORDER BY n.updated_at DESC
            LIMIT 20`
         )
-        .all(userId, likePattern, likePattern, likePattern);
+        .all(userId, likePattern, likePattern, likePattern, likePattern, likePattern);
     }
 
     const like = `%${rawQuery}%`;

@@ -74,7 +74,14 @@ export interface Notebook {
 
 export type NoteMode = 'document' | 'notebook' | 'drawing';
 export type PaperStyle = 'plain' | 'cream' | 'lined' | 'wide_ruled' | 'grid' | 'dot' | 'cornell' | 'dark_board';
-export type PageSize = 'a4' | 'letter' | 'fluid';
+export type PageSize = 'compact' | 'a4' | 'letter' | 'wide' | 'fluid';
+export type NoteSortOption =
+  | 'updated_desc'
+  | 'updated_asc'
+  | 'created_desc'
+  | 'created_asc'
+  | 'title_asc'
+  | 'title_desc';
 
 export interface StrokePoint {
   x: number;
@@ -137,8 +144,11 @@ export interface Note {
   notebook_id: string | null;
   subject_id: string | null;
   title: string;
+  description?: string;
+  category?: string;
   mode: NoteMode;
   paper_style: PaperStyle;
+  paper_bg_color?: string;
   page_size: PageSize;
   content_json: string;
   content_html: string;

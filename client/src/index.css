@@ -108,6 +108,26 @@
   background-image: radial-gradient(rgba(148, 163, 184, 0.25) 1.15px, transparent 1.15px);
 }
 
+/* Custom dark paper background contrast */
+.paper-dark-sheet {
+  color: #f1f5f9 !important;
+}
+.paper-dark-sheet.paper-lined,
+.paper-dark-sheet.paper-wide_ruled,
+.paper-dark-sheet.paper-cornell {
+  background-image:
+    linear-gradient(90deg, transparent 62px, rgba(244, 63, 94, 0.35) 62px, rgba(244, 63, 94, 0.35) 63.5px, transparent 63.5px),
+    repeating-linear-gradient(to bottom, transparent 0px, transparent 31px, rgba(167, 139, 250, 0.22) 31px, rgba(167, 139, 250, 0.22) 32px);
+}
+.paper-dark-sheet.paper-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+}
+.paper-dark-sheet.paper-dot {
+  background-image: radial-gradient(rgba(226, 232, 240, 0.32) 1.15px, transparent 1.15px);
+}
+
 /* TipTap Document Prose Styles */
 .inkora-prose .ProseMirror {
   outline: none;

@@ -409,4 +409,110 @@ describe('INKORA Gmail Auth, Email Verification, Password Reset & RBAC Tests', (
     });
     assert.equal(delB.status, 200);
   });
+
+  it('supports full Digital Note-Taking CRUD, description, category, paper customization, search, sort, favorite & duplicate', async () => {
+    const client = new CookieClient(baseUrl);
+    const demo = await client.json('/api/auth/demo', { method: 'POST' });
+    assert.equal(demo.status, 200);
+
+    // 1. Create note with custom paper_style (dot), paper_bg_color, page_size (wide), description, category, tags
+    const created = await client.json<{
+      note: {
+        id: string;
+        title: string;
+        description: string;
+        category: string;
+        paper_style: string;
+        paper_bg_color: string;
+        page_size: string;
+      };
+    }>('/api/notes', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'Alpha Quantum Mechanics Notes',
+        description: 'Wavefunction normalization and operator identities for PHYS 302.',
+        category: 'Exam Prep',
+        mode: 'notebook',
+        paper_style: 'dot',
+        paper_bg_color: '#F5F3FF',
+        page_size: 'wide',
+        tags: ['physics', 'quantum'],
+        content_json: JSON.stringify({
+          type: 'doc',
+          content: [
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: 'Schrodinger time-dependent wavefunction equation unique_quantum_token.' }],
+            },
+          ],
+        }),
+      }),
+    });
+    assert.equal(created.status, 201);
+    assert.equal(created.data.note.description, 'Wavefunction normalization and operator identities for PHYS 302.');
+    assert.equal(created.data.note.category, 'Exam Prep');
+    assert.equal(created.data.note.paper_style, 'dot');
+    assert.equal(created.data.note.paper_bg_color, '#F5F3FF');
+    assert.equal(created.data.note.page_size, 'wide');
+
+    // 2. Rename, mark favorite, update customization (grid + compact + dark lavender slate)
+    const updated = await client.json<{
+      note: { id: string; title: string; is_starred: number; paper_style: string; page_size: string; paper_bg_color: string };
+    }>(`/api/notes/${created.data.note.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        title: 'AAA Quantum Summary',
+        is_starred: 1,
+        paper_style: 'grid',
+        paper_bg_color: '#1E293B',
+        page_size: 'compact',
+      }),
+    });
+    assert.equal(updated.status, 200);
+    assert.equal(updated.data.note.title, 'AAA Quantum Summary');
+    assert.equal(updated.data.note.is_starred, 1);
+    assert.equal(updated.data.note.paper_style, 'grid');
+    assert.equal(updated.data.note.paper_bg_color, '#1E293B');
+    assert.equal(updated.data.note.page_size, 'compact');
+
+    // 3. Duplicate note preserves description, category, paper_bg_color, paper_style, page_size
+    const duplicated = await client.json<{
+      note: {
+        id: string;
+        title: string;
+        description: string;
+        category: string;
+        paper_bg_color: string;
+        paper_style: string;
+        page_size: string;
+      };
+    }>(`/api/notes/${created.data.note.id}/duplicate`, { method: 'POST' });
+    assert.equal(duplicated.status, 201);
+    assert.equal(duplicated.data.note.title, 'AAA Quantum Summary (Copy)');
+    assert.equal(duplicated.data.note.description, 'Wavefunction normalization and operator identities for PHYS 302.');
+    assert.equal(duplicated.data.note.category, 'Exam Prep');
+    assert.equal(duplicated.data.note.paper_bg_color, '#1E293B');
+    assert.equal(duplicated.data.note.paper_style, 'grid');
+    assert.equal(duplicated.data.note.page_size, 'compact');
+
+    // 4. Search by content & filter by category
+    const byContent = await client.json<{ notes: Array<{ id: string }> }>(
+      '/api/notes?q=unique_quantum_token&category=Exam%20Prep'
+    );
+    assert.equal(byContent.status, 200);
+    assert.equal(byContent.data.notes.length, 2);
+
+    // 5. Sort alphabetically A-Z puts AAA Quantum Summary first
+    const sortedAsc = await client.json<{ notes: Array<{ title: string }> }>(
+      '/api/notes?sort=title_asc'
+    );
+    assert.equal(sortedAsc.status, 200);
+    assert.equal(sortedAsc.data.notes[0].title, 'AAA Quantum Summary');
+
+    // 6. Trash & permanent delete duplicate copy
+    const trashed = await client.json(`/api/notes/${duplicated.data.note.id}/trash`, { method: 'POST' });
+    assert.equal(trashed.status, 200);
+    const deleted = await client.json(`/api/notes/${duplicated.data.note.id}`, { method: 'DELETE' });
+    assert.equal(deleted.status, 200);
+  });
 });

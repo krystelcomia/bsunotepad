@@ -20,6 +20,7 @@ import {
   List,
   ListOrdered,
   Minus,
+  Moon,
   PenTool,
   Printer,
   Quote,
@@ -31,6 +32,7 @@ import {
   Sigma,
   Strikethrough,
   Subscript,
+  Sun,
   Superscript,
   Table,
   Trash2,
@@ -39,14 +41,31 @@ import {
 } from 'lucide-react';
 import { PageSize, PaperStyle } from '../../types';
 
+export const PAPER_BG_SWATCHES = [
+  { value: '', label: 'Auto Theme', preview: 'linear-gradient(135deg, #ffffff 50%, #1e293b 50%)' },
+  { value: '#FFFFFF', label: 'Crisp White' },
+  { value: '#FFFDF5', label: 'Warm Cream' },
+  { value: '#F5F3FF', label: 'Soft Lavender' },
+  { value: '#EFF6FF', label: 'Powder Blue' },
+  { value: '#ECFDF5', label: 'Mint Mist' },
+  { value: '#FFF1F2', label: 'Blush Rose' },
+  { value: '#FFFBEB', label: 'Soft Amber' },
+  { value: '#1E293B', label: 'Dark Slate' },
+  { value: '#13111C', label: 'Deep Obsidian' },
+] as const;
+
 interface RibbonToolbarProps {
   editor: Editor | null;
   paperStyle: PaperStyle;
   onChangePaperStyle: (style: PaperStyle) => void;
+  paperBgColor: string;
+  onChangePaperBgColor: (color: string) => void;
   pageSize: PageSize;
   onChangePageSize: (size: PageSize) => void;
   paperTone: 'light' | 'cream' | 'adaptive';
   onChangePaperTone: (tone: 'light' | 'cream' | 'adaptive') => void;
+  workspaceTheme: 'light' | 'dark';
+  onToggleWorkspaceTheme: () => void;
   zoom: number;
   onChangeZoom: (zoom: number) => void;
   wordCount: number;
@@ -69,10 +88,14 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
   editor,
   paperStyle,
   onChangePaperStyle,
+  paperBgColor,
+  onChangePaperBgColor,
   pageSize,
   onChangePageSize,
   paperTone,
   onChangePaperTone,
+  workspaceTheme,
+  onToggleWorkspaceTheme,
   zoom,
   onChangeZoom,
   wordCount,
@@ -359,51 +382,100 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
         )}
 
         {tab === 'layout' && (
-          <>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="font-semibold text-slate-500">Paper:</span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 w-full">
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="font-semibold text-slate-500">Page Style:</span>
               <select
                 value={paperStyle}
                 onChange={(e) => onChangePaperStyle(e.target.value as PaperStyle)}
                 className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium"
               >
-                <option value="plain">Plain Document</option>
+                <option value="plain">Blank Paper</option>
+                <option value="lined">Lined Paper</option>
+                <option value="wide_ruled">Wide Ruled Paper</option>
+                <option value="grid">Grid Paper</option>
+                <option value="dot">Dotted Paper</option>
+                <option value="cornell">Cornell Lecture Sheet</option>
                 <option value="cream">Warm Cream Sheet</option>
-                <option value="lined">College Ruled</option>
-                <option value="wide_ruled">Wide Ruled</option>
-                <option value="grid">Graph Grid</option>
-                <option value="dot">Dot Grid</option>
-                <option value="cornell">Cornell Lecture Layout</option>
                 <option value="dark_board">Chalkboard Grid</option>
               </select>
             </div>
 
-            <div className="flex items-center gap-2 text-xs ml-2">
-              <span className="font-semibold text-slate-500">Page Width:</span>
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="font-semibold text-slate-500">Paper Color:</span>
+              <div className="flex items-center gap-1">
+                {PAPER_BG_SWATCHES.map((sw) => {
+                  const active = paperBgColor === sw.value;
+                  return (
+                    <button
+                      key={sw.value || 'auto'}
+                      type="button"
+                      onClick={() => onChangePaperBgColor(sw.value)}
+                      title={sw.label}
+                      aria-label={`Paper background ${sw.label}`}
+                      className={`w-5 h-5 rounded-full border transition cursor-pointer ${
+                        active
+                          ? 'ring-2 ring-violet-600 ring-offset-1 border-violet-600 scale-110'
+                          : 'border-stone-300 dark:border-slate-600 hover:scale-105'
+                      }`}
+                      style={
+                        'preview' in sw
+                          ? { background: sw.preview }
+                          : { backgroundColor: sw.value }
+                      }
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="font-semibold text-slate-500">Page Size:</span>
               <select
                 value={pageSize}
                 onChange={(e) => onChangePageSize(e.target.value as PageSize)}
                 className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
               >
+                <option value="compact">Compact (B5)</option>
                 <option value="a4">A4 Standard</option>
                 <option value="letter">US Letter</option>
+                <option value="wide">Wide Studio</option>
                 <option value="fluid">Full Fluid Width</option>
               </select>
             </div>
 
-            <div className="flex items-center gap-2 text-xs ml-2">
-              <span className="font-semibold text-slate-500">Paper Tone:</span>
-              <select
-                value={paperTone}
-                onChange={(e) => onChangePaperTone(e.target.value as 'light' | 'cream' | 'adaptive')}
-                className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
-              >
-                <option value="light">Crisp Paper</option>
-                <option value="adaptive">Adapt to Dark Mode</option>
-              </select>
-            </div>
+            {!paperBgColor && (
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="font-semibold text-slate-500">Tone:</span>
+                <select
+                  value={paperTone}
+                  onChange={(e) => onChangePaperTone(e.target.value as 'light' | 'cream' | 'adaptive')}
+                  className="px-2 py-1.5 rounded-lg border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                >
+                  <option value="light">Crisp Paper</option>
+                  <option value="adaptive">Adapt to Dark Theme</option>
+                </select>
+              </div>
+            )}
 
-            <div className="flex items-center gap-2 text-xs ml-2">
+            <button
+              type="button"
+              onClick={onToggleWorkspaceTheme}
+              className={pillBtn(workspaceTheme === 'dark')}
+              title="Toggle light or dark workspace theme"
+            >
+              {workspaceTheme === 'dark' ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" /> Dark Theme
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-violet-600" /> Light Theme
+                </>
+              )}
+            </button>
+
+            <div className="flex items-center gap-2 text-xs">
               <span className="font-semibold text-slate-500">Zoom:</span>
               <input
                 type="range"
@@ -416,7 +488,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
               />
               <span className="font-mono w-9">{zoom}%</span>
             </div>
-          </>
+          </div>
         )}
 
         {tab === 'review' && (

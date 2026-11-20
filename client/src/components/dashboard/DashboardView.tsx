@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   ArrowRight,
+  ArrowUpDown,
   BookOpen,
   CalendarClock,
+  Check,
   CheckCircle2,
   Circle,
   Clock,
@@ -36,7 +38,16 @@ import {
 } from 'lucide-react';
 import { api } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
-import { Attachment, Folder, Notebook, Note, StudyTask, Subject, WorkspaceSummary } from '../../types';
+import {
+  Attachment,
+  Folder,
+  Notebook,
+  Note,
+  NoteSortOption,
+  StudyTask,
+  Subject,
+  WorkspaceSummary,
+} from '../../types';
 import { formatBytes, formatDueDate, formatRelativeTime, parseTags } from '../../utils/format';
 
 interface DashboardViewProps {
@@ -46,6 +57,12 @@ interface DashboardViewProps {
   isTrashView?: boolean;
   summary: WorkspaceSummary;
   notes: Note[];
+  noteListQuery: string;
+  onChangeNoteListQuery: (q: string) => void;
+  noteCategoryFilter: string;
+  onChangeNoteCategoryFilter: (cat: string) => void;
+  noteSort: NoteSortOption;
+  onChangeNoteSort: (sort: NoteSortOption) => void;
   onOpenNote: (noteId: string) => void;
   onCreateFromTemplate: (template: string) => void;
   onRefresh: () => void;
@@ -87,6 +104,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   isTrashView = false,
   summary,
   notes,
+  noteListQuery,
+  onChangeNoteListQuery,
+  noteCategoryFilter,
+  onChangeNoteCategoryFilter,
+  noteSort,
+  onChangeNoteSort,
   onOpenNote,
   onCreateFromTemplate,
   onRefresh,
@@ -101,6 +124,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const { user } = useAuth();
   const [viewLayout, setViewLayout] = useState<'grid' | 'list'>('grid');
   const [typeFilter, setTypeFilter] = useState<'all' | 'document' | 'notebook' | 'drawing'>('all');
+  const [renamingNoteId, setRenamingNoteId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
 
   // Dashboard interactive search bar
   const [searchQuery, setSearchQuery] = useState('');
@@ -156,10 +181,67 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
+  const categoryOptions = useMemo(() => {
+    const base = new Set<string>([
+      'Lecture Notes',
+      'Study Guide',
+      'Lab Report',
+      'Essay',
+      'Assignment',
+      'Exam Prep',
+      'Summary',
+      'Personal',
+      'General',
+    ]);
+    notes.forEach((n) => {
+      if (n.category) base.add(n.category);
+    });
+    return Array.from(base);
+  }, [notes]);
+
   const filteredNotes = useMemo(() => {
-    if (typeFilter === 'all') return notes;
-    return notes.filter((n) => n.mode === typeFilter);
-  }, [notes, typeFilter]);
+    const q = noteListQuery.trim().toLowerCase();
+    return notes
+      .filter((n) => {
+        if (typeFilter !== 'all' && n.mode !== typeFilter) return false;
+        if (noteCategoryFilter !== 'all' && (n.category || 'General') !== noteCategoryFilter) return false;
+        if (q) {
+          const hay = [n.title, n.description, n.excerpt, n.tags_json, n.category, n.folder_name, n.subject_code]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (noteSort === 'title_asc') return a.title.localeCompare(b.title);
+        if (noteSort === 'title_desc') return b.title.localeCompare(a.title);
+        if (noteSort === 'created_desc') return b.created_at.localeCompare(a.created_at);
+        if (noteSort === 'created_asc') return a.created_at.localeCompare(b.created_at);
+        if (noteSort === 'updated_asc') return a.updated_at.localeCompare(b.updated_at);
+        return b.updated_at.localeCompare(a.updated_at);
+      });
+  }, [notes, typeFilter, noteCategoryFilter, noteListQuery, noteSort]);
+
+  const startRename = (e: React.MouseEvent, note: Note) => {
+    e.stopPropagation();
+    setRenamingNoteId(note.id);
+    setRenameDraft(note.title);
+  };
+
+  const submitRename = async (e: React.SyntheticEvent, noteId: string) => {
+    e.stopPropagation();
+    const clean = renameDraft.trim() || 'Untitled Note';
+    try {
+      await api.updateNote(noteId, { title: clean });
+      setRenamingNoteId(null);
+      onNotify('success', 'Note renamed');
+      onRefresh();
+    } catch (err) {
+      onNotify('error', err instanceof Error ? err.message : 'Rename failed');
+    }
+  };
 
   const toggleTaskDone = async (task: StudyTask) => {
     try {
@@ -1227,59 +1309,119 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* Workspace Notes Grid / List */}
       <section>
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3">
-            {mode === 'dashboard' && (
-              <h2 className="font-display text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                All Notes & Pages
-              </h2>
-            )}
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800">
-              {(
-                [
-                  { id: 'all', label: 'All Types' },
-                  { id: 'document', label: 'Documents' },
-                  { id: 'notebook', label: 'Notebooks' },
-                  { id: 'drawing', label: 'Drawings' },
-                ] as const
-              ).map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => setTypeFilter(f.id)}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    typeFilter === f.id
-                      ? 'bg-violet-700 text-white'
-                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
+        <div className="flex flex-col gap-3 mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              {mode === 'dashboard' && (
+                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  All Notes & Pages
+                </h2>
+              )}
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800">
+                {(
+                  [
+                    { id: 'all', label: 'All Types' },
+                    { id: 'document', label: 'Documents' },
+                    { id: 'notebook', label: 'Notebooks' },
+                    { id: 'drawing', label: 'Drawings' },
+                  ] as const
+                ).map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setTypeFilter(f.id)}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                      typeFilter === f.id
+                        ? 'bg-violet-700 text-white'
+                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setViewLayout('grid')}
+                className={`p-1.5 rounded-lg cursor-pointer ${
+                  viewLayout === 'grid' ? 'bg-stone-100 dark:bg-slate-800 text-violet-600' : 'text-slate-400'
+                }`}
+                title="Grid view"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewLayout('list')}
+                className={`p-1.5 rounded-lg cursor-pointer ${
+                  viewLayout === 'list' ? 'bg-stone-100 dark:bg-slate-800 text-violet-600' : 'text-slate-400'
+                }`}
+                title="List view"
+              >
+                <ListIcon className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 p-1 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setViewLayout('grid')}
-              className={`p-1.5 rounded-lg cursor-pointer ${
-                viewLayout === 'grid' ? 'bg-stone-100 dark:bg-slate-800 text-violet-600' : 'text-slate-400'
-              }`}
-              title="Grid view"
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewLayout('list')}
-              className={`p-1.5 rounded-lg cursor-pointer ${
-                viewLayout === 'list' ? 'bg-stone-100 dark:bg-slate-800 text-violet-600' : 'text-slate-400'
-              }`}
-              title="List view"
-            >
-              <ListIcon className="w-4 h-4" />
-            </button>
+          {/* Search Notes by Title/Content + Category Filter + Sort Controls */}
+          <div className="flex flex-wrap items-center gap-2.5 p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800">
+            <div className="flex-1 min-w-[200px] flex items-center gap-2 px-3 py-1.5 rounded-xl bg-stone-50 dark:bg-slate-800/80 border border-stone-200/80 dark:border-slate-700">
+              <Search className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+              <input
+                type="text"
+                value={noteListQuery}
+                onChange={(e) => onChangeNoteListQuery(e.target.value)}
+                placeholder="Search notes by title, content, description, or tag..."
+                className="w-full bg-transparent text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none"
+              />
+              {noteListQuery && (
+                <button
+                  type="button"
+                  onClick={() => onChangeNoteListQuery('')}
+                  className="text-slate-400 hover:text-slate-700 cursor-pointer"
+                  aria-label="Clear note filter"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-slate-400 font-medium hidden sm:inline">Category:</span>
+              <select
+                value={noteCategoryFilter}
+                onChange={(e) => onChangeNoteCategoryFilter(e.target.value)}
+                aria-label="Filter notes by category"
+                className="px-2.5 py-1.5 rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 cursor-pointer"
+              >
+                <option value="all">All Categories</option>
+                {categoryOptions.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-xs">
+              <ArrowUpDown className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+              <select
+                value={noteSort}
+                onChange={(e) => onChangeNoteSort(e.target.value as NoteSortOption)}
+                aria-label="Sort notes"
+                className="px-2.5 py-1.5 rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 cursor-pointer"
+              >
+                <option value="updated_desc">Last Modified (Newest)</option>
+                <option value="updated_asc">Last Modified (Oldest)</option>
+                <option value="created_desc">Date Created (Newest)</option>
+                <option value="created_asc">Date Created (Oldest)</option>
+                <option value="title_asc">Alphabetical (A → Z)</option>
+                <option value="title_desc">Alphabetical (Z → A)</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -1287,42 +1429,59 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="rounded-2xl bg-white dark:bg-slate-900 border border-dashed border-stone-300 dark:border-slate-700 p-12 text-center">
             <GraduationCap className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
             <h3 className="font-display font-bold text-slate-800 dark:text-white">
-              {isTrashView ? 'Trash is empty' : 'No notes here yet'}
+              {isTrashView ? 'Trash is empty' : 'No matching notes found'}
             </h3>
             <p className="text-xs text-slate-400 mt-1">
               {isTrashView
                 ? 'Deleted notes appear here before permanent removal.'
-                : 'Create a new Word document, Cornell lecture note, or drawing sketch to get started.'}
+                : noteListQuery || noteCategoryFilter !== 'all'
+                  ? 'Try clearing your search query or category filter.'
+                  : 'Create a new Word document, Cornell lecture note, or drawing sketch to get started.'}
             </p>
           </div>
         ) : viewLayout === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredNotes.map((n) => {
               const tags = parseTags(n.tags_json);
+              const isRenaming = renamingNoteId === n.id;
               return (
                 <div
                   key={n.id}
-                  onClick={() => !isTrashView && onOpenNote(n.id)}
+                  onClick={() => !isTrashView && !isRenaming && onOpenNote(n.id)}
                   className={`group rounded-2xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 p-5 flex flex-col justify-between transition ${
                     isTrashView ? '' : 'cursor-pointer hover:border-violet-400 hover:shadow-lg hover:shadow-violet-900/5'
                   }`}
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-3">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                          n.mode === 'drawing'
-                            ? 'bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300'
-                            : n.mode === 'notebook'
-                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                              : 'bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
-                        }`}
-                      >
-                        {renderModeIcon(n.mode)}
-                        {n.mode}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                            n.mode === 'drawing'
+                              ? 'bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300'
+                              : n.mode === 'notebook'
+                                ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                                : 'bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
+                          }`}
+                        >
+                          {renderModeIcon(n.mode)}
+                          {n.mode}
+                        </span>
+                        {n.category && n.category !== 'General' && (
+                          <span className="px-2 py-0.5 rounded-md bg-stone-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-semibold">
+                            {n.category}
+                          </span>
+                        )}
+                      </div>
 
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 shrink-0">
+                        {n.paper_bg_color && (
+                          <span
+                            className="w-3 h-3 rounded-full border border-stone-300 dark:border-slate-600"
+                            style={{ backgroundColor: n.paper_bg_color }}
+                            title="Custom paper background"
+                          />
+                        )}
                         {n.is_pinned === 1 && <Pin className="w-3.5 h-3.5 text-violet-500" />}
                         {!isTrashView && (
                           <button
@@ -1331,7 +1490,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             className={`p-1 rounded-md transition cursor-pointer ${
                               n.is_starred === 1
                                 ? 'text-amber-500'
-                                : 'text-slate-300 opacity-0 group-hover:opacity-100 hover:text-amber-500'
+                                : 'text-slate-300 group-hover:text-amber-500'
                             }`}
                             title={n.is_starred === 1 ? 'Remove from favorites' : 'Star note'}
                           >
@@ -1341,9 +1500,47 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </div>
                     </div>
 
-                    <h3 className="font-display font-bold text-base text-slate-900 dark:text-white group-hover:text-violet-600 transition line-clamp-2">
-                      {n.title}
-                    </h3>
+                    {isRenaming ? (
+                      <div
+                        className="flex items-center gap-1.5 mb-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          autoFocus
+                          type="text"
+                          value={renameDraft}
+                          onChange={(e) => setRenameDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') submitRename(e, n.id);
+                            if (e.key === 'Escape') setRenamingNoteId(null);
+                          }}
+                          className="flex-1 px-2.5 py-1 text-sm font-bold rounded-lg border border-violet-400 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => submitRename(e, n.id)}
+                          className="p-1.5 rounded-lg bg-violet-700 text-white cursor-pointer"
+                          title="Save name"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRenamingNoteId(null);
+                          }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer"
+                          title="Cancel"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <h3 className="font-display font-bold text-base text-slate-900 dark:text-white group-hover:text-violet-600 transition line-clamp-2">
+                        {n.title}
+                      </h3>
+                    )}
 
                     {n.drawing_preview ? (
                       <div className="mt-3 rounded-xl border border-stone-200 dark:border-slate-800 overflow-hidden bg-stone-50 h-28 flex items-center justify-center">
@@ -1355,7 +1552,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </div>
                     ) : (
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 line-clamp-3 leading-relaxed">
-                        {n.excerpt || 'Empty page — click to open studio and start writing or drawing.'}
+                        {n.description || n.excerpt || 'Empty page — click to open studio and start writing or drawing.'}
                       </p>
                     )}
 
@@ -1391,7 +1588,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <span className="truncate">{formatRelativeTime(n.updated_at)}</span>
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5">
                       {isTrashView ? (
                         <button
                           type="button"
@@ -1402,19 +1599,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           <RotateCcw className="w-3.5 h-3.5" />
                         </button>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={(e) => handleDuplicate(e, n.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer"
-                          title="Duplicate note"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => startRename(e, n)}
+                            className="opacity-70 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer"
+                            title="Rename note"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDuplicate(e, n.id)}
+                            className="opacity-70 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer"
+                            title="Duplicate note"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </>
                       )}
                       <button
                         type="button"
                         onClick={(e) => handleTrashOrDelete(e, n)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                        className="opacity-70 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
                         title={isTrashView ? 'Delete permanently' : 'Move to Trash'}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1427,52 +1634,98 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         ) : (
           <div className="rounded-2xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 divide-y divide-stone-100 dark:divide-slate-800 overflow-hidden">
-            {filteredNotes.map((n) => (
-              <div
-                key={n.id}
-                onClick={() => !isTrashView && onOpenNote(n.id)}
-                className="flex items-center gap-4 px-4 py-3 hover:bg-stone-50 dark:hover:bg-slate-800/60 cursor-pointer transition"
-              >
-                <div className="p-2 rounded-xl bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-300">
-                  {renderModeIcon(n.mode)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm text-slate-900 dark:text-white truncate">{n.title}</div>
-                  <div className="text-xs text-slate-400 truncate">
-                    {[n.subject_code, n.folder_name, n.notebook_title, `${n.word_count} words`]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </div>
-                </div>
-                <span className="text-xs text-slate-400 hidden sm:inline">{formatRelativeTime(n.updated_at)}</span>
-                {isTrashView ? (
-                  <button
-                    type="button"
-                    onClick={(e) => handleRestore(e, n.id)}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-semibold cursor-pointer"
-                  >
-                    Restore
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={(e) => handleToggleStar(e, n)}
-                    className={`p-1.5 rounded-lg cursor-pointer ${
-                      n.is_starred === 1 ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'
-                    }`}
-                  >
-                    <Star className="w-4 h-4" fill={n.is_starred === 1 ? 'currentColor' : 'none'} />
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={(e) => handleTrashOrDelete(e, n)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 cursor-pointer"
+            {filteredNotes.map((n) => {
+              const isRenaming = renamingNoteId === n.id;
+              return (
+                <div
+                  key={n.id}
+                  onClick={() => !isTrashView && !isRenaming && onOpenNote(n.id)}
+                  className="flex items-center gap-3 sm:gap-4 px-4 py-3 hover:bg-stone-50 dark:hover:bg-slate-800/60 cursor-pointer transition"
                 >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+                  <div className="p-2 rounded-xl bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-300 shrink-0">
+                    {renderModeIcon(n.mode)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {isRenaming ? (
+                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          autoFocus
+                          type="text"
+                          value={renameDraft}
+                          onChange={(e) => setRenameDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') submitRename(e, n.id);
+                            if (e.key === 'Escape') setRenamingNoteId(null);
+                          }}
+                          className="flex-1 px-2 py-1 text-sm font-semibold rounded-lg border border-violet-400 bg-white dark:bg-slate-800 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => submitRename(e, n.id)}
+                          className="p-1 rounded-lg bg-violet-700 text-white cursor-pointer"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="font-semibold text-sm text-slate-900 dark:text-white truncate">{n.title}</div>
+                    )}
+                    <div className="text-xs text-slate-400 truncate">
+                      {[n.category, n.subject_code, n.folder_name, n.notebook_title, `${n.word_count} words`]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </div>
+                  </div>
+                  <span className="text-xs text-slate-400 hidden sm:inline">{formatRelativeTime(n.updated_at)}</span>
+                  {isTrashView ? (
+                    <button
+                      type="button"
+                      onClick={(e) => handleRestore(e, n.id)}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-semibold cursor-pointer"
+                    >
+                      Restore
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={(e) => startRename(e, n)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 cursor-pointer"
+                        title="Rename note"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDuplicate(e, n.id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 cursor-pointer"
+                        title="Duplicate note"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleStar(e, n)}
+                        className={`p-1.5 rounded-lg cursor-pointer ${
+                          n.is_starred === 1 ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'
+                        }`}
+                        title="Favorite note"
+                      >
+                        <Star className="w-4 h-4" fill={n.is_starred === 1 ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => handleTrashOrDelete(e, n)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 cursor-pointer"
+                    title={isTrashView ? 'Delete permanently' : 'Move to Trash'}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>

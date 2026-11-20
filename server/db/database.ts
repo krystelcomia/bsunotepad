@@ -144,8 +144,11 @@ export function createDatabase(config: AppConfig): DatabaseSync {
       notebook_id TEXT DEFAULT NULL,
       subject_id TEXT DEFAULT NULL,
       title TEXT NOT NULL DEFAULT 'Untitled Note',
+      description TEXT NOT NULL DEFAULT '',
+      category TEXT NOT NULL DEFAULT 'General',
       mode TEXT NOT NULL DEFAULT 'document',
       paper_style TEXT NOT NULL DEFAULT 'plain',
+      paper_bg_color TEXT NOT NULL DEFAULT '',
       page_size TEXT NOT NULL DEFAULT 'a4',
       content_json TEXT NOT NULL DEFAULT '{"type":"doc","content":[{"type":"paragraph"}]}',
       content_html TEXT NOT NULL DEFAULT '',
@@ -309,6 +312,9 @@ export function createDatabase(config: AppConfig): DatabaseSync {
   ensureColumn(db, 'sessions', 'refresh_expires_at', 'TEXT DEFAULT NULL');
   ensureColumn(db, 'notes', 'folder_id', 'TEXT DEFAULT NULL');
   ensureColumn(db, 'notes', 'last_opened_at', 'TEXT DEFAULT NULL');
+  ensureColumn(db, 'notes', 'description', "TEXT NOT NULL DEFAULT ''");
+  ensureColumn(db, 'notes', 'category', "TEXT NOT NULL DEFAULT 'General'");
+  ensureColumn(db, 'notes', 'paper_bg_color', "TEXT NOT NULL DEFAULT ''");
   db.exec('CREATE INDEX IF NOT EXISTS idx_notes_folder ON notes(folder_id)');
 
   return db;
@@ -320,6 +326,8 @@ export function syncNoteFts(
     id: string;
     user_id: string;
     title: string;
+    description?: string;
+    category?: string;
     plain_text: string;
     cornell_cues: string;
     cornell_summary: string;
@@ -338,6 +346,9 @@ export function syncNoteFts(
     tagsText = '';
   }
 
+  const combinedText = [note.description, note.plain_text].filter(Boolean).join('\n');
+  const combinedTags = [tagsText, note.category].filter(Boolean).join(' ');
+
   db.prepare(
     `INSERT INTO notes_fts (note_id, user_id, title, plain_text, cornell_cues, cornell_summary, tags)
      VALUES (?, ?, ?, ?, ?, ?, ?)`
@@ -345,10 +356,10 @@ export function syncNoteFts(
     note.id,
     note.user_id,
     note.title || '',
-    note.plain_text || '',
+    combinedText,
     note.cornell_cues || '',
     note.cornell_summary || '',
-    tagsText
+    combinedTags
   );
 }
 

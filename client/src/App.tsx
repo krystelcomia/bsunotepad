@@ -16,7 +16,7 @@ import { StudyHubView } from './components/study/StudyHubView';
 import { FolderModal, NotebookModal, SubjectModal } from './components/workspace/Modals';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
-import { Folder, Notebook, Note, Subject, WorkspaceSummary } from './types';
+import { Folder, Notebook, Note, NoteSortOption, Subject, WorkspaceSummary } from './types';
 
 const WorkspaceShell: React.FC = () => {
   const { user, loading: authLoading, setStorageUsedBytes } = useAuth();
@@ -31,6 +31,9 @@ const WorkspaceShell: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeNav, setActiveNav] = useState<NavSection>({ kind: 'dashboard' });
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
+  const [noteListQuery, setNoteListQuery] = useState('');
+  const [noteCategoryFilter, setNoteCategoryFilter] = useState('all');
+  const [noteSort, setNoteSort] = useState<NoteSortOption>('updated_desc');
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -59,13 +62,14 @@ const WorkspaceShell: React.FC = () => {
     }, 3600);
   }, []);
 
-  const refreshWorkspace = useCallback(async () => {
+  const fetchFilteredNotes = useCallback(async () => {
     if (!user || user.role !== 'student') return;
     try {
-      const sum = await api.workspaceSummary();
-      setSummary(sum);
-      setStorageUsedBytes(sum.stats.storageUsedBytes);
-
+      const commonFilters = {
+        q: noteListQuery.trim() || undefined,
+        category: noteCategoryFilter !== 'all' ? noteCategoryFilter : undefined,
+        sort: noteSort,
+      };
       if (activeNav.kind === 'notes') {
         const listRes = await api.listNotes({
           folderId: activeNav.folderId,
@@ -73,22 +77,50 @@ const WorkspaceShell: React.FC = () => {
           subjectId: activeNav.subjectId,
           starred: activeNav.filter === 'starred',
           trashed: activeNav.filter === 'trash',
+          ...commonFilters,
         });
         setNotes(listRes.notes);
       } else {
-        const listRes = await api.listNotes();
+        const listRes = await api.listNotes(commonFilters);
         setNotes(listRes.notes);
       }
     } catch {
+      // ignore fetch errors during rapid typing
+    }
+  }, [user, activeNav, noteListQuery, noteCategoryFilter, noteSort]);
+
+  const refreshWorkspace = useCallback(async () => {
+    if (!user || user.role !== 'student') return;
+    try {
+      const sum = await api.workspaceSummary();
+      setSummary(sum);
+      setStorageUsedBytes(sum.stats.storageUsedBytes);
+      await fetchFilteredNotes();
+    } catch {
       // ignore initial errors
     }
-  }, [user, activeNav, setStorageUsedBytes]);
+  }, [user, setStorageUsedBytes, fetchFilteredNotes]);
 
   useEffect(() => {
-    if (user && user.role === 'student') {
-      refreshWorkspace();
-    }
-  }, [user, refreshWorkspace]);
+    if (!user || user.role !== 'student') return;
+    api
+      .workspaceSummary()
+      .then((sum) => {
+        setSummary(sum);
+        setStorageUsedBytes(sum.stats.storageUsedBytes);
+      })
+      .catch(() => {
+        // ignore initial errors
+      });
+  }, [user, setStorageUsedBytes]);
+
+  useEffect(() => {
+    if (!user || user.role !== 'student') return;
+    const timer = window.setTimeout(() => {
+      fetchFilteredNotes();
+    }, noteListQuery.trim() ? 180 : 0);
+    return () => window.clearTimeout(timer);
+  }, [user, noteListQuery, fetchFilteredNotes]);
 
   // Global Ctrl+K Search shortcut (for students)
   useEffect(() => {
@@ -282,6 +314,11 @@ const WorkspaceShell: React.FC = () => {
               setActiveNoteId(null);
               refreshWorkspace();
             }}
+            onOpenNote={(id) => {
+              setActiveNoteId(id);
+              refreshWorkspace();
+            }}
+            onNewNote={() => handleCreateNote({ template: 'lined-notebook' })}
             onNoteUpdated={() => refreshWorkspace()}
             onNoteDeleted={() => {
               setActiveNoteId(null);
@@ -305,6 +342,12 @@ const WorkspaceShell: React.FC = () => {
             isTrashView={activeNav.kind === 'notes' && activeNav.filter === 'trash'}
             summary={summary}
             notes={notes}
+            noteListQuery={noteListQuery}
+            onChangeNoteListQuery={setNoteListQuery}
+            noteCategoryFilter={noteCategoryFilter}
+            onChangeNoteCategoryFilter={setNoteCategoryFilter}
+            noteSort={noteSort}
+            onChangeNoteSort={setNoteSort}
             onOpenNote={(id) => setActiveNoteId(id)}
             onCreateFromTemplate={(tpl) => handleCreateNote({ template: tpl })}
             onRefresh={refreshWorkspace}
