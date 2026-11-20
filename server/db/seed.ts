@@ -3,9 +3,9 @@ import { generateId, hashPassword } from '../utils/crypto.js';
 import { countWords, extractPlainTextFromTipTap } from '../utils/sanitize.js';
 import { syncNoteFts } from './database.js';
 
-export const DEMO_EMAIL = 'alex.rivera@university.edu';
+export const DEMO_EMAIL = 'alex.rivera.demo@gmail.com';
 export const DEMO_PASSWORD = 'InkoraDemo2026!';
-export const ADMIN_EMAIL = 'admin@inkora.edu';
+export const ADMIN_EMAIL = (process.env.INKORA_ADMIN_EMAIL || 'inkora.admin@gmail.com').trim().toLowerCase();
 export const ADMIN_PASSWORD = process.env.INKORA_ADMIN_PASSWORD || 'InkoraAdmin2026!';
 
 function isoOffset(hoursOffset: number): string {
@@ -14,8 +14,8 @@ function isoOffset(hoursOffset: number): string {
 
 export function ensureAdminUser(db: DatabaseSync): string {
   const existing = db
-    .prepare("SELECT id FROM users WHERE email = ? AND role = 'admin'")
-    .get(ADMIN_EMAIL) as { id: string } | undefined;
+    .prepare("SELECT id FROM users WHERE role = 'admin' LIMIT 1")
+    .get() as { id: string } | undefined;
 
   if (existing) {
     return existing.id;
@@ -27,10 +27,10 @@ export function ensureAdminUser(db: DatabaseSync): string {
 
   db.prepare(
     `INSERT INTO users (
-      id, email, password_hash, role, status, status_reason, full_name, university,
+      id, email, email_verified, password_hash, role, status, status_reason, full_name, university,
       major, academic_year, bio, theme_preference, workspace_accent, is_demo,
       last_login_at, login_count, created_at, updated_at
-    ) VALUES (?, ?, ?, 'admin', 'active', '', ?, ?, ?, ?, ?, 'light', 'purple', 1, ?, 1, ?, ?)`
+    ) VALUES (?, ?, 1, ?, 'admin', 'active', '', ?, ?, ?, ?, ?, 'light', 'purple', 0, ?, 0, ?, ?)`
   ).run(
     adminId,
     ADMIN_EMAIL,
@@ -40,7 +40,7 @@ export function ensureAdminUser(db: DatabaseSync): string {
     'System Administration',
     'Staff',
     'Platform administrator overseeing student account health, access control, and account concerns.',
-    isoOffset(-3),
+    null,
     now,
     now
   );
@@ -52,7 +52,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
   ensureAdminUser(db);
 
   const existing = db
-    .prepare('SELECT id FROM users WHERE email = ?')
+    .prepare('SELECT id FROM users WHERE LOWER(email) = ?')
     .get(DEMO_EMAIL) as { id: string } | undefined;
 
   if (existing) {
@@ -65,10 +65,10 @@ export function ensureDemoUser(db: DatabaseSync): string {
 
   db.prepare(
     `INSERT INTO users (
-      id, email, password_hash, role, status, status_reason, full_name, university,
+      id, email, email_verified, password_hash, role, status, status_reason, full_name, university,
       major, academic_year, bio, theme_preference, workspace_accent, is_demo,
       last_login_at, login_count, created_at, updated_at
-    ) VALUES (?, ?, ?, 'student', 'active', '', ?, ?, ?, ?, ?, 'light', 'purple', 1, ?, 4, ?, ?)`
+    ) VALUES (?, ?, 1, ?, 'student', 'active', '', ?, ?, ?, ?, ?, 'light', 'purple', 1, ?, 4, ?, ?)`
   ).run(
     userId,
     DEMO_EMAIL,
@@ -487,15 +487,15 @@ export function ensureDemoUser(db: DatabaseSync): string {
   const jordanId = generateId();
   const insertExtraStudent = db.prepare(
     `INSERT INTO users (
-      id, email, password_hash, role, status, status_reason, full_name, university,
+      id, email, email_verified, password_hash, role, status, status_reason, full_name, university,
       major, academic_year, bio, theme_preference, workspace_accent, is_demo,
       last_login_at, login_count, created_at, updated_at
-    ) VALUES (?, ?, ?, 'student', ?, ?, ?, ?, ?, ?, '', 'light', 'purple', 0, ?, ?, ?, ?)`
+    ) VALUES (?, ?, 1, ?, 'student', ?, ?, ?, ?, ?, ?, '', 'light', 'purple', 0, ?, ?, ?, ?)`
   );
 
   insertExtraStudent.run(
     samId,
-    'samantha.lee@university.edu',
+    'samantha.lee.demo@gmail.com',
     hashPassword('StudentDemo2026!'),
     'active',
     '',
@@ -511,7 +511,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
 
   insertExtraStudent.run(
     jordanId,
-    'jordan.patel@university.edu',
+    'jordan.patel.demo@gmail.com',
     hashPassword('StudentDemo2026!'),
     'suspended',
     'Temporary suspension pending email verification review',
@@ -531,10 +531,10 @@ export function ensureDemoUser(db: DatabaseSync): string {
   ).run(
     generateId(),
     jordanId,
-    'jordan.patel@university.edu',
+    'jordan.patel.demo@gmail.com',
     'Requesting reactivation after updating student ID',
     'account_access',
-    'Hello Admin, I have verified my university email address. Could you reactivate my INKORA account ahead of finals?',
+    'Hello Admin, I have verified my Gmail address. Could you reactivate my INKORA account ahead of finals?',
     isoOffset(-14),
     isoOffset(-14)
   );

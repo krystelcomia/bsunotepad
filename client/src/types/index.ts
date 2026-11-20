@@ -4,6 +4,7 @@ export type AccountStatus = 'active' | 'deactivated' | 'suspended';
 export interface User {
   id: string;
   email: string;
+  email_verified: number;
   role: UserRole;
   status: AccountStatus;
   status_reason: string;

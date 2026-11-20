@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
+  ShieldPlus,
   Sun,
   Trash2,
   UserCheck,
@@ -20,7 +21,7 @@ import {
 import { api } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { AccountConcern, AccountStatus, AdminStats, AdminStudentRow } from '../../types';
+import { AccountConcern, AccountStatus, AdminStats, AdminStudentRow, User } from '../../types';
 import { formatBytes, formatRelativeTime } from '../../utils/format';
 import { BrandLogo } from '../common/BrandLogo';
 import { Modal } from '../common/Modal';
@@ -34,10 +35,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenAccount, o
   const { user, logout } = useAuth();
   const { resolved, toggle: toggleTheme } = useTheme();
 
-  const [tab, setTab] = useState<'students' | 'concerns'>('students');
+  const [tab, setTab] = useState<'students' | 'concerns' | 'admins'>('students');
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [students, setStudents] = useState<AdminStudentRow[]>([]);
   const [concerns, setConcerns] = useState<AccountConcern[]>([]);
+  const [admins, setAdmins] = useState<User[]>([]);
+  const [newAdminName, setNewAdminName] = useState('');
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newAdminPassword, setNewAdminPassword] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [concernFilter, setConcernFilter] = useState<string>('all');
@@ -56,14 +61,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenAccount, o
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [statsRes, stuRes, conRes] = await Promise.all([
+      const [statsRes, stuRes, conRes, admRes] = await Promise.all([
         api.adminStats(),
         api.adminListStudents({ q: searchQuery.trim() || undefined, status: statusFilter }),
         api.adminListConcerns(concernFilter === 'all' ? undefined : concernFilter),
+        api.adminListAdmins(),
       ]);
       setStats(statsRes.stats);
       setStudents(stuRes.students);
       setConcerns(conRes.concerns);
+      setAdmins(admRes.admins);
     } catch (err) {
       onNotify('error', err instanceof Error ? err.message : 'Failed to load admin data');
     } finally {
@@ -317,6 +324,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenAccount, o
             >
               <FolderKanban className="w-4 h-4" /> Account Concerns ({concerns.length})
             </button>
+            <button
+              type="button"
+              onClick={() => setTab('admins')}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                tab === 'admins'
+                  ? 'bg-gradient-to-r from-violet-800 to-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-violet-200/75 hover:text-violet-800'
+              }`}
+            >
+              <ShieldPlus className="w-4 h-4" /> Administrators ({admins.length})
+            </button>
           </div>
         </div>
 
@@ -552,6 +570,94 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenAccount, o
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Administrators Management Tab */}
+        {tab === 'admins' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  await api.adminCreateAdmin({
+                    full_name: newAdminName.trim(),
+                    email: newAdminEmail.trim().toLowerCase(),
+                    password: newAdminPassword,
+                  });
+                  setNewAdminName('');
+                  setNewAdminEmail('');
+                  setNewAdminPassword('');
+                  onNotify('success', 'New Administrator account created.');
+                  await loadData();
+                } catch (err) {
+                  onNotify('error', err instanceof Error ? err.message : 'Failed to create admin');
+                }
+              }}
+              className="rounded-3xl bg-white dark:bg-[#141024] border border-violet-200/70 dark:border-violet-900/50 p-6 space-y-3.5 h-fit"
+            >
+              <h3 className="font-display font-bold text-base flex items-center gap-2">
+                <ShieldPlus className="w-4 h-4 text-violet-600" /> Provision Admin Account
+              </h3>
+              <p className="text-xs text-slate-500">
+                Only authorized administrators can create or assign new administrator accounts.
+              </p>
+              <input
+                type="text"
+                required
+                value={newAdminName}
+                onChange={(e) => setNewAdminName(e.target.value)}
+                placeholder="Administrator Full Name"
+                className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50/40 dark:bg-[#1C1633]"
+              />
+              <input
+                type="email"
+                required
+                value={newAdminEmail}
+                onChange={(e) => setNewAdminEmail(e.target.value)}
+                placeholder="admin.name@gmail.com"
+                className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50/40 dark:bg-[#1C1633]"
+              />
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={newAdminPassword}
+                onChange={(e) => setNewAdminPassword(e.target.value)}
+                placeholder="Strong Password (8+ chars & number)"
+                className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50/40 dark:bg-[#1C1633]"
+              />
+              <button
+                type="submit"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-800 to-blue-600 text-white text-xs font-semibold cursor-pointer"
+              >
+                Create Administrator
+              </button>
+            </form>
+
+            <div className="lg:col-span-2 rounded-3xl bg-white dark:bg-[#141024] border border-violet-200/70 dark:border-violet-900/50 p-6 space-y-3">
+              <h3 className="font-display font-bold text-base">Authorized Administrators</h3>
+              <div className="divide-y divide-violet-100 dark:divide-violet-900/40">
+                {admins.map((adm) => (
+                  <div key={adm.id} className="py-3 flex items-center justify-between gap-3 text-xs">
+                    <div>
+                      <div className="font-bold text-sm text-slate-900 dark:text-white">
+                        {adm.full_name}
+                      </div>
+                      <div className="text-slate-500">{adm.email}</div>
+                    </div>
+                    <div className="text-right text-slate-400">
+                      <span className="inline-block px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 font-bold text-[10px] uppercase">
+                        Admin
+                      </span>
+                      <div className="mt-1">
+                        Last login: {adm.last_login_at ? formatRelativeTime(adm.last_login_at) : 'Never'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </main>

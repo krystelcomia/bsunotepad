@@ -9,7 +9,10 @@ export interface AppConfig {
   avatarsDir: string;
   dbPath: string;
   sessionCookieName: string;
+  refreshCookieName: string;
   sessionTtlMs: number;
+  refreshTtlMs: number;
+  emailTokenTtlMs: number;
   maxFileSizeBytes: number;
   maxAvatarSizeBytes: number;
   defaultStorageQuotaBytes: number;
@@ -43,7 +46,10 @@ export function getConfig(): AppConfig {
     avatarsDir,
     dbPath: path.join(dataDir, 'inkora.db'),
     sessionCookieName: 'inkora_session',
-    sessionTtlMs: 14 * 24 * 60 * 60 * 1000,
+    refreshCookieName: 'inkora_refresh',
+    sessionTtlMs: 2 * 60 * 60 * 1000, // 2 hours active access session
+    refreshTtlMs: 30 * 24 * 60 * 60 * 1000, // 30 days persistent refresh token
+    emailTokenTtlMs: 15 * 60 * 1000, // 15 minutes OTP / verification link
     maxFileSizeBytes: isVercel ? 4 * 1024 * 1024 : 20 * 1024 * 1024, // 4 MB on Vercel serverless, 20 MB standalone
     maxAvatarSizeBytes: isVercel ? 3 * 1024 * 1024 : 5 * 1024 * 1024,
     defaultStorageQuotaBytes: 250 * 1024 * 1024, // 250 MB per student

@@ -3,8 +3,10 @@ import path from 'node:path';
 import { Router, Response } from 'express';
 import { DatabaseSync } from 'node:sqlite';
 import { AppConfig } from '../config.js';
-import { requireRole } from '../middleware/auth.js';
+import { requireRole, SAFE_USER_COLUMNS } from '../middleware/auth.js';
 import { AccountStatus, AuthenticatedRequest } from '../types.js';
+import { generateId, hashPassword } from '../utils/crypto.js';
+import { isValidGmailAddress, normalizeGmail, validatePasswordStrength } from '../utils/gmail.js';
 
 export function createAdminRouter(
   db: DatabaseSync,
@@ -72,7 +74,7 @@ export function createAdminRouter(
 
     let sql = `
       SELECT
-        u.id, u.email, u.full_name, u.university, u.major, u.academic_year,
+        u.id, u.email, u.email_verified, u.full_name, u.university, u.major, u.academic_year,
         u.status, u.status_reason, u.is_demo, u.last_login_at, u.login_count,
         u.created_at, u.updated_at, u.storage_quota_bytes,
         (SELECT COUNT(*) FROM notes n WHERE n.user_id = u.id AND n.is_trashed = 0) as note_count,
@@ -218,6 +220,87 @@ export function createAdminRouter(
       .get(req.params.id);
 
     res.json({ concern });
+  });
+
+  // Authorized Admin-only endpoints for creating or assigning administrator accounts
+  router.get('/admins', (_req: AuthenticatedRequest, res) => {
+    const admins = db
+      .prepare(
+        `SELECT ${SAFE_USER_COLUMNS}
+         FROM users u
+         WHERE u.role = 'admin'
+         ORDER BY u.created_at ASC`
+      )
+      .all();
+    res.json({ admins });
+  });
+
+  router.post('/admins', (req: AuthenticatedRequest, res) => {
+    const email = normalizeGmail(String(req.body?.email || ''));
+    const fullName = String(req.body?.full_name || '').trim();
+    const password = String(req.body?.password || '');
+
+    if (!isValidGmailAddress(email)) {
+      res.status(400).json({ error: 'Administrator account must use a valid @gmail.com address.' });
+      return;
+    }
+    if (fullName.length < 2) {
+      res.status(400).json({ error: 'Full name is required.' });
+      return;
+    }
+    const pwErr = validatePasswordStrength(password);
+    if (pwErr) {
+      res.status(400).json({ error: pwErr });
+      return;
+    }
+
+    const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(email);
+    if (existing) {
+      res.status(409).json({ error: 'This Gmail address is already registered.' });
+      return;
+    }
+
+    const adminId = generateId();
+    const now = new Date().toISOString();
+    db.prepare(
+      `INSERT INTO users (
+        id, email, email_verified, password_hash, role, status, status_reason, full_name,
+        university, major, academic_year, bio, theme_preference, workspace_accent,
+        storage_quota_bytes, is_demo, last_login_at, login_count, created_at, updated_at
+      ) VALUES (?, ?, 1, ?, 'admin', 'active', '', ?, 'INKORA Platform Operations', 'Administration', 'Staff', '', 'light', 'purple', ?, 0, NULL, 0, ?, ?)`
+    ).run(adminId, email, hashPassword(password), fullName, config.defaultStorageQuotaBytes, now, now);
+
+    const admin = db.prepare(`SELECT ${SAFE_USER_COLUMNS} FROM users u WHERE u.id = ?`).get(adminId);
+    res.status(201).json({ admin });
+  });
+
+  router.patch('/students/:id/role', (req: AuthenticatedRequest, res) => {
+    const targetId = String(req.params.id || '');
+    const role = String(req.body?.role || '');
+    if (role !== 'admin') {
+      res.status(400).json({ error: 'Invalid role assignment target.' });
+      return;
+    }
+
+    const target = db
+      .prepare('SELECT id, role, email_verified, status FROM users WHERE id = ?')
+      .get(targetId) as { id: string; role: string; email_verified: number; status: string } | undefined;
+
+    if (!target || target.role !== 'student') {
+      res.status(404).json({ error: 'Student account not found.' });
+      return;
+    }
+    if (target.email_verified !== 1 || target.status !== 'active') {
+      res.status(400).json({ error: 'Only active, verified Gmail accounts can be assigned the Administrator role.' });
+      return;
+    }
+
+    const now = new Date().toISOString();
+    db.prepare("UPDATE users SET role = 'admin', updated_at = ? WHERE id = ?").run(now, targetId);
+    db.prepare('DELETE FROM sessions WHERE user_id = ?').run(targetId);
+
+    const updated = db.prepare(`SELECT ${SAFE_USER_COLUMNS} FROM users u WHERE u.id = ?`).get(targetId);
+    res.json({ admin: updated });
   });
 
   return router;

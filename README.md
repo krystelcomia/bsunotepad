@@ -10,22 +10,18 @@
 - **Color Palette**: Deep purple, lavender, and soft blue primary accents paired with crisp white, light gray, and smooth gradients.
 - **Landing Page**: Full introduction to INKORA's studios, organization tools, privacy model, interactive Sign In / Create Student Account, and instant Demo Student & Demo Admin entry.
 
-## Two-Role Access Control (Backend Enforced)
+## Authentication, Gmail Verification & Two-Role RBAC
 
 1. **Student (`student`)**
-   - Personal dashboard, custom **Folders**, **Courses**, **Notebooks**, tags, and workspace accent customization
-   - **Word-like Document Studio** (TipTap + multi-tab Ribbon, tables, checklists, KaTeX equations, Find & Replace, snapshots, PDF/HTML/Markdown export)
-   - **Traditional Notebook & Cornell Paper** (College/Wide Ruled, Dot/Graph Grid, Cornell 3-zone lecture layout + live ink overlay)
-   - **Digital Drawing Pad & Split Studio** (Pen, Fountain Nib, Pencil, Highlighter, Eraser, Shapes, Text, PNG/SVG export, Embed to Doc)
-   - **Personal File Vault** (upload/download PDFs, images, docs) & **Study Hub** (tasks, flashcards, Pomodoro timer)
+   - **Gmail-Only Registration**: Requires Full Name, unique `@gmail.com` address (case-insensitive SQLite `UNIQUE COLLATE NOCASE` constraint), Password + Confirm Password, and optional Profile Picture upload.
+   - **Mandatory Verification**: Unverified Gmail accounts cannot access the student workspace (`403` blocked on backend) until verified via 6-digit OTP or verification link.
+   - **Password Reset & Sessions**: Forgot Password & password reset via verified Gmail OTP/link; persistent `HttpOnly` sessions with automatic refresh token rotation.
+   - **Personal Workspace**: Custom **Folders**, **Courses**, **Notebooks**, tags, **Word-like Document Studio**, **Traditional/Cornell Notebook + Ink**, **Digital Drawing Pad & Split View**, **File Vault**, and **Study Hub**.
    - **Strict Isolation**: Students can only read/modify/search/download their own notes, folders, and files (`404`/`403` enforced on cross-user access).
 2. **Administrator (`admin`)**
-   - Dedicated **Admin Console** separate from student workspaces (`403` enforced across all student/admin route boundaries)
-   - View & search registered student accounts by name, email, or university
-   - Inspect registration dates, status (`active`, `deactivated`, `suspended`), last login, login count, and aggregate usage statistics
-   - Activate, deactivate, suspend, or delete student accounts (revoking active sessions immediately)
-   - Manage student **account-related concerns & appeals**
-   - **Privacy Shield**: Admin APIs only return account metadata and aggregate counts—private student note contents and personal files are never exposed.
+   - **Secure Setup Only**: No public Admin signup or role picker. Initial admin is provisioned securely via `npm run setup:admin` / `INKORA_ADMIN_SETUP_SECRET`, and additional admins can only be created or assigned by an existing authorized Administrator.
+   - **Dedicated Admin Console**: Automatic role identification on login routes admins to the Admin Console (`403` enforced across student/admin boundaries).
+   - Manage student accounts (`active`, `deactivated`, `suspended`, delete), search by name/email, monitor aggregate usage & login activity, and resolve account concerns—while keeping private student notes and files hidden by default.
 
 ## Tech Stack
 

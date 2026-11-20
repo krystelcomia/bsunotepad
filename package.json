@@ -13,7 +13,8 @@
     "build": "vite build && tsc -p tsconfig.server.json",
     "start": "node --no-warnings dist/server/index.js",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.client.json",
-    "test": "tsx --no-warnings --test tests/api.test.ts"
+    "test": "tsx --no-warnings --test tests/api.test.ts",
+    "setup:admin": "tsx --no-warnings server/scripts/setup-admin.ts"
   },
   "dependencies": {
     "@tiptap/extension-character-count": "^2.11.5",
@@ -42,6 +43,7 @@
     "katex": "^0.16.21",
     "lucide-react": "^0.475.0",
     "multer": "^2.0.2",
+    "nodemailer": "^6.10.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -52,6 +54,7 @@
     "@types/katex": "^0.16.7",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.13.4",
+    "@types/nodemailer": "^6.4.17",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.4",

@@ -21,15 +21,68 @@ export class ApiError extends Error {
   status: number;
   accountStatus?: AccountStatus;
   statusReason?: string;
-  constructor(message: string, status: number, extra?: { accountStatus?: AccountStatus; statusReason?: string }) {
+  emailVerificationRequired?: boolean;
+  email?: string;
+  constructor(
+    message: string,
+    status: number,
+    extra?: {
+      accountStatus?: AccountStatus;
+      statusReason?: string;
+      emailVerificationRequired?: boolean;
+      email?: string;
+    }
+  ) {
     super(message);
     this.status = status;
     this.accountStatus = extra?.accountStatus;
     this.statusReason = extra?.statusReason;
+    this.emailVerificationRequired = extra?.emailVerificationRequired;
+    this.email = extra?.email;
   }
 }
 
-async function request<T>(url: string, options?: RequestInit): Promise<T> {
+export interface EmailChallengeResponse {
+  requiresVerification?: boolean;
+  ok?: boolean;
+  email: string;
+  deliveryMode: 'smtp' | 'dev_preview';
+  previewOtp?: string;
+  previewLink?: string;
+  message?: string;
+}
+
+const NO_REFRESH_PATHS = new Set([
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/refresh',
+  '/api/auth/verify-email',
+  '/api/auth/resend-verification',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+]);
+
+let inflightRefresh: Promise<boolean> | null = null;
+
+async function tryRefreshSession(): Promise<boolean> {
+  if (inflightRefresh) return inflightRefresh;
+  inflightRefresh = (async () => {
+    try {
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      inflightRefresh = null;
+    }
+  })();
+  return inflightRefresh;
+}
+
+async function request<T>(url: string, options?: RequestInit, allowRetry = true): Promise<T> {
   const headers: Record<string, string> = {};
   if (!(options?.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
@@ -44,16 +97,36 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     },
   });
 
+  if (res.status === 401 && allowRetry && !NO_REFRESH_PATHS.has(url)) {
+    const refreshed = await tryRefreshSession();
+    if (refreshed) {
+      return request<T>(url, options, false);
+    }
+  }
+
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
-    let extra: { accountStatus?: AccountStatus; statusReason?: string } | undefined;
+    let extra:
+      | {
+          accountStatus?: AccountStatus;
+          statusReason?: string;
+          emailVerificationRequired?: boolean;
+          email?: string;
+        }
+      | undefined;
     try {
       const data = await res.json();
       if (data?.error) message = String(data.error);
-      if (data?.accountStatus) {
+      if (
+        data?.accountStatus ||
+        data?.emailVerificationRequired ||
+        data?.email
+      ) {
         extra = {
           accountStatus: data.accountStatus,
           statusReason: data.statusReason,
+          emailVerificationRequired: Boolean(data.emailVerificationRequired),
+          email: data.email,
         };
       }
     } catch {
@@ -77,17 +150,68 @@ export const api = {
   register: (payload: {
     email: string;
     password: string;
+    confirm_password: string;
     full_name: string;
     university?: string;
     major?: string;
     academic_year?: string;
+    avatar?: File | null;
+  }) => {
+    if (payload.avatar) {
+      const fd = new FormData();
+      fd.append('full_name', payload.full_name);
+      fd.append('email', payload.email);
+      fd.append('password', payload.password);
+      fd.append('confirm_password', payload.confirm_password);
+      if (payload.university) fd.append('university', payload.university);
+      if (payload.major) fd.append('major', payload.major);
+      if (payload.academic_year) fd.append('academic_year', payload.academic_year);
+      fd.append('avatar', payload.avatar);
+      return request<EmailChallengeResponse>('/api/auth/register', {
+        method: 'POST',
+        body: fd,
+      });
+    }
+    return request<EmailChallengeResponse>('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        full_name: payload.full_name,
+        email: payload.email,
+        password: payload.password,
+        confirm_password: payload.confirm_password,
+        university: payload.university,
+        major: payload.major,
+        academic_year: payload.academic_year,
+      }),
+    });
+  },
+  verifyEmail: (payload: { email?: string; otp?: string; token?: string }) =>
+    request<{ user: User; verified: boolean }>('/api/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  resendVerification: (email: string) =>
+    request<EmailChallengeResponse>('/api/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  forgotPassword: (email: string) =>
+    request<EmailChallengeResponse>('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  resetPassword: (payload: {
+    email?: string;
+    otp?: string;
+    token?: string;
+    new_password: string;
+    confirm_password: string;
   }) =>
-    request<{ user: User }>('/api/auth/register', {
+    request<{ ok: boolean; message: string }>('/api/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   demoLogin: () => request<{ user: User }>('/api/auth/demo', { method: 'POST' }),
-  demoAdminLogin: () => request<{ user: User }>('/api/auth/demo-admin', { method: 'POST' }),
   submitAppeal: (payload: { email: string; password: string; subject: string; message: string }) =>
     request<{ ok: boolean; id: string }>('/api/auth/appeal', {
       method: 'POST',
@@ -153,6 +277,17 @@ export const api = {
     request<{ concern: AccountConcern }>(`/api/admin/concerns/${concernId}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
+    }),
+  adminListAdmins: () => request<{ admins: User[] }>('/api/admin/admins'),
+  adminCreateAdmin: (payload: { full_name: string; email: string; password: string }) =>
+    request<{ admin: User }>('/api/admin/admins', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  adminPromoteStudent: (studentId: string) =>
+    request<{ admin: User }>(`/api/admin/students/${studentId}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role: 'admin' }),
     }),
 
   // Workspace & Search

@@ -27,7 +27,8 @@ export function createDatabase(config: AppConfig): DatabaseSync {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
-      email TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+      email_verified INTEGER NOT NULL DEFAULT 0,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'admin')),
       status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'deactivated', 'suspended')),
@@ -48,13 +49,17 @@ export function createDatabase(config: AppConfig): DatabaseSync {
       updated_at TEXT NOT NULL
     );
 
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lower ON users(LOWER(email));
+
     CREATE TABLE IF NOT EXISTS sessions (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       token_hash TEXT NOT NULL UNIQUE,
+      refresh_token_hash TEXT UNIQUE,
       user_agent TEXT NOT NULL DEFAULT '',
       ip_address TEXT NOT NULL DEFAULT '',
       expires_at TEXT NOT NULL,
+      refresh_expires_at TEXT DEFAULT NULL,
       created_at TEXT NOT NULL,
       last_active_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -62,6 +67,23 @@ export function createDatabase(config: AppConfig): DatabaseSync {
 
     CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_sessions_refresh ON sessions(refresh_token_hash);
+
+    CREATE TABLE IF NOT EXISTS email_tokens (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      email TEXT NOT NULL,
+      purpose TEXT NOT NULL CHECK (purpose IN ('verify_email', 'reset_password')),
+      otp_hash TEXT NOT NULL,
+      link_token_hash TEXT NOT NULL UNIQUE,
+      expires_at TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      used_at TEXT DEFAULT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_email_tokens_lookup ON email_tokens(email, purpose, used_at);
 
     CREATE TABLE IF NOT EXISTS folders (
       id TEXT PRIMARY KEY,
@@ -275,12 +297,15 @@ export function createDatabase(config: AppConfig): DatabaseSync {
   `);
 
   // Safe migrations if an older inkora.db exists
+  ensureColumn(db, 'users', 'email_verified', 'INTEGER NOT NULL DEFAULT 0');
   ensureColumn(db, 'users', 'role', "TEXT NOT NULL DEFAULT 'student'");
   ensureColumn(db, 'users', 'status', "TEXT NOT NULL DEFAULT 'active'");
   ensureColumn(db, 'users', 'status_reason', "TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, 'users', 'workspace_accent', "TEXT NOT NULL DEFAULT 'purple'");
   ensureColumn(db, 'users', 'last_login_at', 'TEXT DEFAULT NULL');
   ensureColumn(db, 'users', 'login_count', 'INTEGER NOT NULL DEFAULT 0');
+  ensureColumn(db, 'sessions', 'refresh_token_hash', 'TEXT');
+  ensureColumn(db, 'sessions', 'refresh_expires_at', 'TEXT DEFAULT NULL');
   ensureColumn(db, 'notes', 'folder_id', 'TEXT DEFAULT NULL');
   db.exec('CREATE INDEX IF NOT EXISTS idx_notes_folder ON notes(folder_id)');
 

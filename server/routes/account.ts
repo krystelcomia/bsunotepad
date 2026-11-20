@@ -3,10 +3,11 @@ import path from 'node:path';
 import { Router, Response } from 'express';
 import { DatabaseSync } from 'node:sqlite';
 import { AppConfig } from '../config.js';
-import { clearSessionCookie, SAFE_USER_COLUMNS } from '../middleware/auth.js';
+import { clearSessionCookies, SAFE_USER_COLUMNS } from '../middleware/auth.js';
 import { createAvatarUploader } from '../middleware/upload.js';
 import { AuthenticatedRequest, SafeUser } from '../types.js';
 import { generateId, hashPassword, verifyPassword } from '../utils/crypto.js';
+import { isValidGmailAddress, normalizeGmail, validatePasswordStrength } from '../utils/gmail.js';
 
 export function createAccountRouter(
   db: DatabaseSync,
@@ -85,7 +86,8 @@ export function createAccountRouter(
   router.patch('/profile', requireAuth, (req: AuthenticatedRequest, res) => {
     const userId = req.user!.id;
     const fullName = req.body?.full_name !== undefined ? String(req.body.full_name).trim() : req.user!.full_name;
-    const email = req.body?.email !== undefined ? String(req.body.email).trim().toLowerCase() : req.user!.email;
+    const requestedEmail =
+      req.body?.email !== undefined ? normalizeGmail(String(req.body.email)) : req.user!.email;
     const university = req.body?.university !== undefined ? String(req.body.university).trim() : req.user!.university;
     const major = req.body?.major !== undefined ? String(req.body.major).trim() : req.user!.major;
     const academicYear = req.body?.academic_year !== undefined ? String(req.body.academic_year).trim() : req.user!.academic_year;
@@ -97,8 +99,14 @@ export function createAccountRouter(
       res.status(400).json({ error: 'Full name must be at least 2 characters.' });
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      res.status(400).json({ error: 'Please provide a valid email address.' });
+    if (!isValidGmailAddress(requestedEmail)) {
+      res.status(400).json({ error: 'Only valid Gmail addresses ending in @gmail.com are allowed.' });
+      return;
+    }
+    if (requestedEmail !== req.user!.email) {
+      res.status(400).json({
+        error: 'Your verified Gmail address cannot be changed directly. Contact an administrator if needed.',
+      });
       return;
     }
     if (!['system', 'light', 'dark'].includes(theme)) {
@@ -107,21 +115,13 @@ export function createAccountRouter(
     }
     const validAccent = ['purple', 'lavender', 'blue'].includes(accent) ? accent : 'purple';
 
-    if (email !== req.user!.email) {
-      const taken = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, userId);
-      if (taken) {
-        res.status(409).json({ error: 'That email address is already associated with another account.' });
-        return;
-      }
-    }
-
     const now = new Date().toISOString();
     db.prepare(
       `UPDATE users
-       SET email = ?, full_name = ?, university = ?, major = ?, academic_year = ?, bio = ?,
+       SET full_name = ?, university = ?, major = ?, academic_year = ?, bio = ?,
            theme_preference = ?, workspace_accent = ?, updated_at = ?
        WHERE id = ?`
-    ).run(email, fullName, university, major, academicYear, bio, theme, validAccent, now, userId);
+    ).run(fullName, university, major, academicYear, bio, theme, validAccent, now, userId);
 
     const updated = db
       .prepare(`SELECT ${SAFE_USER_COLUMNS} FROM users u WHERE u.id = ?`)
@@ -170,8 +170,9 @@ export function createAccountRouter(
     const newPassword = String(req.body?.newPassword || '');
     const revokeOthers = Boolean(req.body?.revokeOtherSessions);
 
-    if (newPassword.length < 8) {
-      res.status(400).json({ error: 'New password must be at least 8 characters long.' });
+    const pwError = validatePasswordStrength(newPassword);
+    if (pwError) {
+      res.status(400).json({ error: pwError });
       return;
     }
 
@@ -302,7 +303,7 @@ export function createAccountRouter(
     db.prepare('DELETE FROM notes_fts WHERE user_id = ?').run(userId);
     db.prepare('DELETE FROM users WHERE id = ?').run(userId);
 
-    clearSessionCookie(res, config);
+    clearSessionCookies(res, config);
     res.json({ ok: true });
   });
 

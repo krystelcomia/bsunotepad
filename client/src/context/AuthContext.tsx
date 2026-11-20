@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { api } from '../api/client';
+import { api, EmailChallengeResponse } from '../api/client';
 import { User } from '../types';
 import { useTheme } from './ThemeContext';
 
@@ -13,13 +13,15 @@ interface AuthContextValue {
   register: (payload: {
     email: string;
     password: string;
+    confirm_password: string;
     full_name: string;
     university?: string;
     major?: string;
     academic_year?: string;
-  }) => Promise<void>;
+    avatar?: File | null;
+  }) => Promise<EmailChallengeResponse>;
+  verifyEmail: (payload: { email?: string; otp?: string; token?: string }) => Promise<void>;
   demoLogin: () => Promise<void>;
-  demoAdminLogin: () => Promise<void>;
   logout: () => Promise<void>;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
@@ -61,25 +63,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (payload: {
     email: string;
     password: string;
+    confirm_password: string;
     full_name: string;
     university?: string;
     major?: string;
     academic_year?: string;
+    avatar?: File | null;
   }) => {
-    const res = await api.register(payload);
-    setUser(res.user);
-    await refreshUser();
+    return api.register(payload);
   };
 
-  const demoLogin = async () => {
-    const res = await api.demoLogin();
+  const verifyEmail = async (payload: { email?: string; otp?: string; token?: string }) => {
+    const res = await api.verifyEmail(payload);
     setUser(res.user);
     if (res.user.theme_preference) setMode(res.user.theme_preference);
     await refreshUser();
   };
 
-  const demoAdminLogin = async () => {
-    const res = await api.demoAdminLogin();
+  const demoLogin = async () => {
+    const res = await api.demoLogin();
     setUser(res.user);
     if (res.user.theme_preference) setMode(res.user.theme_preference);
     await refreshUser();
@@ -104,8 +106,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshUser,
         login,
         register,
+        verifyEmail,
         demoLogin,
-        demoAdminLogin,
         logout,
         setUser,
       }}
