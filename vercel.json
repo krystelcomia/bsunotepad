@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "node scripts/vercel-install.mjs",
   "buildCommand": "vite build",
   "outputDirectory": "dist/client",
   "rewrites": [
