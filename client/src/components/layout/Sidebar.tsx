@@ -7,6 +7,7 @@ import {
   FolderOpen,
   GraduationCap,
   Home,
+  LogOut,
   NotebookPen,
   Plus,
   Search,
@@ -71,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onEditNotebook,
   onOpenAccount,
 }) => {
-  const { user, storageUsedBytes } = useAuth();
+  const { user, storageUsedBytes, logout } = useAuth();
   const [foldersExpanded, setFoldersExpanded] = useState(true);
   const [coursesExpanded, setCoursesExpanded] = useState(true);
   const [notebooksExpanded, setNotebooksExpanded] = useState(true);
@@ -110,7 +111,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside className="w-72 h-full flex flex-col bg-[#F1EEFA] dark:bg-[#110D22] border-r border-violet-200/80 dark:border-violet-900/50 select-none">
       {/* Header */}
       <div className="px-4 py-4 flex items-center justify-between border-b border-violet-200/60 dark:border-violet-900/40">
-        <BrandLogo size="sm" showTagline={false} />
+        <button
+          type="button"
+          onClick={() => {
+            onNavigate({ kind: 'dashboard' });
+            onCloseMobile();
+          }}
+          className="text-left cursor-pointer"
+          title="Go to Student Dashboard"
+        >
+          <BrandLogo size="sm" showTagline={false} />
+        </button>
         <button
           type="button"
           onClick={onCloseMobile}
@@ -437,32 +448,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onOpenAccount}
-          className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-white/80 dark:hover:bg-violet-950/70 transition text-left cursor-pointer"
-        >
-          {user?.avatar_file ? (
-            <img
-              src={`/api/account/avatar/${user.id}/${user.avatar_file}`}
-              alt={user.full_name}
-              className="w-8 h-8 rounded-full object-cover ring-1 ring-violet-300 dark:ring-violet-700"
-            />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-700 to-blue-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
-              {(user?.full_name || 'S').slice(0, 2).toUpperCase()}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onOpenAccount}
+            className="flex-1 min-w-0 flex items-center gap-2.5 p-2 rounded-xl hover:bg-white/80 dark:hover:bg-violet-950/70 transition text-left cursor-pointer"
+            title="Account Settings & Profile"
+          >
+            {user?.avatar_file ? (
+              <img
+                src={`/api/account/avatar/${user.id}/${user.avatar_file}`}
+                alt={user.full_name}
+                className="w-8 h-8 rounded-full object-cover ring-1 ring-violet-300 dark:ring-violet-700 shrink-0"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-700 to-blue-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                {(user?.full_name || 'S').slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                {user?.full_name}
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-violet-200/70 truncate">
+                {user?.major || user?.email}
+              </div>
             </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-              {user?.full_name}
-            </div>
-            <div className="text-[11px] text-slate-500 dark:text-violet-200/70 truncate">
-              {user?.major || user?.email}
-            </div>
-          </div>
-          <Settings className="w-4 h-4 text-slate-400 shrink-0" />
-        </button>
+            <Settings className="w-4 h-4 text-slate-400 shrink-0" />
+          </button>
+          <button
+            type="button"
+            onClick={() => logout()}
+            className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer shrink-0"
+            title="Sign Out"
+            aria-label="Sign Out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </aside>
   );

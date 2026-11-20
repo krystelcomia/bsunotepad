@@ -81,14 +81,17 @@ export function setSessionCookies(
 }
 
 export function clearSessionCookies(res: Response, config: AppConfig): void {
+  const secureFlag = config.isProduction && process.env.INKORA_ALLOW_INSECURE_COOKIE !== '1';
   res.clearCookie(config.sessionCookieName, {
     httpOnly: true,
     sameSite: 'lax',
+    secure: secureFlag,
     path: '/',
   });
   res.clearCookie(config.refreshCookieName, {
     httpOnly: true,
     sameSite: 'lax',
+    secure: secureFlag,
     path: '/api/auth',
   });
 }

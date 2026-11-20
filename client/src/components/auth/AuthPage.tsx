@@ -38,11 +38,35 @@ function isValidGmailFrontend(raw: string): boolean {
 
 type AuthPanelView = 'login' | 'register' | 'verify' | 'forgot' | 'reset';
 
+function authPathToView(pathname: string): AuthPanelView {
+  const clean = pathname.replace(/\/+$/, '') || '/';
+  if (clean === '/register' || clean === '/signup') return 'register';
+  if (clean === '/verify-email') return 'verify';
+  if (clean === '/forgot-password') return 'forgot';
+  if (clean === '/reset-password') return 'reset';
+  return 'login';
+}
+
+function authViewToPath(view: AuthPanelView): string {
+  switch (view) {
+    case 'register':
+      return '/register';
+    case 'verify':
+      return '/verify-email';
+    case 'forgot':
+      return '/forgot-password';
+    case 'reset':
+      return '/reset-password';
+    default:
+      return '/login';
+  }
+}
+
 export const AuthPage: React.FC = () => {
   const { login, register, verifyEmail, demoLogin } = useAuth();
   const { resolved, toggle: toggleTheme } = useTheme();
 
-  const [view, setView] = useState<AuthPanelView>('login');
+  const [view, setView] = useState<AuthPanelView>(() => authPathToView(window.location.pathname));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -65,6 +89,26 @@ export const AuthPage: React.FC = () => {
 
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
+  const syncAuthRoute = (mode: AuthPanelView, replace = false) => {
+    setView(mode);
+    const targetPath = authViewToPath(mode);
+    if (window.location.pathname !== targetPath) {
+      if (replace) {
+        window.history.replaceState({}, '', targetPath);
+      } else {
+        window.history.pushState({}, '', targetPath);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const onPop = () => {
+      setView(authPathToView(window.location.pathname));
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   // Handle verification or reset tokens in URL query (?verify_token=... or ?reset_token=...)
   useEffect(() => {
     const qs = new URLSearchParams(window.location.search);
@@ -74,25 +118,23 @@ export const AuthPage: React.FC = () => {
     if (verifyTok) {
       setSubmitting(true);
       verifyEmail({ token: verifyTok })
-        .then(() => {
-          window.history.replaceState({}, '', '/');
+        .then((loggedUser) => {
+          window.history.replaceState({}, '', loggedUser.role === 'admin' ? '/admin' : '/dashboard');
         })
         .catch((err) => {
-          setView('verify');
+          syncAuthRoute('verify', true);
           setError(err instanceof Error ? err.message : 'Verification link invalid or expired');
-          window.history.replaceState({}, '', '/');
         })
         .finally(() => setSubmitting(false));
     } else if (resetTok) {
       setUrlToken(resetTok);
-      setView('reset');
+      syncAuthRoute('reset', true);
       setInfoMsg('Enter your new password below to complete your password reset.');
-      window.history.replaceState({}, '', '/');
     }
   }, [verifyEmail]);
 
   const focusAuth = (mode: AuthPanelView) => {
-    setView(mode);
+    syncAuthRoute(mode);
     setError('');
     setInfoMsg('');
     setLockedAccountStatus(null);
@@ -121,12 +163,13 @@ export const AuthPage: React.FC = () => {
 
     setSubmitting(true);
     try {
-      await login(normalized, password);
+      const loggedUser = await login(normalized, password);
+      window.history.replaceState({}, '', loggedUser.role === 'admin' ? '/admin' : '/dashboard');
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.emailVerificationRequired) {
           setEmail(err.email || normalized);
-          setView('verify');
+          syncAuthRoute('verify');
           setInfoMsg('Your Gmail address must be verified before entering the workspace.');
           setError('');
           setSubmitting(false);
@@ -179,7 +222,7 @@ export const AuthPage: React.FC = () => {
       setEmail(normalized);
       setChallengeInfo(challenge);
       setOtp('');
-      setView('verify');
+      syncAuthRoute('verify');
       setInfoMsg(
         challenge.deliveryMode === 'smtp'
           ? `We sent a 6-digit verification code and link to ${normalized}.`
@@ -197,7 +240,8 @@ export const AuthPage: React.FC = () => {
     setError('');
     setSubmitting(true);
     try {
-      await verifyEmail({ email: email.trim().toLowerCase(), otp: otp.trim() });
+      const loggedUser = await verifyEmail({ email: email.trim().toLowerCase(), otp: otp.trim() });
+      window.history.replaceState({}, '', loggedUser.role === 'admin' ? '/admin' : '/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Verification failed');
     } finally {
@@ -211,7 +255,8 @@ export const AuthPage: React.FC = () => {
       const token = url.searchParams.get('verify_token');
       if (!token) return;
       setSubmitting(true);
-      await verifyEmail({ token });
+      const loggedUser = await verifyEmail({ token });
+      window.history.replaceState({}, '', loggedUser.role === 'admin' ? '/admin' : '/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Link verification failed');
     } finally {
@@ -252,7 +297,7 @@ export const AuthPage: React.FC = () => {
       setPassword('');
       setConfirmPassword('');
       setUrlToken(null);
-      setView('reset');
+      syncAuthRoute('reset');
       setInfoMsg(
         res.deliveryMode === 'smtp'
           ? `Sent a 6-digit password reset code and link to ${normalized}.`
@@ -260,7 +305,7 @@ export const AuthPage: React.FC = () => {
       );
     } catch (err) {
       if (err instanceof ApiError && err.emailVerificationRequired) {
-        setView('verify');
+        syncAuthRoute('verify');
       }
       setError(err instanceof Error ? err.message : 'Could not start password reset');
     } finally {
@@ -297,7 +342,7 @@ export const AuthPage: React.FC = () => {
       setOtp('');
       setPassword('');
       setConfirmPassword('');
-      setView('login');
+      syncAuthRoute('login');
       setInfoMsg('Password reset complete! Sign in with your new password.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Password reset failed');
@@ -331,7 +376,8 @@ export const AuthPage: React.FC = () => {
     setLockedAccountStatus(null);
     setSubmitting(true);
     try {
-      await demoLogin();
+      const loggedUser = await demoLogin();
+      window.history.replaceState({}, '', loggedUser.role === 'admin' ? '/admin' : '/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to enter demo workspace');
     } finally {
@@ -344,7 +390,14 @@ export const AuthPage: React.FC = () => {
       {/* Top Navbar */}
       <header className="sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-[#0E0B1A]/80 border-b border-violet-200/60 dark:border-violet-900/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
-          <BrandLogo size="md" />
+          <button
+            type="button"
+            onClick={() => focusAuth('login')}
+            className="text-left cursor-pointer"
+            aria-label="INKORA Home"
+          >
+            <BrandLogo size="md" />
+          </button>
 
           <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600 dark:text-violet-100/75">
             <a href="#studios" className="hover:text-violet-700 dark:hover:text-violet-300 transition">

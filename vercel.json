@@ -5,7 +5,11 @@
   "outputDirectory": "dist/client",
   "rewrites": [
     {
-      "source": "/((?!api/|assets/).*)",
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/((?!api(?:/|$)|assets/).*)",
       "destination": "/index.html"
     }
   ]

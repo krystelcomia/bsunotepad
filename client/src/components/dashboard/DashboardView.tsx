@@ -72,6 +72,7 @@ interface DashboardViewProps {
   onNewFolder: () => void;
   onSelectFolder: (folderId: string) => void;
   onOpenAccount: () => void;
+  onOpenAllNotes?: () => void;
   onNotify: (type: 'success' | 'error' | 'info', text: string) => void;
 }
 
@@ -119,6 +120,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNewFolder,
   onSelectFolder,
   onOpenAccount,
+  onOpenAllNotes,
   onNotify,
 }) => {
   const { user } = useAuth();
@@ -679,7 +681,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <div className="flex items-center gap-3.5 min-w-0">
                     {user?.avatar_file ? (
                       <img
-                        src={`/uploads/avatars/${user.avatar_file}`}
+                        src={`/api/account/avatar/${user.id}/${user.avatar_file}`}
                         alt={user.full_name}
                         className="w-14 h-14 rounded-2xl object-cover border-2 border-violet-200 dark:border-violet-800 shrink-0"
                       />
@@ -1313,9 +1315,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
               {mode === 'dashboard' && (
-                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  All Notes & Pages
-                </h2>
+                <div className="flex items-center gap-2.5">
+                  <h2 className="font-display text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    All Notes & Pages
+                  </h2>
+                  {onOpenAllNotes && (
+                    <button
+                      type="button"
+                      onClick={onOpenAllNotes}
+                      className="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
+                    >
+                      Open Library &rarr;
+                    </button>
+                  )}
+                </div>
               )}
               <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800">
                 {(

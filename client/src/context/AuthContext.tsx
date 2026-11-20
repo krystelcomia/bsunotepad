@@ -9,7 +9,7 @@ interface AuthContextValue {
   storageUsedBytes: number;
   setStorageUsedBytes: React.Dispatch<React.SetStateAction<number>>;
   refreshUser: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   register: (payload: {
     email: string;
     password: string;
@@ -20,8 +20,8 @@ interface AuthContextValue {
     academic_year?: string;
     avatar?: File | null;
   }) => Promise<EmailChallengeResponse>;
-  verifyEmail: (payload: { email?: string; otp?: string; token?: string }) => Promise<void>;
-  demoLogin: () => Promise<void>;
+  verifyEmail: (payload: { email?: string; otp?: string; token?: string }) => Promise<User>;
+  demoLogin: () => Promise<User>;
   logout: () => Promise<void>;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
@@ -53,11 +53,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshUser();
   }, [refreshUser]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     const res = await api.login(email, password);
     setUser(res.user);
     if (res.user.theme_preference) setMode(res.user.theme_preference);
-    await refreshUser();
+    api
+      .me()
+      .then((d) => {
+        setUser(d.user);
+        setStorageUsedBytes(d.storageUsedBytes);
+      })
+      .catch(() => {
+        // ignore secondary sync failure; primary login succeeded
+      });
+    return res.user;
   };
 
   const register = async (payload: {
@@ -73,18 +82,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return api.register(payload);
   };
 
-  const verifyEmail = async (payload: { email?: string; otp?: string; token?: string }) => {
+  const verifyEmail = async (payload: { email?: string; otp?: string; token?: string }): Promise<User> => {
     const res = await api.verifyEmail(payload);
     setUser(res.user);
     if (res.user.theme_preference) setMode(res.user.theme_preference);
-    await refreshUser();
+    api
+      .me()
+      .then((d) => {
+        setUser(d.user);
+        setStorageUsedBytes(d.storageUsedBytes);
+      })
+      .catch(() => {
+        // ignore secondary sync failure
+      });
+    return res.user;
   };
 
-  const demoLogin = async () => {
+  const demoLogin = async (): Promise<User> => {
     const res = await api.demoLogin();
     setUser(res.user);
     if (res.user.theme_preference) setMode(res.user.theme_preference);
-    await refreshUser();
+    api
+      .me()
+      .then((d) => {
+        setUser(d.user);
+        setStorageUsedBytes(d.storageUsedBytes);
+      })
+      .catch(() => {
+        // ignore secondary sync failure
+      });
+    return res.user;
   };
 
   const logout = async () => {
@@ -93,6 +120,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setUser(null);
       setStorageUsedBytes(0);
+      if (typeof window !== 'undefined' && window.location.pathname !== '/' && window.location.pathname !== '/login') {
+        window.history.replaceState({}, '', '/login');
+      }
     }
   };
 

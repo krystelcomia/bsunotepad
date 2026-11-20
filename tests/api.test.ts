@@ -515,4 +515,47 @@ describe('INKORA Gmail Auth, Email Verification, Password Reset & RBAC Tests', (
     const deleted = await client.json(`/api/notes/${duplicated.data.note.id}`, { method: 'DELETE' });
     assert.equal(deleted.status, 200);
   });
+
+  it('routes Vercel /api/index handler across /api/health, stripped paths, and ?path=auth/demo', async () => {
+    const serverlessDir = fs.mkdtempSync(path.join(os.tmpdir(), 'inkora-vercel-'));
+    const prevDataDir = process.env.INKORA_DATA_DIR;
+    const prevStorageDir = process.env.INKORA_STORAGE_DIR;
+    process.env.INKORA_DATA_DIR = path.join(serverlessDir, 'data');
+    process.env.INKORA_STORAGE_DIR = path.join(serverlessDir, 'storage');
+
+    const { default: vercelHandler } = await import('../api/index.js');
+    const s = http.createServer((req, res) => {
+      vercelHandler(req as never, res as never);
+    });
+    await new Promise<void>((resolve) => s.listen(0, '127.0.0.1', () => resolve()));
+    const addr = s.address();
+    const sUrl = typeof addr === 'object' && addr ? `http://127.0.0.1:${addr.port}` : '';
+
+    try {
+      const h1 = await fetch(`${sUrl}/api/health`);
+      assert.equal(h1.status, 200);
+      const h1Json = (await h1.json()) as { status: string };
+      assert.equal(h1Json.status, 'ok');
+
+      const h2 = await fetch(`${sUrl}/health`);
+      assert.equal(h2.status, 200);
+
+      const demoRes = await fetch(`${sUrl}/api?path=auth/demo`, { method: 'POST' });
+      assert.equal(demoRes.status, 200);
+      const demoJson = (await demoRes.json()) as { user: { role: string; email: string } };
+      assert.equal(demoJson.user.role, 'student');
+      assert.equal(demoJson.user.email, 'alex.rivera.demo@gmail.com');
+    } finally {
+      await new Promise<void>((resolve) => s.close(() => resolve()));
+      if (prevDataDir === undefined) delete process.env.INKORA_DATA_DIR;
+      else process.env.INKORA_DATA_DIR = prevDataDir;
+      if (prevStorageDir === undefined) delete process.env.INKORA_STORAGE_DIR;
+      else process.env.INKORA_STORAGE_DIR = prevStorageDir;
+      try {
+        fs.rmSync(serverlessDir, { recursive: true, force: true });
+      } catch {
+        // Singleton serverless DB handle remains open on Windows until process exit
+      }
+    }
+  });
 });
