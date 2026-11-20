@@ -1,6 +1,12 @@
+export type UserRole = 'student' | 'admin';
+export type AccountStatus = 'active' | 'deactivated' | 'suspended';
+
 export interface User {
   id: string;
   email: string;
+  role: UserRole;
+  status: AccountStatus;
+  status_reason: string;
   full_name: string;
   university: string;
   major: string;
@@ -8,8 +14,23 @@ export interface User {
   bio: string;
   avatar_file: string | null;
   theme_preference: 'system' | 'light' | 'dark';
+  workspace_accent: 'purple' | 'lavender' | 'blue';
   storage_quota_bytes: number;
   is_demo: number;
+  last_login_at: string | null;
+  login_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Folder {
+  id: string;
+  user_id: string;
+  parent_id: string | null;
+  name: string;
+  color: string;
+  icon: string;
+  note_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -56,7 +77,7 @@ export type PageSize = 'a4' | 'letter' | 'fluid';
 export interface StrokePoint {
   x: number;
   y: number;
-  p: number; // pressure 0..1
+  p: number;
 }
 
 export interface DrawingStroke {
@@ -110,6 +131,7 @@ export interface DrawingData {
 export interface Note {
   id: string;
   user_id?: string;
+  folder_id: string | null;
   notebook_id: string | null;
   subject_id: string | null;
   title: string;
@@ -131,6 +153,8 @@ export interface Note {
   is_trashed: number;
   trashed_at?: string | null;
   share_token?: string | null;
+  folder_name?: string | null;
+  folder_color?: string | null;
   notebook_title?: string | null;
   subject_code?: string | null;
   subject_name?: string | null;
@@ -216,6 +240,7 @@ export interface StudySession {
 }
 
 export interface WorkspaceSummary {
+  folders: Folder[];
   subjects: Subject[];
   notebooks: Notebook[];
   recentNotes: Note[];
@@ -229,9 +254,25 @@ export interface WorkspaceSummary {
   };
 }
 
+export interface AccountConcern {
+  id: string;
+  user_id: string | null;
+  email: string;
+  subject: string;
+  category: string;
+  message: string;
+  status: 'open' | 'in_review' | 'resolved';
+  admin_note: string;
+  student_name?: string | null;
+  student_status?: AccountStatus | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AccountOverview {
   user: User;
   counts: {
+    folders: number;
     subjects: number;
     notebooks: number;
     notes: number;
@@ -251,4 +292,40 @@ export interface AccountOverview {
     last_active_at: string;
     isCurrent: boolean;
   }>;
+}
+
+export interface AdminStats {
+  totalStudents: number;
+  activeAccounts: number;
+  suspendedAccounts: number;
+  deactivatedAccounts: number;
+  newRegistrations7d: number;
+  activeLogins24h: number;
+  totalNotes: number;
+  totalNotebooks: number;
+  totalFolders: number;
+  totalFiles: number;
+  totalStorageUsedBytes: number;
+  openConcerns: number;
+}
+
+export interface AdminStudentRow {
+  id: string;
+  email: string;
+  full_name: string;
+  university: string;
+  major: string;
+  academic_year: string;
+  status: AccountStatus;
+  status_reason: string;
+  is_demo: number;
+  last_login_at: string | null;
+  login_count: number;
+  created_at: string;
+  updated_at: string;
+  storage_quota_bytes: number;
+  note_count: number;
+  file_count: number;
+  storage_used_bytes: number;
+  active_session_count: number;
 }

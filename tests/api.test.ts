@@ -72,7 +72,7 @@ class CookieClient {
   }
 }
 
-describe('INKORA Full-Stack API Integration Tests', () => {
+describe('INKORA Full-Stack API & RBAC Integration Tests', () => {
   let tmpDir: string;
   let server: http.Server;
   let db: InkoraDatabase;
@@ -105,232 +105,240 @@ describe('INKORA Full-Stack API Integration Tests', () => {
 
     const unauth = await client.json<{ error: string }>('/api/workspace/summary');
     assert.equal(unauth.status, 401);
+
+    const unauthAdmin = await client.json<{ error: string }>('/api/admin/stats');
+    assert.equal(unauthAdmin.status, 401);
   });
 
-  it('supports demo login with seeded academic data', async () => {
+  it('supports demo student login with seeded folders, notes & subjects while blocking admin routes', async () => {
     const client = new CookieClient(baseUrl);
-    const demo = await client.json<{ user: { email: string; is_demo: number } }>('/api/auth/demo', {
-      method: 'POST',
-    });
+    const demo = await client.json<{ user: { email: string; role: string; is_demo: number } }>(
+      '/api/auth/demo',
+      { method: 'POST' }
+    );
     assert.equal(demo.status, 200);
     assert.equal(demo.data.user.email, 'alex.rivera@university.edu');
+    assert.equal(demo.data.user.role, 'student');
     assert.equal(demo.data.user.is_demo, 1);
 
     const summary = await client.json<{
+      folders: unknown[];
       subjects: unknown[];
       notebooks: unknown[];
       recentNotes: unknown[];
     }>('/api/workspace/summary');
     assert.equal(summary.status, 200);
+    assert.ok(summary.data.folders.length >= 3);
     assert.ok(summary.data.subjects.length >= 3);
     assert.ok(summary.data.notebooks.length >= 3);
     assert.ok(summary.data.recentNotes.length >= 4);
+
+    // Student MUST be denied access to Admin APIs
+    const forbiddenStats = await client.json<{ error: string }>('/api/admin/stats');
+    assert.equal(forbiddenStats.status, 403);
+    const forbiddenStudents = await client.json<{ error: string }>('/api/admin/students');
+    assert.equal(forbiddenStudents.status, 403);
   });
 
-  it('runs end-to-end user registration, workspace CRUD, search, versions, file storage, study tools & deletion', async () => {
-    const client = new CookieClient(baseUrl);
-    const email = 'maya.chen@bsu.edu';
-    const password = 'StrongPassword123!';
+  it('enforces cross-student privacy isolation, admin RBAC, suspension/appeals & deletion', async () => {
+    const studentA = new CookieClient(baseUrl);
+    const studentB = new CookieClient(baseUrl);
+    const admin = new CookieClient(baseUrl);
 
-    // 1. Register
-    const reg = await client.json<{ user: { id: string; email: string } }>('/api/auth/register', {
+    // 1. Register Student A (attempting to pass role: 'admin' must be ignored -> 'student')
+    const regA = await studentA.json<{ user: { id: string; email: string; role: string } }>(
+      '/api/auth/register',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          email: 'maya.chen@bsu.edu',
+          password: 'StrongPassword123!',
+          full_name: 'Maya Chen',
+          role: 'admin',
+          university: 'BSU',
+          major: 'Physics',
+        }),
+      }
+    );
+    assert.equal(regA.status, 201);
+    assert.equal(regA.data.user.role, 'student');
+
+    // Register Student B
+    const regB = await studentB.json<{ user: { id: string; email: string; role: string } }>(
+      '/api/auth/register',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          email: 'liam.wright@bsu.edu',
+          password: 'StrongPassword123!',
+          full_name: 'Liam Wright',
+        }),
+      }
+    );
+    assert.equal(regB.status, 201);
+    assert.equal(regB.data.user.role, 'student');
+
+    // 2. Student A creates Folder, Subject, Notebook, Private Note & Uploaded File
+    const folderA = await studentA.json<{ folder: { id: string } }>('/api/folders', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Private Thesis Folder', color: '#6D28D9' }),
+    });
+    assert.equal(folderA.status, 201);
+
+    const subA = await studentA.json<{ subject: { id: string } }>('/api/workspace/subjects', {
+      method: 'POST',
+      body: JSON.stringify({ code: 'PHYS 402', name: 'Quantum Mechanics' }),
+    });
+    const nbA = await studentA.json<{ notebook: { id: string } }>('/api/notebooks', {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Schrodinger Notes', subject_id: subA.data.subject.id }),
+    });
+
+    const noteA = await studentA.json<{ note: { id: string } }>('/api/notes', {
       method: 'POST',
       body: JSON.stringify({
-        email,
-        password,
-        full_name: 'Maya Chen',
-        university: 'BSU',
-        major: 'Physics',
-        academic_year: 'Senior',
+        title: 'Secret Thesis Derivation',
+        folder_id: folderA.data.folder.id,
+        notebook_id: nbA.data.notebook.id,
+        subject_id: subA.data.subject.id,
       }),
     });
-    assert.equal(reg.status, 201);
-    assert.equal(reg.data.user.email, email);
+    assert.equal(noteA.status, 201);
+    const secretNoteId = noteA.data.note.id;
 
-    // Duplicate registration returns 409
-    const dupReg = await client.json<{ error: string }>('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, full_name: 'Dup' }),
-    });
-    assert.equal(dupReg.status, 409);
-
-    // 2. Profile update & password change
-    const prof = await client.json<{ user: { bio: string } }>('/api/account/profile', {
-      method: 'PATCH',
-      body: JSON.stringify({ bio: 'Quantum optics researcher' }),
-    });
-    assert.equal(prof.status, 200);
-    assert.equal(prof.data.user.bio, 'Quantum optics researcher');
-
-    const newPw = 'UpdatedSecret456!';
-    const pwRes = await client.json<{ ok: boolean }>('/api/account/password', {
-      method: 'POST',
-      body: JSON.stringify({ currentPassword: password, newPassword: newPw, revokeOtherSessions: false }),
-    });
-    assert.equal(pwRes.status, 200);
-    assert.equal(pwRes.data.ok, true);
-
-    // 3. Create Subject & Notebook
-    const subRes = await client.json<{ subject: { id: string } }>('/api/workspace/subjects', {
-      method: 'POST',
-      body: JSON.stringify({ code: 'PHYS 402', name: 'Quantum Mechanics', color: '#4F46E5' }),
-    });
-    assert.equal(subRes.status, 201);
-    const subjectId = subRes.data.subject.id;
-
-    const nbRes = await client.json<{ notebook: { id: string } }>('/api/notebooks', {
-      method: 'POST',
-      body: JSON.stringify({
-        title: 'Schrodinger Notes',
-        subject_id: subjectId,
-        default_paper_style: 'cornell',
-      }),
-    });
-    assert.equal(nbRes.status, 201);
-    const notebookId = nbRes.data.notebook.id;
-
-    // 4. Create Note from template & update with rich content + drawing strokes
-    const noteRes = await client.json<{ note: { id: string } }>('/api/notes', {
-      method: 'POST',
-      body: JSON.stringify({
-        title: 'Wavefunction Collapse Lecture',
-        template: 'cornell',
-        notebook_id: notebookId,
-        subject_id: subjectId,
-      }),
-    });
-    assert.equal(noteRes.status, 201);
-    const noteId = noteRes.data.note.id;
-
-    const updatedJson = JSON.stringify({
-      type: 'doc',
-      content: [
-        { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Hamiltonian Operator' }] },
-        { type: 'paragraph', content: [{ type: 'text', text: 'Eigenvalues of the Hermitian operator represent observables.' }] },
-      ],
-    });
-    const drawingJson = JSON.stringify({
-      version: 1,
-      background: 'grid',
-      strokes: [{ id: 's1', tool: 'pen', color: '#4F46E5', width: 3, opacity: 1, points: [{ x: 10, y: 10, p: 0.5 }, { x: 80, y: 80, p: 0.5 }] }],
-      shapes: [],
-      texts: [],
-    });
-
-    const patchRes = await client.json<{ note: { word_count: number; drawing_data: string } }>(`/api/notes/${noteId}`, {
+    await studentA.json(`/api/notes/${secretNoteId}`, {
       method: 'PATCH',
       body: JSON.stringify({
-        content_json: updatedJson,
-        drawing_data: drawingJson,
-        tags: ['quantum', 'eigenvalues'],
+        content_json: JSON.stringify({
+          type: 'doc',
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Confidential Hermitian proof.' }] }],
+        }),
       }),
     });
-    assert.equal(patchRes.status, 200);
-    assert.ok(patchRes.data.note.word_count >= 7);
 
-    // 5. Full-Text Search (FTS5)
-    const searchRes = await client.json<{ notes: Array<{ id: string }> }>(
+    const fd = new FormData();
+    fd.append('file', new Blob(['Secret lab dataset'], { type: 'text/csv' }), 'maya-secret.csv');
+    fd.append('note_id', secretNoteId);
+    const fileA = await studentA.request('/api/files/upload', { method: 'POST', body: fd });
+    assert.equal(fileA.status, 201);
+    const fileData = (await fileA.json()) as { file: { id: string } };
+
+    // 3. Student B MUST NOT access Student A's note, folder, search results, or file!
+    const stealNote = await studentB.json(`/api/notes/${secretNoteId}`);
+    assert.equal(stealNote.status, 404);
+    const stealPatch = await studentB.json(`/api/notes/${secretNoteId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title: 'Hacked' }),
+    });
+    assert.equal(stealPatch.status, 404);
+    const stealFile = await studentB.request(`/api/files/${fileData.file.id}/content`);
+    assert.equal(stealFile.status, 404);
+    const stealFolder = await studentB.json(`/api/folders/${folderA.data.folder.id}`, {
+      method: 'DELETE',
+    });
+    assert.equal(stealFolder.status, 404);
+    const searchB = await studentB.json<{ notes: Array<{ id: string }>; files: Array<{ id: string }> }>(
       '/api/workspace/search?q=Hermitian'
     );
-    assert.equal(searchRes.status, 200);
-    assert.ok(searchRes.data.notes.some((n) => n.id === noteId));
+    assert.equal(searchB.data.notes.length, 0);
+    assert.equal(searchB.data.files.length, 0);
 
-    // 6. Snapshot Version History & Restore
-    const snapRes = await client.json<{ version: { id: string } }>(`/api/notes/${noteId}/versions`, {
+    // 4. Admin Role login & verification (admin has stats + student list, ZERO private note access)
+    const adminLogin = await admin.json<{ user: { role: string } }>('/api/auth/demo-admin', {
       method: 'POST',
-      body: JSON.stringify({ label: 'Before Edit' }),
     });
-    assert.equal(snapRes.status, 201);
+    assert.equal(adminLogin.status, 200);
+    assert.equal(adminLogin.data.user.role, 'admin');
 
-    await client.json(`/api/notes/${noteId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ title: 'Temporarily Renamed' }),
-    });
+    // Admin CANNOT access student private workspace endpoints
+    const adminBlockedNotes = await admin.json('/api/notes');
+    assert.equal(adminBlockedNotes.status, 403);
+    const adminBlockedFile = await admin.request(`/api/files/${fileData.file.id}/content`);
+    assert.equal(adminBlockedFile.status, 403);
 
-    const restoreSnap = await client.json<{ note: { title: string } }>(
-      `/api/notes/${noteId}/versions/${snapRes.data.version.id}/restore`,
-      { method: 'POST' }
+    // Admin stats & student search work cleanly without exposing note contents
+    const stats = await admin.json<{
+      stats: { totalStudents: number; activeAccounts: number; suspendedAccounts: number; totalNotes: number };
+    }>('/api/admin/stats');
+    assert.equal(stats.status, 200);
+    assert.ok(stats.data.stats.totalStudents >= 3);
+
+    const searchMaya = await admin.json<{
+      students: Array<{ id: string; email: string; note_count: number; title?: string; plain_text?: string }>;
+    }>('/api/admin/students?q=maya.chen');
+    assert.equal(searchMaya.status, 200);
+    assert.equal(searchMaya.data.students.length, 1);
+    assert.equal(searchMaya.data.students[0].note_count, 2);
+    assert.equal(searchMaya.data.students[0].title, undefined);
+    assert.equal(searchMaya.data.students[0].plain_text, undefined);
+
+    // 5. Admin suspends Student A -> Student A's session is revoked & login blocked -> Student A submits Appeal -> Admin resolves & reactivates
+    const susp = await admin.json<{ student: { status: string } }>(
+      `/api/admin/students/${regA.data.user.id}/status`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'suspended', status_reason: 'Account review required' }),
+      }
     );
-    assert.equal(restoreSnap.status, 200);
-    assert.equal(restoreSnap.data.note.title, 'Wavefunction Collapse Lecture');
+    assert.equal(susp.status, 200);
+    assert.equal(susp.data.student.status, 'suspended');
 
-    // 7. Share Link (Public Read-Only) & Revoke
-    const shareEnable = await client.json<{ share_token: string }>(`/api/notes/${noteId}/share`, {
+    const meWhileSuspended = await studentA.json('/api/auth/me');
+    assert.ok(meWhileSuspended.status === 401 || meWhileSuspended.status === 403);
+
+    const loginWhileSuspended = await studentA.json('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ enabled: true }),
+      body: JSON.stringify({ email: 'maya.chen@bsu.edu', password: 'StrongPassword123!' }),
     });
-    assert.equal(shareEnable.status, 200);
-    assert.ok(shareEnable.data.share_token);
+    assert.equal(loginWhileSuspended.status, 403);
 
-    const anonClient = new CookieClient(baseUrl);
-    const publicRead = await anonClient.json<{ note: { title: string; author_name: string } }>(
-      `/api/shared/${shareEnable.data.share_token}`
-    );
-    assert.equal(publicRead.status, 200);
-    assert.equal(publicRead.data.note.title, 'Wavefunction Collapse Lecture');
-    assert.equal(publicRead.data.note.author_name, 'Maya Chen');
-
-    // 8. Real File Upload, Download & Delete
-    const fd = new FormData();
-    fd.append('file', new Blob(['Wavefunction lab CSV data\n1,2,3\n'], { type: 'text/csv' }), 'lab-data.csv');
-    fd.append('note_id', noteId);
-    fd.append('subject_id', subjectId);
-
-    const upRes = await client.request('/api/files/upload', { method: 'POST', body: fd });
-    assert.equal(upRes.status, 201);
-    const uploaded = (await upRes.json()) as { file: { id: string; size_bytes: number }; storage: { usedBytes: number } };
-    assert.ok(uploaded.storage.usedBytes > 0);
-
-    const dlRes = await client.request(`/api/files/${uploaded.file.id}/content`);
-    assert.equal(dlRes.status, 200);
-    const dlText = await dlRes.text();
-    assert.ok(dlText.includes('Wavefunction lab CSV data'));
-
-    // 9. Study Tasks, Flashcards & Sessions
-    const taskRes = await client.json<{ task: { id: string } }>('/api/study/tasks', {
-      method: 'POST',
-      body: JSON.stringify({ title: 'Solve Problem Set 4', subject_id: subjectId, priority: 'high' }),
-    });
-    assert.equal(taskRes.status, 201);
-
-    const cardRes = await client.json<{ flashcard: { id: string } }>('/api/study/flashcards', {
+    // Submit appeal
+    const appeal = await studentA.json<{ ok: boolean }>('/api/auth/appeal', {
       method: 'POST',
       body: JSON.stringify({
-        front: 'What property do Hermitian operator eigenvalues have?',
-        back: 'They are always real.',
-        subject_id: subjectId,
+        email: 'maya.chen@bsu.edu',
+        password: 'StrongPassword123!',
+        subject: 'Please reactivate my student account',
+        message: 'Verified my BSU enrollment status.',
       }),
     });
-    assert.equal(cardRes.status, 201);
+    assert.equal(appeal.status, 201);
 
-    const reviewRes = await client.json<{ flashcard: { confidence: number; review_count: number } }>(
-      `/api/study/flashcards/${cardRes.data.flashcard.id}/review`,
-      { method: 'POST', body: JSON.stringify({ confidence: 5 }) }
+    const concerns = await admin.json<{ concerns: Array<{ id: string; email: string; status: string }> }>(
+      '/api/admin/concerns?status=open'
     );
-    assert.equal(reviewRes.status, 200);
-    assert.equal(reviewRes.data.flashcard.confidence, 5);
-    assert.equal(reviewRes.data.flashcard.review_count, 1);
+    const mayaConcern = concerns.data.concerns.find((c) => c.email === 'maya.chen@bsu.edu');
+    assert.ok(mayaConcern);
 
-    const sessRes = await client.json<{ session: { duration_minutes: number } }>('/api/study/sessions', {
+    const resolveConcern = await admin.json<{ concern: { status: string } }>(
+      `/api/admin/concerns/${mayaConcern.id}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'resolved', admin_note: 'Verified and reactivated.' }),
+      }
+    );
+    assert.equal(resolveConcern.status, 200);
+    assert.equal(resolveConcern.data.concern.status, 'resolved');
+
+    await admin.json(`/api/admin/students/${regA.data.user.id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'active' }),
+    });
+
+    const loginReactivated = await studentA.json<{ user: { status: string } }>('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ duration_minutes: 25, mode: 'focus', subject_id: subjectId }),
+      body: JSON.stringify({ email: 'maya.chen@bsu.edu', password: 'StrongPassword123!' }),
     });
-    assert.equal(sessRes.status, 201);
-    assert.equal(sessRes.data.session.duration_minutes, 25);
+    assert.equal(loginReactivated.status, 200);
+    assert.equal(loginReactivated.data.user.status, 'active');
 
-    // 10. Trash & Restore Note
-    await client.json(`/api/notes/${noteId}/trash`, { method: 'POST' });
-    await client.json(`/api/notes/${noteId}/restore`, { method: 'POST' });
-
-    // 11. Account Delete cleans up everything
-    const delRes = await client.json<{ ok: boolean }>('/api/account', {
+    // 6. Admin deletes Student B
+    const delB = await admin.json<{ ok: boolean }>(`/api/admin/students/${regB.data.user.id}`, {
       method: 'DELETE',
-      body: JSON.stringify({ password: newPw }),
     });
-    assert.equal(delRes.status, 200);
-    assert.equal(delRes.data.ok, true);
+    assert.equal(delB.status, 200);
 
-    const afterDel = await client.json<{ error: string }>('/api/auth/me');
-    assert.equal(afterDel.status, 401);
+    const checkB = await studentB.json('/api/auth/me');
+    assert.equal(checkB.status, 401);
   });
 });

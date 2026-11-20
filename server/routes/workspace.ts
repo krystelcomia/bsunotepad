@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { DatabaseSync } from 'node:sqlite';
+import { requireRole } from '../middleware/auth.js';
 import { AuthenticatedRequest } from '../types.js';
 import { generateId } from '../utils/crypto.js';
 
@@ -9,9 +10,20 @@ export function createWorkspaceRouter(
 ): Router {
   const router = Router();
   router.use(requireAuth);
+  router.use(requireRole('student'));
 
   router.get('/summary', (req: AuthenticatedRequest, res) => {
     const userId = req.user!.id;
+
+    const folders = db
+      .prepare(
+        `SELECT f.*,
+          (SELECT COUNT(*) FROM notes n WHERE n.folder_id = f.id AND n.is_trashed = 0) as note_count
+         FROM folders f
+         WHERE f.user_id = ?
+         ORDER BY f.name COLLATE NOCASE ASC`
+      )
+      .all(userId);
 
     const subjects = db
       .prepare(
@@ -38,11 +50,13 @@ export function createWorkspaceRouter(
 
     const recentNotes = db
       .prepare(
-        `SELECT n.id, n.notebook_id, n.subject_id, n.title, n.mode, n.paper_style, n.page_size,
+        `SELECT n.id, n.folder_id, n.notebook_id, n.subject_id, n.title, n.mode, n.paper_style, n.page_size,
                 substr(n.plain_text, 1, 220) as excerpt, n.drawing_preview, n.tags_json,
                 n.word_count, n.is_pinned, n.is_starred, n.share_token, n.created_at, n.updated_at,
+                f.name as folder_name, f.color as folder_color,
                 nb.title as notebook_title, s.code as subject_code, s.name as subject_name, s.color as subject_color
          FROM notes n
+         LEFT JOIN folders f ON f.id = n.folder_id
          LEFT JOIN notebooks nb ON nb.id = n.notebook_id
          LEFT JOIN subjects s ON s.id = n.subject_id
          WHERE n.user_id = ? AND n.is_trashed = 0
@@ -83,6 +97,7 @@ export function createWorkspaceRouter(
       .get(userId) as { c: number };
 
     res.json({
+      folders,
       subjects,
       notebooks,
       recentNotes,
@@ -101,7 +116,7 @@ export function createWorkspaceRouter(
     const userId = req.user!.id;
     const rawQuery = String(req.query.q || '').trim();
     if (!rawQuery) {
-      res.json({ notes: [], notebooks: [], subjects: [], files: [] });
+      res.json({ notes: [], folders: [], notebooks: [], subjects: [], files: [] });
       return;
     }
 
@@ -154,6 +169,14 @@ export function createWorkspaceRouter(
     }
 
     const like = `%${rawQuery}%`;
+    const folders = db
+      .prepare(
+        `SELECT id, name, color
+         FROM folders WHERE user_id = ? AND name LIKE ?
+         LIMIT 10`
+      )
+      .all(userId, like);
+
     const notebooks = db
       .prepare(
         `SELECT id, title, description, cover_color, default_paper_style
@@ -178,7 +201,7 @@ export function createWorkspaceRouter(
       )
       .all(userId, like);
 
-    res.json({ notes, notebooks, subjects, files });
+    res.json({ notes, folders, notebooks, subjects, files });
   });
 
   // Subjects CRUD

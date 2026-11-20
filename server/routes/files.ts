@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Router, Response } from 'express';
 import { DatabaseSync } from 'node:sqlite';
 import { AppConfig } from '../config.js';
+import { requireRole } from '../middleware/auth.js';
 import { createFileUploader } from '../middleware/upload.js';
 import { AuthenticatedRequest } from '../types.js';
 import { generateId } from '../utils/crypto.js';
@@ -17,6 +18,7 @@ export function createFilesRouter(
   const upload = createFileUploader(config);
 
   router.use(requireAuth);
+  router.use(requireRole('student'));
 
   router.get('/', (req: AuthenticatedRequest, res) => {
     const userId = req.user!.id;

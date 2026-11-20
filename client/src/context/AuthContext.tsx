@@ -19,6 +19,7 @@ interface AuthContextValue {
     academic_year?: string;
   }) => Promise<void>;
   demoLogin: () => Promise<void>;
+  demoAdminLogin: () => Promise<void>;
   logout: () => Promise<void>;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
@@ -77,6 +78,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await refreshUser();
   };
 
+  const demoAdminLogin = async () => {
+    const res = await api.demoAdminLogin();
+    setUser(res.user);
+    if (res.user.theme_preference) setMode(res.user.theme_preference);
+    await refreshUser();
+  };
+
   const logout = async () => {
     try {
       await api.logout();
@@ -97,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         demoLogin,
+        demoAdminLogin,
         logout,
         setUser,
       }}

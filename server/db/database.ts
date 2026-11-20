@@ -3,6 +3,13 @@ import { AppConfig } from '../config.js';
 
 export type InkoraDatabase = DatabaseSync;
 
+function ensureColumn(db: DatabaseSync, table: string, column: string, definition: string): void {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
 export function createDatabase(config: AppConfig): DatabaseSync {
   const db = new DatabaseSync(config.dbPath);
 
@@ -17,6 +24,9 @@ export function createDatabase(config: AppConfig): DatabaseSync {
       id TEXT PRIMARY KEY,
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'admin')),
+      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'deactivated', 'suspended')),
+      status_reason TEXT NOT NULL DEFAULT '',
       full_name TEXT NOT NULL,
       university TEXT NOT NULL DEFAULT '',
       major TEXT NOT NULL DEFAULT '',
@@ -24,8 +34,11 @@ export function createDatabase(config: AppConfig): DatabaseSync {
       bio TEXT NOT NULL DEFAULT '',
       avatar_file TEXT DEFAULT NULL,
       theme_preference TEXT NOT NULL DEFAULT 'system',
+      workspace_accent TEXT NOT NULL DEFAULT 'purple',
       storage_quota_bytes INTEGER NOT NULL DEFAULT 262144000,
       is_demo INTEGER NOT NULL DEFAULT 0,
+      last_login_at TEXT DEFAULT NULL,
+      login_count INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -45,6 +58,21 @@ export function createDatabase(config: AppConfig): DatabaseSync {
     CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
 
+    CREATE TABLE IF NOT EXISTS folders (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      parent_id TEXT DEFAULT NULL,
+      name TEXT NOT NULL,
+      color TEXT NOT NULL DEFAULT '#6D28D9',
+      icon TEXT NOT NULL DEFAULT 'Folder',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (parent_id) REFERENCES folders(id) ON DELETE SET NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_folders_user ON folders(user_id);
+
     CREATE TABLE IF NOT EXISTS subjects (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -52,7 +80,7 @@ export function createDatabase(config: AppConfig): DatabaseSync {
       name TEXT NOT NULL,
       instructor TEXT NOT NULL DEFAULT '',
       semester TEXT NOT NULL DEFAULT '',
-      color TEXT NOT NULL DEFAULT '#4F46E5',
+      color TEXT NOT NULL DEFAULT '#6D28D9',
       icon TEXT NOT NULL DEFAULT 'BookOpen',
       sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
@@ -68,8 +96,8 @@ export function createDatabase(config: AppConfig): DatabaseSync {
       subject_id TEXT DEFAULT NULL,
       title TEXT NOT NULL,
       description TEXT NOT NULL DEFAULT '',
-      cover_color TEXT NOT NULL DEFAULT '#312E81',
-      accent_color TEXT NOT NULL DEFAULT '#F59E0B',
+      cover_color TEXT NOT NULL DEFAULT '#4C1D95',
+      accent_color TEXT NOT NULL DEFAULT '#A78BFA',
       icon TEXT NOT NULL DEFAULT 'NotebookPen',
       default_paper_style TEXT NOT NULL DEFAULT 'lined',
       is_pinned INTEGER NOT NULL DEFAULT 0,
@@ -85,6 +113,7 @@ export function createDatabase(config: AppConfig): DatabaseSync {
     CREATE TABLE IF NOT EXISTS notes (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
+      folder_id TEXT DEFAULT NULL,
       notebook_id TEXT DEFAULT NULL,
       subject_id TEXT DEFAULT NULL,
       title TEXT NOT NULL DEFAULT 'Untitled Note',
@@ -108,6 +137,7 @@ export function createDatabase(config: AppConfig): DatabaseSync {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL,
       FOREIGN KEY (notebook_id) REFERENCES notebooks(id) ON DELETE SET NULL,
       FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL
     );
@@ -220,7 +250,34 @@ export function createDatabase(config: AppConfig): DatabaseSync {
     );
 
     CREATE INDEX IF NOT EXISTS idx_study_sessions_user ON study_sessions(user_id, completed_at DESC);
+
+    CREATE TABLE IF NOT EXISTS account_concerns (
+      id TEXT PRIMARY KEY,
+      user_id TEXT DEFAULT NULL,
+      email TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'account_access',
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in_review', 'resolved')),
+      admin_note TEXT NOT NULL DEFAULT '',
+      resolved_by TEXT DEFAULT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_concerns_status ON account_concerns(status, created_at DESC);
   `);
+
+  // Safe migrations if an older inkora.db exists
+  ensureColumn(db, 'users', 'role', "TEXT NOT NULL DEFAULT 'student'");
+  ensureColumn(db, 'users', 'status', "TEXT NOT NULL DEFAULT 'active'");
+  ensureColumn(db, 'users', 'status_reason', "TEXT NOT NULL DEFAULT ''");
+  ensureColumn(db, 'users', 'workspace_accent', "TEXT NOT NULL DEFAULT 'purple'");
+  ensureColumn(db, 'users', 'last_login_at', 'TEXT DEFAULT NULL');
+  ensureColumn(db, 'users', 'login_count', 'INTEGER NOT NULL DEFAULT 0');
+  ensureColumn(db, 'notes', 'folder_id', 'TEXT DEFAULT NULL');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_notes_folder ON notes(folder_id)');
 
   return db;
 }

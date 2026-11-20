@@ -1,10 +1,105 @@
 import React, { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { api } from '../../api/client';
-import { Notebook, PaperStyle, Subject } from '../../types';
+import { Folder, Notebook, PaperStyle, Subject } from '../../types';
 import { Modal } from '../common/Modal';
 
-const COLORS = ['#4F46E5', '#059669', '#D97706', '#E11D48', '#0284C7', '#7C3AED', '#312E81', '#065F46'];
+const COLORS = ['#6D28D9', '#8B5CF6', '#3B82F6', '#4C1D95', '#0EA5E9', '#EC4899', '#10B981', '#F59E0B'];
+
+export const FolderModal: React.FC<{
+  open: boolean;
+  editing: Folder | null;
+  onClose: () => void;
+  onSaved: () => void;
+  onNotify: (type: 'success' | 'error' | 'info', text: string) => void;
+}> = ({ open, editing, onClose, onSaved, onNotify }) => {
+  const [name, setName] = useState('');
+  const [color, setColor] = useState('#6D28D9');
+
+  useEffect(() => {
+    if (!open) return;
+    if (editing) {
+      setName(editing.name);
+      setColor(editing.color);
+    } else {
+      setName('');
+      setColor('#6D28D9');
+    }
+  }, [open, editing]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editing) {
+        await api.updateFolder(editing.id, { name, color });
+        onNotify('success', 'Folder updated');
+      } else {
+        await api.createFolder({ name, color });
+        onNotify('success', 'Folder created');
+      }
+      onSaved();
+      onClose();
+    } catch (err) {
+      onNotify('error', err instanceof Error ? err.message : 'Failed to save folder');
+    }
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title={editing ? 'Edit Folder' : 'Create Folder'}>
+      <form onSubmit={submit} className="space-y-4">
+        <div>
+          <label className="block text-xs font-semibold mb-1">Folder Name *</label>
+          <input
+            type="text"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Midterm Study Packets"
+            className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-slate-700 bg-violet-50/40 dark:bg-slate-800"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold mb-1.5">Folder Color</label>
+          <div className="flex gap-2">
+            {COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                className={`w-7 h-7 rounded-full cursor-pointer ${color === c ? 'ring-2 ring-offset-2 ring-violet-600' : ''}`}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center justify-between pt-2">
+          {editing ? (
+            <button
+              type="button"
+              onClick={async () => {
+                if (!window.confirm(`Delete folder "${editing.name}"? Notes inside will remain in All Notes.`)) return;
+                await api.deleteFolder(editing.id);
+                onSaved();
+                onClose();
+              }}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:underline cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete Folder
+            </button>
+          ) : (
+            <span />
+          )}
+          <button
+            type="submit"
+            className="px-5 py-2 rounded-xl bg-gradient-to-r from-violet-700 to-blue-600 text-white text-sm font-semibold cursor-pointer"
+          >
+            {editing ? 'Save Folder' : 'Create Folder'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
 
 export const SubjectModal: React.FC<{
   open: boolean;

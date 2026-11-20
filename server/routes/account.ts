@@ -3,10 +3,10 @@ import path from 'node:path';
 import { Router, Response } from 'express';
 import { DatabaseSync } from 'node:sqlite';
 import { AppConfig } from '../config.js';
-import { clearSessionCookie } from '../middleware/auth.js';
+import { clearSessionCookie, SAFE_USER_COLUMNS } from '../middleware/auth.js';
 import { createAvatarUploader } from '../middleware/upload.js';
 import { AuthenticatedRequest, SafeUser } from '../types.js';
-import { hashPassword, verifyPassword } from '../utils/crypto.js';
+import { generateId, hashPassword, verifyPassword } from '../utils/crypto.js';
 
 export function createAccountRouter(
   db: DatabaseSync,
@@ -60,6 +60,7 @@ export function createAccountRouter(
       .get(userId) as { total: number };
 
     const counts = {
+      folders: Number((db.prepare('SELECT COUNT(*) as c FROM folders WHERE user_id = ?').get(userId) as { c: number }).c),
       subjects: Number((db.prepare('SELECT COUNT(*) as c FROM subjects WHERE user_id = ?').get(userId) as { c: number }).c),
       notebooks: Number((db.prepare('SELECT COUNT(*) as c FROM notebooks WHERE user_id = ?').get(userId) as { c: number }).c),
       notes: Number((db.prepare('SELECT COUNT(*) as c FROM notes WHERE user_id = ? AND is_trashed = 0').get(userId) as { c: number }).c),
@@ -90,6 +91,7 @@ export function createAccountRouter(
     const academicYear = req.body?.academic_year !== undefined ? String(req.body.academic_year).trim() : req.user!.academic_year;
     const bio = req.body?.bio !== undefined ? String(req.body.bio).trim() : req.user!.bio;
     const theme = req.body?.theme_preference !== undefined ? String(req.body.theme_preference) : req.user!.theme_preference;
+    const accent = req.body?.workspace_accent !== undefined ? String(req.body.workspace_accent) : req.user!.workspace_accent;
 
     if (fullName.length < 2) {
       res.status(400).json({ error: 'Full name must be at least 2 characters.' });
@@ -103,6 +105,7 @@ export function createAccountRouter(
       res.status(400).json({ error: 'Invalid theme preference.' });
       return;
     }
+    const validAccent = ['purple', 'lavender', 'blue'].includes(accent) ? accent : 'purple';
 
     if (email !== req.user!.email) {
       const taken = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, userId);
@@ -115,16 +118,13 @@ export function createAccountRouter(
     const now = new Date().toISOString();
     db.prepare(
       `UPDATE users
-       SET email = ?, full_name = ?, university = ?, major = ?, academic_year = ?, bio = ?, theme_preference = ?, updated_at = ?
+       SET email = ?, full_name = ?, university = ?, major = ?, academic_year = ?, bio = ?,
+           theme_preference = ?, workspace_accent = ?, updated_at = ?
        WHERE id = ?`
-    ).run(email, fullName, university, major, academicYear, bio, theme, now, userId);
+    ).run(email, fullName, university, major, academicYear, bio, theme, validAccent, now, userId);
 
     const updated = db
-      .prepare(
-        `SELECT id, email, full_name, university, major, academic_year, bio, avatar_file,
-                theme_preference, storage_quota_bytes, is_demo, created_at, updated_at
-         FROM users WHERE id = ?`
-      )
+      .prepare(`SELECT ${SAFE_USER_COLUMNS} FROM users u WHERE u.id = ?`)
       .get(userId) as unknown as SafeUser;
 
     res.json({ user: updated });
@@ -158,11 +158,7 @@ export function createAccountRouter(
       );
 
       const updated = db
-        .prepare(
-          `SELECT id, email, full_name, university, major, academic_year, bio, avatar_file,
-                  theme_preference, storage_quota_bytes, is_demo, created_at, updated_at
-           FROM users WHERE id = ?`
-        )
+        .prepare(`SELECT ${SAFE_USER_COLUMNS} FROM users u WHERE u.id = ?`)
         .get(userId) as unknown as SafeUser;
 
       res.json({ user: updated });
@@ -216,8 +212,47 @@ export function createAccountRouter(
     res.json({ ok: true });
   });
 
+  // Account-related support concerns raised by user
+  router.get('/concerns', requireAuth, (req: AuthenticatedRequest, res) => {
+    const concerns = db
+      .prepare(
+        `SELECT id, subject, category, message, status, admin_note, created_at, updated_at
+         FROM account_concerns
+         WHERE user_id = ?
+         ORDER BY created_at DESC`
+      )
+      .all(req.user!.id);
+    res.json({ concerns });
+  });
+
+  router.post('/concerns', requireAuth, (req: AuthenticatedRequest, res) => {
+    const subject = String(req.body?.subject || '').trim();
+    const category = ['account_access', 'storage_quota', 'billing_profile', 'other'].includes(
+      String(req.body?.category)
+    )
+      ? String(req.body.category)
+      : 'other';
+    const message = String(req.body?.message || '').trim();
+
+    if (subject.length < 3 || message.length < 5) {
+      res.status(400).json({ error: 'Please provide both a subject and a detailed message.' });
+      return;
+    }
+
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(
+      `INSERT INTO account_concerns (id, user_id, email, subject, category, message, status, admin_note, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'open', '', ?, ?)`
+    ).run(id, req.user!.id, req.user!.email, subject.slice(0, 120), category, message.slice(0, 1500), now, now);
+
+    const concern = db.prepare('SELECT * FROM account_concerns WHERE id = ?').get(id);
+    res.status(201).json({ concern });
+  });
+
   router.get('/export', requireAuth, (req: AuthenticatedRequest, res) => {
     const userId = req.user!.id;
+    const folders = db.prepare('SELECT * FROM folders WHERE user_id = ?').all(userId);
     const subjects = db.prepare('SELECT * FROM subjects WHERE user_id = ?').all(userId);
     const notebooks = db.prepare('SELECT * FROM notebooks WHERE user_id = ?').all(userId);
     const notes = db.prepare('SELECT * FROM notes WHERE user_id = ?').all(userId);
@@ -228,6 +263,7 @@ export function createAccountRouter(
       exportedAt: new Date().toISOString(),
       platform: 'INKORA',
       user: req.user,
+      folders,
       subjects,
       notebooks,
       notes,
@@ -242,8 +278,12 @@ export function createAccountRouter(
 
   router.delete('/', requireAuth, (req: AuthenticatedRequest, res) => {
     const userId = req.user!.id;
-    const password = String(req.body?.password || '');
+    if (req.user!.role === 'admin') {
+      res.status(403).json({ error: 'Administrator accounts cannot be self-deleted here.' });
+      return;
+    }
 
+    const password = String(req.body?.password || '');
     if (!req.user!.is_demo) {
       const row = db
         .prepare('SELECT password_hash FROM users WHERE id = ?')
@@ -254,13 +294,11 @@ export function createAccountRouter(
       }
     }
 
-    // Delete stored files and avatars on disk
     const userUploads = path.join(config.uploadsDir, userId);
     const userAvatars = path.join(config.avatarsDir, userId);
     fs.rmSync(userUploads, { recursive: true, force: true });
     fs.rmSync(userAvatars, { recursive: true, force: true });
 
-    // Clean FTS rows explicitly before user cascade delete
     db.prepare('DELETE FROM notes_fts WHERE user_id = ?').run(userId);
     db.prepare('DELETE FROM users WHERE id = ?').run(userId);
 

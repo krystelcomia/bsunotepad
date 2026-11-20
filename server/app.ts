@@ -7,8 +7,10 @@ import { createDatabase, InkoraDatabase } from './db/database.js';
 import { ensureDemoUser } from './db/seed.js';
 import { createAuthMiddleware } from './middleware/auth.js';
 import { createAccountRouter } from './routes/account.js';
+import { createAdminRouter } from './routes/admin.js';
 import { createAuthRouter } from './routes/auth.js';
 import { createFilesRouter } from './routes/files.js';
+import { createFoldersRouter } from './routes/folders.js';
 import { createNotebooksRouter } from './routes/notebooks.js';
 import { createNotesRouter } from './routes/notes.js';
 import { createStudyRouter } from './routes/study.js';
@@ -44,6 +46,8 @@ export function createApp(
 
   app.use('/api/auth', createAuthRouter(db, config, requireAuth));
   app.use('/api/account', createAccountRouter(db, config, requireAuth));
+  app.use('/api/admin', createAdminRouter(db, config, requireAuth));
+  app.use('/api/folders', createFoldersRouter(db, requireAuth));
   app.use('/api/workspace', createWorkspaceRouter(db, requireAuth));
   app.use('/api/notebooks', createNotebooksRouter(db, requireAuth));
 

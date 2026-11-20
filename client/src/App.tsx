@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Menu, Moon, Search, Sun } from 'lucide-react';
 import { api } from './api/client';
 import { AccountModal } from './components/account/AccountModal';
+import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AuthPage } from './components/auth/AuthPage';
 import { ToastContainer, ToastMessage } from './components/common/Toast';
 import { DashboardView } from './components/dashboard/DashboardView';
@@ -12,10 +13,10 @@ import { NavSection, Sidebar } from './components/layout/Sidebar';
 import { SharedNoteView } from './components/shared/SharedNoteView';
 import { PomodoroWidget } from './components/study/PomodoroWidget';
 import { StudyHubView } from './components/study/StudyHubView';
-import { NotebookModal, SubjectModal } from './components/workspace/Modals';
+import { FolderModal, NotebookModal, SubjectModal } from './components/workspace/Modals';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
-import { Notebook, Note, Subject, WorkspaceSummary } from './types';
+import { Folder, Notebook, Note, Subject, WorkspaceSummary } from './types';
 
 const WorkspaceShell: React.FC = () => {
   const { user, loading: authLoading, setStorageUsedBytes } = useAuth();
@@ -35,6 +36,10 @@ const WorkspaceShell: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
+  const [folderModal, setFolderModal] = useState<{ open: boolean; editing: Folder | null }>({
+    open: false,
+    editing: null,
+  });
   const [subjectModal, setSubjectModal] = useState<{ open: boolean; editing: Subject | null }>({
     open: false,
     editing: null,
@@ -55,7 +60,7 @@ const WorkspaceShell: React.FC = () => {
   }, []);
 
   const refreshWorkspace = useCallback(async () => {
-    if (!user) return;
+    if (!user || user.role !== 'student') return;
     try {
       const sum = await api.workspaceSummary();
       setSummary(sum);
@@ -63,6 +68,7 @@ const WorkspaceShell: React.FC = () => {
 
       if (activeNav.kind === 'notes') {
         const listRes = await api.listNotes({
+          folderId: activeNav.folderId,
           notebookId: activeNav.notebookId,
           subjectId: activeNav.subjectId,
           starred: activeNav.filter === 'starred',
@@ -79,11 +85,14 @@ const WorkspaceShell: React.FC = () => {
   }, [user, activeNav, setStorageUsedBytes]);
 
   useEffect(() => {
-    if (user) refreshWorkspace();
+    if (user && user.role === 'student') {
+      refreshWorkspace();
+    }
   }, [user, refreshWorkspace]);
 
-  // Global Ctrl+K Search shortcut
+  // Global Ctrl+K Search shortcut (for students)
   useEffect(() => {
+    if (!user || user.role !== 'student') return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
@@ -92,14 +101,17 @@ const WorkspaceShell: React.FC = () => {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [user]);
 
   const handleCreateNote = async (opts?: {
     template?: string;
+    folderId?: string;
     notebookId?: string;
     subjectId?: string;
   }) => {
     try {
+      const fldId =
+        opts?.folderId ?? (activeNav.kind === 'notes' ? activeNav.folderId : undefined);
       const nbId =
         opts?.notebookId ??
         (activeNav.kind === 'notes' ? activeNav.notebookId : undefined);
@@ -109,6 +121,7 @@ const WorkspaceShell: React.FC = () => {
 
       const res = await api.createNote({
         template: opts?.template || 'blank',
+        folder_id: fldId || null,
         notebook_id: nbId || null,
         subject_id: subId || null,
       });
@@ -123,6 +136,10 @@ const WorkspaceShell: React.FC = () => {
     if (activeNav.kind !== 'notes') return { title: 'Notes', subtitle: '' };
     if (activeNav.filter === 'starred') return { title: 'Starred Notes', subtitle: 'Your pinned & favorite study sheets' };
     if (activeNav.filter === 'trash') return { title: 'Trash', subtitle: 'Restore deleted pages or erase them permanently' };
+    if (activeNav.folderId) {
+      const f = summary?.folders.find((x) => x.id === activeNav.folderId);
+      return { title: f ? `Folder: ${f.name}` : 'Folder Notes', subtitle: 'Organized notes inside this folder' };
+    }
     if (activeNav.notebookId) {
       const nb = summary?.notebooks.find((n) => n.id === activeNav.notebookId);
       return { title: nb?.title || 'Notebook', subtitle: nb?.description || '' };
@@ -151,7 +168,7 @@ const WorkspaceShell: React.FC = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F3EE] dark:bg-[#0B0F17] text-sm text-slate-500">
+      <div className="min-h-screen flex items-center justify-center bg-[#F6F4FB] dark:bg-[#0B0914] text-sm text-violet-600 dark:text-violet-300">
         Loading INKORA Workspace...
       </div>
     );
@@ -161,11 +178,33 @@ const WorkspaceShell: React.FC = () => {
     return <AuthPage />;
   }
 
+  // Separate Administrative Dashboard for ADMIN Role
+  if (user.role === 'admin') {
+    return (
+      <>
+        <AdminDashboard
+          onOpenAccount={() => setAccountOpen(true)}
+          onNotify={notify}
+        />
+        <AccountModal
+          open={accountOpen}
+          onClose={() => setAccountOpen(false)}
+          onNotify={notify}
+        />
+        <ToastContainer
+          toasts={toasts}
+          onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+        />
+      </>
+    );
+  }
+
+  const folders = summary?.folders || [];
   const subjects = summary?.subjects || [];
   const notebooks = summary?.notebooks || [];
 
   return (
-    <div className="h-screen flex overflow-hidden bg-[#F5F3EE] dark:bg-[#0B0F17]">
+    <div className="h-screen flex overflow-hidden bg-[#F6F4FB] dark:bg-[#0B0914]">
       <Sidebar
         openMobile={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
@@ -174,11 +213,14 @@ const WorkspaceShell: React.FC = () => {
           setActiveNoteId(null);
           setActiveNav(nav);
         }}
+        folders={folders}
         subjects={subjects}
         notebooks={notebooks}
         trashedCount={summary?.trashedCount || 0}
         onOpenSearch={() => setSearchOpen(true)}
         onNewNote={(opts) => handleCreateNote(opts)}
+        onNewFolder={() => setFolderModal({ open: true, editing: null })}
+        onEditFolder={(fld) => setFolderModal({ open: true, editing: fld })}
         onNewSubject={() => setSubjectModal({ open: true, editing: null })}
         onEditSubject={(sub) => setSubjectModal({ open: true, editing: sub })}
         onNewNotebook={() => setNotebookModal({ open: true, editing: null })}
@@ -188,17 +230,17 @@ const WorkspaceShell: React.FC = () => {
 
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Global Top Header (hidden in print) */}
-        <header className="no-print h-13 px-4 border-b border-stone-200/90 dark:border-slate-800 bg-white/85 dark:bg-slate-900/90 backdrop-blur-xs flex items-center justify-between gap-3 shrink-0">
+        <header className="no-print h-13 px-4 border-b border-violet-200/70 dark:border-violet-900/50 bg-white/85 dark:bg-[#141024]/90 backdrop-blur-xs flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800"
+              className="lg:hidden p-2 rounded-xl text-slate-600 dark:text-violet-200 hover:bg-violet-50 dark:hover:bg-violet-950"
               aria-label="Open menu"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">
+            <div className="text-xs font-medium text-slate-500 dark:text-violet-200/75 truncate">
               {activeNoteId ? 'INKORA Studio Editor' : viewHeaderInfo.title}
             </div>
           </div>
@@ -207,9 +249,9 @@ const WorkspaceShell: React.FC = () => {
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800 text-xs text-slate-500 hover:border-indigo-400 cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-violet-200 dark:border-violet-800/60 bg-violet-50/50 dark:bg-[#1C1633] text-xs text-slate-500 dark:text-violet-200/75 hover:border-violet-400 cursor-pointer"
             >
-              <Search className="w-3.5 h-3.5" /> Search
+              <Search className="w-3.5 h-3.5 text-violet-600" /> Search
             </button>
 
             <PomodoroWidget
@@ -221,10 +263,10 @@ const WorkspaceShell: React.FC = () => {
             <button
               type="button"
               onClick={toggleTheme}
-              className="p-2 rounded-xl border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer"
+              className="p-2 rounded-xl border border-violet-200 dark:border-violet-800/60 bg-white dark:bg-[#1C1633] text-slate-600 dark:text-violet-200 hover:bg-violet-50 dark:hover:bg-violet-900/40 cursor-pointer"
               title="Toggle light/dark mode"
             >
-              {resolved === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+              {resolved === 'dark' ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4" />}
             </button>
           </div>
         </header>
@@ -233,6 +275,7 @@ const WorkspaceShell: React.FC = () => {
         {activeNoteId ? (
           <NoteWorkspace
             noteId={activeNoteId}
+            folders={folders}
             subjects={subjects}
             notebooks={notebooks}
             onBack={() => {
@@ -282,6 +325,10 @@ const WorkspaceShell: React.FC = () => {
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         onSelectNote={(id) => setActiveNoteId(id)}
+        onSelectFolder={(fldId) => {
+          setActiveNoteId(null);
+          setActiveNav({ kind: 'notes', folderId: fldId });
+        }}
         onSelectNotebook={(nbId) => {
           setActiveNoteId(null);
           setActiveNav({ kind: 'notes', notebookId: nbId });
@@ -294,6 +341,14 @@ const WorkspaceShell: React.FC = () => {
           setActiveNoteId(null);
           setActiveNav({ kind: 'files' });
         }}
+      />
+
+      <FolderModal
+        open={folderModal.open}
+        editing={folderModal.editing}
+        onClose={() => setFolderModal({ open: false, editing: null })}
+        onSaved={refreshWorkspace}
+        onNotify={notify}
       />
 
       <SubjectModal

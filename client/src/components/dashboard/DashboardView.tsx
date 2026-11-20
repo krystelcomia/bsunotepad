@@ -148,7 +148,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             type="button"
             onClick={() => onCreateFromTemplate('blank')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm shadow-indigo-600/20 transition cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-800 via-purple-700 to-blue-600 hover:brightness-110 text-white text-sm font-semibold shadow-md shadow-violet-700/20 transition cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Create Note
           </button>
@@ -474,14 +474,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     )}
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-stone-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-                    <div className="flex items-center gap-2 min-w-0">
+                  <div className="mt-4 pt-3 border-t border-violet-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                    <div className="flex items-center gap-1.5 min-w-0">
                       {n.subject_code && (
                         <span
                           className="font-bold px-1.5 py-0.5 rounded text-white text-[10px]"
-                          style={{ backgroundColor: n.subject_color || '#4F46E5' }}
+                          style={{ backgroundColor: n.subject_color || '#6D28D9' }}
                         >
                           {n.subject_code}
+                        </span>
+                      )}
+                      {n.folder_name && (
+                        <span className="px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 text-[10px] font-medium truncate max-w-[90px]">
+                          {n.folder_name}
                         </span>
                       )}
                       <span className="truncate">{formatRelativeTime(n.updated_at)}</span>

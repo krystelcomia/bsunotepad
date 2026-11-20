@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { DatabaseSync } from 'node:sqlite';
+import { requireRole } from '../middleware/auth.js';
 import { AuthenticatedRequest } from '../types.js';
 import { generateId } from '../utils/crypto.js';
 
@@ -9,6 +10,7 @@ export function createNotebooksRouter(
 ): Router {
   const router = Router();
   router.use(requireAuth);
+  router.use(requireRole('student'));
 
   router.get('/', (req: AuthenticatedRequest, res) => {
     const subjectId = req.query.subjectId ? String(req.query.subjectId) : null;

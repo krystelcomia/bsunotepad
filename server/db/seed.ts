@@ -5,12 +5,52 @@ import { syncNoteFts } from './database.js';
 
 export const DEMO_EMAIL = 'alex.rivera@university.edu';
 export const DEMO_PASSWORD = 'InkoraDemo2026!';
+export const ADMIN_EMAIL = 'admin@inkora.edu';
+export const ADMIN_PASSWORD = process.env.INKORA_ADMIN_PASSWORD || 'InkoraAdmin2026!';
 
 function isoOffset(hoursOffset: number): string {
   return new Date(Date.now() + hoursOffset * 3600 * 1000).toISOString();
 }
 
+export function ensureAdminUser(db: DatabaseSync): string {
+  const existing = db
+    .prepare("SELECT id FROM users WHERE email = ? AND role = 'admin'")
+    .get(ADMIN_EMAIL) as { id: string } | undefined;
+
+  if (existing) {
+    return existing.id;
+  }
+
+  const now = new Date().toISOString();
+  const adminId = generateId();
+  const passwordHash = hashPassword(ADMIN_PASSWORD);
+
+  db.prepare(
+    `INSERT INTO users (
+      id, email, password_hash, role, status, status_reason, full_name, university,
+      major, academic_year, bio, theme_preference, workspace_accent, is_demo,
+      last_login_at, login_count, created_at, updated_at
+    ) VALUES (?, ?, ?, 'admin', 'active', '', ?, ?, ?, ?, ?, 'light', 'purple', 1, ?, 1, ?, ?)`
+  ).run(
+    adminId,
+    ADMIN_EMAIL,
+    passwordHash,
+    'INKORA Administrator',
+    'INKORA Platform Operations',
+    'System Administration',
+    'Staff',
+    'Platform administrator overseeing student account health, access control, and account concerns.',
+    isoOffset(-3),
+    now,
+    now
+  );
+
+  return adminId;
+}
+
 export function ensureDemoUser(db: DatabaseSync): string {
+  ensureAdminUser(db);
+
   const existing = db
     .prepare('SELECT id FROM users WHERE email = ?')
     .get(DEMO_EMAIL) as { id: string } | undefined;
@@ -25,9 +65,10 @@ export function ensureDemoUser(db: DatabaseSync): string {
 
   db.prepare(
     `INSERT INTO users (
-      id, email, password_hash, full_name, university, major, academic_year,
-      bio, theme_preference, is_demo, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
+      id, email, password_hash, role, status, status_reason, full_name, university,
+      major, academic_year, bio, theme_preference, workspace_accent, is_demo,
+      last_login_at, login_count, created_at, updated_at
+    ) VALUES (?, ?, ?, 'student', 'active', '', ?, ?, ?, ?, ?, 'light', 'purple', 1, ?, 4, ?, ?)`
   ).run(
     userId,
     DEMO_EMAIL,
@@ -37,10 +78,23 @@ export function ensureDemoUser(db: DatabaseSync): string {
     'Computer Science & Bioinformatics',
     'Junior (Year 3)',
     'Honors student organizing lecture notes, lab reports, and algorithm sketches in INKORA.',
-    'light',
-    now,
+    isoOffset(-1),
+    isoOffset(-240),
     now
   );
+
+  // Folders for organizing notes
+  const folderFallId = generateId();
+  const folderLabsId = generateId();
+  const folderExamsId = generateId();
+
+  const insertFolder = db.prepare(
+    `INSERT INTO folders (id, user_id, parent_id, name, color, icon, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  );
+  insertFolder.run(folderFallId, userId, null, 'Fall 2026 Lectures', '#6D28D9', 'Folder', now, now);
+  insertFolder.run(folderLabsId, userId, null, 'Lab Reports & Diagrams', '#3B82F6', 'Folder', now, now);
+  insertFolder.run(folderExamsId, userId, null, 'Midterm Prep', '#8B5CF6', 'Folder', now, now);
 
   const csId = generateId();
   const bioId = generateId();
@@ -51,9 +105,9 @@ export function ensureDemoUser(db: DatabaseSync): string {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
-  insertSubject.run(csId, userId, 'CS 301', 'Algorithms & Data Structures', 'Dr. Elena Vance', 'Fall 2026', '#4F46E5', 'Cpu', 1, now, now);
-  insertSubject.run(bioId, userId, 'BIO 204', 'Cellular & Molecular Biology', 'Prof. Marcus Thorne', 'Fall 2026', '#059669', 'Microscope', 2, now, now);
-  insertSubject.run(histId, userId, 'HIST 210', 'History of Scientific Thought', 'Dr. Claire Bennett', 'Fall 2026', '#D97706', 'Landmark', 3, now, now);
+  insertSubject.run(csId, userId, 'CS 301', 'Algorithms & Data Structures', 'Dr. Elena Vance', 'Fall 2026', '#6D28D9', 'Cpu', 1, now, now);
+  insertSubject.run(bioId, userId, 'BIO 204', 'Cellular & Molecular Biology', 'Prof. Marcus Thorne', 'Fall 2026', '#2563EB', 'Microscope', 2, now, now);
+  insertSubject.run(histId, userId, 'HIST 210', 'History of Scientific Thought', 'Dr. Claire Bennett', 'Fall 2026', '#8B5CF6', 'Landmark', 3, now, now);
 
   const csNbId = generateId();
   const bioNbId = generateId();
@@ -64,9 +118,9 @@ export function ensureDemoUser(db: DatabaseSync): string {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
-  insertNb.run(csNbId, userId, csId, 'Algorithms Lecture Compendium', 'Cornell notes, complexity proofs, and graph diagrams', '#312E81', '#818CF8', 'Code2', 'cornell', 1, now, now);
-  insertNb.run(bioNbId, userId, bioId, 'Cell Bio Lab & Diagrams', 'Formal lab reports, enzyme assays, and organelle sketches', '#065F46', '#34D399', 'FlaskConical', 'lined', 1, now, now);
-  insertNb.run(histNbId, userId, histId, 'Scientific Revolutions Essays', 'Draft essays, primary source quotes, and midterm review', '#78350F', '#FBBF24', 'ScrollText', 'plain', 0, now, now);
+  insertNb.run(csNbId, userId, csId, 'Algorithms Lecture Compendium', 'Cornell notes, complexity proofs, and graph diagrams', '#4C1D95', '#A78BFA', 'Code2', 'cornell', 1, now, now);
+  insertNb.run(bioNbId, userId, bioId, 'Cell Bio Lab & Diagrams', 'Formal lab reports, enzyme assays, and organelle sketches', '#1E40AF', '#60A5FA', 'FlaskConical', 'lined', 1, now, now);
+  insertNb.run(histNbId, userId, histId, 'Scientific Revolutions Essays', 'Draft essays, primary source quotes, and midterm review', '#5B21B6', '#C4B5FD', 'ScrollText', 'plain', 0, now, now);
 
   // Note 1: Word-like Lab Report
   const labContentJson = JSON.stringify({
@@ -189,7 +243,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
     ],
   });
 
-  const labHtml = `<h1>Lab Report 04: Catalase Enzyme Kinetics Assay</h1><p><strong>Course: </strong>BIO 204 — Cellular &amp; Molecular Biology | <strong>Lab Partner: </strong>Maya Lin</p><h2>1. Objective &amp; Hypothesis</h2><p>Determine the initial reaction velocity (V₀) of bovine liver catalase across varying hydrogen peroxide (H₂O₂) concentrations and estimate Vmax and Km using Lineweaver-Burk double-reciprocal linearization.</p><blockquote><p><em>Hypothesis: Reaction velocity increases hyperbolically with substrate concentration until enzyme active sites saturate at Vmax.</em></p></blockquote><h2>2. Experimental Trial Data</h2><p>Recorded oxygen evolution rates across 5.0 mM, 15.0 mM, and 40.0 mM trials.</p>`;
+  const labHtml = `<h1>Lab Report 04: Catalase Enzyme Kinetics Assay</h1><p><strong>Course: </strong>BIO 204 — Cellular &amp; Molecular Biology | <strong>Lab Partner: </strong>Maya Lin</p><h2>1. Objective &amp; Hypothesis</h2><p>Determine the initial reaction velocity (V₀) of bovine liver catalase across varying hydrogen peroxide (H₂O₂) concentrations and estimate Vmax and Km using Lineweaver-Burk double-reciprocal linearization.</p>`;
   const labPlain = extractPlainTextFromTipTap(labContentJson);
 
   // Note 2: Cornell Notebook + Vector Ink Graph Sketch
@@ -237,9 +291,9 @@ export function ensureDemoUser(db: DatabaseSync): string {
       {
         id: 'st-1',
         tool: 'highlighter',
-        color: '#FDE047',
+        color: '#DDD6FE',
         width: 14,
-        opacity: 0.45,
+        opacity: 0.5,
         points: [
           { x: 90, y: 156, p: 0.5 },
           { x: 260, y: 156, p: 0.5 },
@@ -248,20 +302,20 @@ export function ensureDemoUser(db: DatabaseSync): string {
       },
     ],
     shapes: [
-      { id: 'sh-1', kind: 'circle', x1: 520, y1: 110, x2: 572, y2: 162, color: '#4F46E5', width: 2.5, opacity: 1 },
-      { id: 'sh-2', kind: 'circle', x1: 635, y1: 75, x2: 687, y2: 127, color: '#4F46E5', width: 2.5, opacity: 1 },
-      { id: 'sh-3', kind: 'circle', x1: 635, y1: 165, x2: 687, y2: 217, color: '#4F46E5', width: 2.5, opacity: 1 },
-      { id: 'sh-4', kind: 'arrow', x1: 572, y1: 128, x2: 634, y2: 102, color: '#0F172A', width: 2.2, opacity: 1 },
-      { id: 'sh-5', kind: 'arrow', x1: 572, y1: 146, x2: 634, y2: 186, color: '#0F172A', width: 2.2, opacity: 1 },
+      { id: 'sh-1', kind: 'circle', x1: 520, y1: 110, x2: 572, y2: 162, color: '#6D28D9', width: 2.5, opacity: 1 },
+      { id: 'sh-2', kind: 'circle', x1: 635, y1: 75, x2: 687, y2: 127, color: '#6D28D9', width: 2.5, opacity: 1 },
+      { id: 'sh-3', kind: 'circle', x1: 635, y1: 165, x2: 687, y2: 217, color: '#6D28D9', width: 2.5, opacity: 1 },
+      { id: 'sh-4', kind: 'arrow', x1: 572, y1: 128, x2: 634, y2: 102, color: '#1E1B4B', width: 2.2, opacity: 1 },
+      { id: 'sh-5', kind: 'arrow', x1: 572, y1: 146, x2: 634, y2: 186, color: '#1E1B4B', width: 2.2, opacity: 1 },
     ],
     texts: [
-      { id: 'tx-1', x: 540, y: 142, text: 'A', color: '#4F46E5', fontSize: 16 },
-      { id: 'tx-2', x: 655, y: 107, text: 'B', color: '#4F46E5', fontSize: 16 },
-      { id: 'tx-3', x: 655, y: 197, text: 'C', color: '#4F46E5', fontSize: 16 },
+      { id: 'tx-1', x: 540, y: 142, text: 'A', color: '#6D28D9', fontSize: 16 },
+      { id: 'tx-2', x: 655, y: 107, text: 'B', color: '#6D28D9', fontSize: 16 },
+      { id: 'tx-3', x: 655, y: 197, text: 'C', color: '#6D28D9', fontSize: 16 },
     ],
   });
 
-  // Note 3: Pure Drawing Pad Cell Diagram
+  // Note 3: Drawing Pad Cell Diagram
   const cellDrawingData = JSON.stringify({
     version: 1,
     background: 'grid',
@@ -269,7 +323,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
       {
         id: 'cell-mem-1',
         tool: 'pen',
-        color: '#059669',
+        color: '#2563EB',
         width: 3,
         opacity: 1,
         points: [
@@ -286,18 +340,18 @@ export function ensureDemoUser(db: DatabaseSync): string {
       },
     ],
     shapes: [
-      { id: 'nuc-1', kind: 'circle', x1: 310, y1: 185, x2: 430, y2: 305, color: '#4F46E5', width: 3, opacity: 1 },
-      { id: 'nuc-2', kind: 'circle', x1: 350, y1: 225, x2: 390, y2: 265, color: '#6366F1', width: 2, opacity: 0.85 },
-      { id: 'mito-1', kind: 'circle', x1: 465, y1: 175, x2: 535, y2: 220, color: '#D97706', width: 2.5, opacity: 1 },
+      { id: 'nuc-1', kind: 'circle', x1: 310, y1: 185, x2: 430, y2: 305, color: '#6D28D9', width: 3, opacity: 1 },
+      { id: 'nuc-2', kind: 'circle', x1: 350, y1: 225, x2: 390, y2: 265, color: '#8B5CF6', width: 2, opacity: 0.85 },
+      { id: 'mito-1', kind: 'circle', x1: 465, y1: 175, x2: 535, y2: 220, color: '#3B82F6', width: 2.5, opacity: 1 },
       { id: 'arr-1', kind: 'arrow', x1: 115, y1: 185, x2: 195, y2: 185, color: '#334155', width: 2, opacity: 1 },
-      { id: 'arr-2', kind: 'arrow', x1: 370, y1: 130, x2: 370, y2: 182, color: '#4F46E5', width: 2, opacity: 1 },
-      { id: 'arr-3', kind: 'arrow', x1: 585, y1: 155, x2: 525, y2: 185, color: '#D97706', width: 2, opacity: 1 },
+      { id: 'arr-2', kind: 'arrow', x1: 370, y1: 130, x2: 370, y2: 182, color: '#6D28D9', width: 2, opacity: 1 },
+      { id: 'arr-3', kind: 'arrow', x1: 585, y1: 155, x2: 525, y2: 185, color: '#2563EB', width: 2, opacity: 1 },
     ],
     texts: [
-      { id: 'lbl-0', x: 245, y: 65, text: 'Eukaryotic Cell Cross-Section', color: '#0F172A', fontSize: 20 },
-      { id: 'lbl-1', x: 24, y: 188, text: 'Plasma Membrane', color: '#059669', fontSize: 14 },
-      { id: 'lbl-2', x: 328, y: 122, text: 'Nucleus & Nucleolus', color: '#4F46E5', fontSize: 14 },
-      { id: 'lbl-3', x: 560, y: 148, text: 'Mitochondrion (ATP)', color: '#D97706', fontSize: 14 },
+      { id: 'lbl-0', x: 245, y: 65, text: 'Eukaryotic Cell Cross-Section', color: '#1E1B4B', fontSize: 20 },
+      { id: 'lbl-1', x: 24, y: 188, text: 'Plasma Membrane', color: '#2563EB', fontSize: 14 },
+      { id: 'lbl-2', x: 328, y: 122, text: 'Nucleus & Nucleolus', color: '#6D28D9', fontSize: 14 },
+      { id: 'lbl-3', x: 560, y: 148, text: 'Mitochondrion (ATP)', color: '#2563EB', fontSize: 14 },
     ],
   });
 
@@ -333,10 +387,10 @@ export function ensureDemoUser(db: DatabaseSync): string {
 
   const insertNote = db.prepare(
     `INSERT INTO notes (
-      id, user_id, notebook_id, subject_id, title, mode, paper_style, page_size,
+      id, user_id, folder_id, notebook_id, subject_id, title, mode, paper_style, page_size,
       content_json, content_html, plain_text, cornell_cues, cornell_summary,
       drawing_data, tags_json, word_count, is_pinned, is_starred, is_trashed, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
   );
 
   const note1Id = generateId();
@@ -345,7 +399,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
   const note4Id = generateId();
 
   insertNote.run(
-    note1Id, userId, bioNbId, bioId,
+    note1Id, userId, folderLabsId, bioNbId, bioId,
     'Lab Report 04: Catalase Enzyme Kinetics',
     'document', 'plain', 'a4',
     labContentJson, labHtml, labPlain, '', '',
@@ -355,7 +409,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
   );
 
   insertNote.run(
-    note2Id, userId, csNbId, csId,
+    note2Id, userId, folderFallId, csNbId, csId,
     'Lecture 08: Graph Traversal (BFS, DFS & Dijkstra)',
     'notebook', 'cornell', 'a4',
     csContentJson, '', csPlain, csCues, csSummary,
@@ -365,7 +419,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
   );
 
   insertNote.run(
-    note3Id, userId, bioNbId, bioId,
+    note3Id, userId, folderLabsId, bioNbId, bioId,
     'Eukaryotic Cell Organelle Sketch',
     'drawing', 'grid', 'fluid',
     JSON.stringify({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Visual reference sketch for Chapter 4 Organelle Structure.' }] }] }),
@@ -378,7 +432,7 @@ export function ensureDemoUser(db: DatabaseSync): string {
   );
 
   insertNote.run(
-    note4Id, userId, histNbId, histId,
+    note4Id, userId, folderExamsId, histNbId, histId,
     'Midterm Essay: Thermodynamics & Determinism',
     'document', 'plain', 'letter',
     histContentJson, '', histPlain, '', '',
@@ -387,13 +441,11 @@ export function ensureDemoUser(db: DatabaseSync): string {
     countWords(histPlain), 0, 0, isoOffset(-72), isoOffset(-24)
   );
 
-  // Sync FTS5 for all demo notes
   syncNoteFts(db, { id: note1Id, user_id: userId, title: 'Lab Report 04: Catalase Enzyme Kinetics', plain_text: labPlain, cornell_cues: '', cornell_summary: '', tags_json: '["lab-report","biochem","kinetics"]', is_trashed: 0 });
   syncNoteFts(db, { id: note2Id, user_id: userId, title: 'Lecture 08: Graph Traversal (BFS, DFS & Dijkstra)', plain_text: csPlain, cornell_cues: csCues, cornell_summary: csSummary, tags_json: '["algorithms","graphs","midterm"]', is_trashed: 0 });
   syncNoteFts(db, { id: note3Id, user_id: userId, title: 'Eukaryotic Cell Organelle Sketch', plain_text: 'Visual reference sketch for Chapter 4 Organelle Structure.', cornell_cues: '', cornell_summary: '', tags_json: '["diagram","cell-biology","sketch"]', is_trashed: 0 });
   syncNoteFts(db, { id: note4Id, user_id: userId, title: 'Midterm Essay: Thermodynamics & Determinism', plain_text: histPlain, cornell_cues: '', cornell_summary: '', tags_json: '["essay","thermodynamics"]', is_trashed: 0 });
 
-  // Initial version snapshot for note 1
   db.prepare(
     `INSERT INTO note_versions (id, note_id, user_id, label, title, mode, paper_style, content_json, content_html, cornell_cues, cornell_summary, drawing_data, word_count, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -405,7 +457,6 @@ export function ensureDemoUser(db: DatabaseSync): string {
     countWords(labPlain), isoOffset(-12)
   );
 
-  // Tasks
   const insertTask = db.prepare(
     `INSERT INTO study_tasks (id, user_id, subject_id, note_id, title, description, due_date, priority, status, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -415,7 +466,6 @@ export function ensureDemoUser(db: DatabaseSync): string {
   insertTask.run(generateId(), userId, histId, note4Id, 'Outline Boltzmann Primary Source Citations', 'Check pages 112-135 of syllabus reader', isoOffset(96), 'medium', 'todo', now, now);
   insertTask.run(generateId(), userId, bioId, note3Id, 'Review Mitosis vs Meiosis Checkpoint Diagram', 'Self-quiz using organelle flashcards', isoOffset(-12), 'low', 'done', now, now);
 
-  // Flashcards
   const insertCard = db.prepare(
     `INSERT INTO flashcards (id, user_id, subject_id, notebook_id, note_id, front, back, confidence, review_count, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -425,7 +475,6 @@ export function ensureDemoUser(db: DatabaseSync): string {
   insertCard.run(generateId(), userId, bioId, bioNbId, note1Id, 'What does Km represent in Michaelis-Menten kinetics?', 'The substrate concentration at which reaction velocity is exactly half of Vmax (1/2 Vmax); lower Km indicates higher enzyme affinity.', 4, 4, now);
   insertCard.run(generateId(), userId, bioId, bioNbId, note3Id, 'Which organelle houses the citric acid cycle and ATP synthase?', 'Mitochondrion (matrix and inner mitochondrial cristae membrane).', 5, 5, now);
 
-  // Study focus sessions
   const insertSession = db.prepare(
     `INSERT INTO study_sessions (id, user_id, subject_id, note_id, duration_minutes, mode, completed_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`
@@ -433,24 +482,87 @@ export function ensureDemoUser(db: DatabaseSync): string {
   insertSession.run(generateId(), userId, csId, note2Id, 25, 'focus', isoOffset(-6));
   insertSession.run(generateId(), userId, bioId, note1Id, 45, 'focus', isoOffset(-2));
 
+  // Sample realistic additional student accounts (active & suspended) + an open concern so the Admin Dashboard shows rich realistic data out of the box!
+  const samId = generateId();
+  const jordanId = generateId();
+  const insertExtraStudent = db.prepare(
+    `INSERT INTO users (
+      id, email, password_hash, role, status, status_reason, full_name, university,
+      major, academic_year, bio, theme_preference, workspace_accent, is_demo,
+      last_login_at, login_count, created_at, updated_at
+    ) VALUES (?, ?, ?, 'student', ?, ?, ?, ?, ?, ?, '', 'light', 'purple', 0, ?, ?, ?, ?)`
+  );
+
+  insertExtraStudent.run(
+    samId,
+    'samantha.lee@university.edu',
+    hashPassword('StudentDemo2026!'),
+    'active',
+    '',
+    'Samantha Lee',
+    'Bridgewater State University',
+    'Biomedical Engineering',
+    'Sophomore (Year 2)',
+    isoOffset(-8),
+    12,
+    isoOffset(-190),
+    now
+  );
+
+  insertExtraStudent.run(
+    jordanId,
+    'jordan.patel@university.edu',
+    hashPassword('StudentDemo2026!'),
+    'suspended',
+    'Temporary suspension pending email verification review',
+    'Jordan Patel',
+    'Bridgewater State University',
+    'Applied Mathematics',
+    'Senior (Year 4)',
+    isoOffset(-96),
+    3,
+    isoOffset(-310),
+    now
+  );
+
+  db.prepare(
+    `INSERT INTO account_concerns (id, user_id, email, subject, category, message, status, admin_note, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, 'open', '', ?, ?)`
+  ).run(
+    generateId(),
+    jordanId,
+    'jordan.patel@university.edu',
+    'Requesting reactivation after updating student ID',
+    'account_access',
+    'Hello Admin, I have verified my university email address. Could you reactivate my INKORA account ahead of finals?',
+    isoOffset(-14),
+    isoOffset(-14)
+  );
+
   return userId;
 }
 
 export function seedStarterWorkspaceForNewUser(db: DatabaseSync, userId: string): void {
   const now = new Date().toISOString();
+  const folderId = generateId();
   const subjectId = generateId();
   const notebookId = generateId();
   const noteId = generateId();
 
   db.prepare(
+    `INSERT INTO folders (id, user_id, parent_id, name, color, icon, created_at, updated_at)
+     VALUES (?, ?, NULL, 'Getting Started', '#6D28D9', 'Folder', ?, ?)`
+  ).run(folderId, userId, now, now);
+
+  db.prepare(
     `INSERT INTO subjects (id, user_id, code, name, instructor, semester, color, icon, sort_order, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
-  ).run(subjectId, userId, 'STUDY 101', 'General Academic Notes', '', 'Current Term', '#4F46E5', 'GraduationCap', now, now);
+  ).run(subjectId, userId, 'STUDY 101', 'General Academic Notes', '', 'Current Term', '#6D28D9', 'GraduationCap', now, now);
 
   db.prepare(
     `INSERT INTO notebooks (id, user_id, subject_id, title, description, cover_color, accent_color, icon, default_paper_style, is_pinned, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
-  ).run(notebookId, userId, subjectId, 'My First Notebook', 'Write documents, Cornell lecture notes, and sketches here', '#312E81', '#F59E0B', 'NotebookPen', 'lined', now, now);
+  ).run(notebookId, userId, subjectId, 'My First Notebook', 'Write documents, Cornell lecture notes, and sketches here', '#4C1D95', '#A78BFA', 'NotebookPen', 'lined', now, now);
 
   const welcomeJson = JSON.stringify({
     type: 'doc',
@@ -461,15 +573,15 @@ export function seedStarterWorkspaceForNewUser(db: DatabaseSync, userId: string)
         content: [
           {
             type: 'text',
-            text: 'Use the studio switcher at the top to move freely between Document mode (Word-style formatting, tables, checklists), Notebook mode (Cornell cues, lined/grid paper, and ink annotations), Drawing Pad, or Split Studio.',
+            text: 'Your Thoughts. Your Space. Your Ink. Use the studio switcher above to move smoothly between Document mode (Word-style formatting, tables, checklists), Notebook mode (Cornell cues, lined/grid paper, and ink annotations), Drawing Pad, or Split Studio.',
           },
         ],
       },
       {
         type: 'taskList',
         content: [
-          { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Add your courses in the left sidebar' }] }] },
-          { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Try sketching in Draw or Split Studio mode' }] }] },
+          { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Organize notes into Folders, Courses, or Notebooks' }] }] },
+          { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Try sketching diagrams in Draw Pad or Split mode' }] }] },
           { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Upload PDFs or lecture slides to your File Vault' }] }] },
         ],
       },
@@ -480,12 +592,12 @@ export function seedStarterWorkspaceForNewUser(db: DatabaseSync, userId: string)
 
   db.prepare(
     `INSERT INTO notes (
-      id, user_id, notebook_id, subject_id, title, mode, paper_style, page_size,
+      id, user_id, folder_id, notebook_id, subject_id, title, mode, paper_style, page_size,
       content_json, content_html, plain_text, cornell_cues, cornell_summary,
       drawing_data, tags_json, word_count, is_pinned, is_starred, is_trashed, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, 'document', 'plain', 'a4', ?, '', ?, '', '', ?, '["getting-started"]', ?, 1, 0, 0, ?, ?)`
+    ) VALUES (?, ?, ?, ?, ?, ?, 'document', 'plain', 'a4', ?, '', ?, '', '', ?, '["getting-started"]', ?, 1, 0, 0, ?, ?)`
   ).run(
-    noteId, userId, notebookId, subjectId, 'Welcome to INKORA',
+    noteId, userId, folderId, notebookId, subjectId, 'Welcome to INKORA',
     welcomeJson, plain,
     JSON.stringify({ version: 1, strokes: [], shapes: [], texts: [], background: 'transparent' }),
     countWords(plain), now, now

@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { DatabaseSync } from 'node:sqlite';
 import { removeNoteFts, syncNoteFts } from '../db/database.js';
+import { requireRole } from '../middleware/auth.js';
 import { AuthenticatedRequest } from '../types.js';
 import { generateId, generateToken } from '../utils/crypto.js';
 import { countWords, extractPlainTextFromTipTap, sanitizeHtmlBasic } from '../utils/sanitize.js';
@@ -130,22 +131,26 @@ export function createNotesRouter(
 ): { notesRouter: Router; sharedRouter: Router } {
   const notesRouter = Router();
   notesRouter.use(requireAuth);
+  notesRouter.use(requireRole('student'));
 
   notesRouter.get('/', (req: AuthenticatedRequest, res) => {
     const userId = req.user!.id;
     const trashed = req.query.trashed === '1' ? 1 : 0;
     const starred = req.query.starred === '1';
+    const folderId = req.query.folderId ? String(req.query.folderId) : null;
     const notebookId = req.query.notebookId ? String(req.query.notebookId) : null;
     const subjectId = req.query.subjectId ? String(req.query.subjectId) : null;
     const mode = req.query.mode ? String(req.query.mode) : null;
 
     let sql = `
-      SELECT n.id, n.notebook_id, n.subject_id, n.title, n.mode, n.paper_style, n.page_size,
+      SELECT n.id, n.folder_id, n.notebook_id, n.subject_id, n.title, n.mode, n.paper_style, n.page_size,
              substr(n.plain_text, 1, 220) as excerpt, n.drawing_preview, n.tags_json,
              n.word_count, n.is_pinned, n.is_starred, n.is_trashed, n.trashed_at, n.share_token,
              n.created_at, n.updated_at,
+             f.name as folder_name, f.color as folder_color,
              nb.title as notebook_title, s.code as subject_code, s.name as subject_name, s.color as subject_color
       FROM notes n
+      LEFT JOIN folders f ON f.id = n.folder_id
       LEFT JOIN notebooks nb ON nb.id = n.notebook_id
       LEFT JOIN subjects s ON s.id = n.subject_id
       WHERE n.user_id = ? AND n.is_trashed = ?
@@ -154,6 +159,10 @@ export function createNotesRouter(
 
     if (starred) {
       sql += ' AND n.is_starred = 1';
+    }
+    if (folderId) {
+      sql += ' AND n.folder_id = ?';
+      params.push(folderId);
     }
     if (notebookId) {
       sql += ' AND n.notebook_id = ?';
@@ -176,8 +185,10 @@ export function createNotesRouter(
   notesRouter.get('/:id', (req: AuthenticatedRequest, res) => {
     const note = db
       .prepare(
-        `SELECT n.*, nb.title as notebook_title, s.code as subject_code, s.name as subject_name, s.color as subject_color
+        `SELECT n.*, f.name as folder_name, f.color as folder_color,
+                nb.title as notebook_title, s.code as subject_code, s.name as subject_name, s.color as subject_color
          FROM notes n
+         LEFT JOIN folders f ON f.id = n.folder_id
          LEFT JOIN notebooks nb ON nb.id = n.notebook_id
          LEFT JOIN subjects s ON s.id = n.subject_id
          WHERE n.id = ? AND n.user_id = ?`
@@ -217,8 +228,14 @@ export function createNotesRouter(
       ? String(req.body.page_size)
       : (mode === 'drawing' ? 'fluid' : 'a4');
 
+    let folderId = req.body?.folder_id ? String(req.body.folder_id) : null;
     let notebookId = req.body?.notebook_id ? String(req.body.notebook_id) : null;
     let subjectId = req.body?.subject_id ? String(req.body.subject_id) : null;
+
+    if (folderId) {
+      const f = db.prepare('SELECT id FROM folders WHERE id = ? AND user_id = ?').get(folderId, userId);
+      if (!f) folderId = null;
+    }
 
     if (notebookId) {
       const nb = db
@@ -258,12 +275,12 @@ export function createNotesRouter(
 
     db.prepare(
       `INSERT INTO notes (
-        id, user_id, notebook_id, subject_id, title, mode, paper_style, page_size,
+        id, user_id, folder_id, notebook_id, subject_id, title, mode, paper_style, page_size,
         content_json, content_html, plain_text, cornell_cues, cornell_summary,
         drawing_data, tags_json, word_count, is_pinned, is_starred, is_trashed, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?)`
     ).run(
-      id, userId, notebookId, subjectId, title || 'Untitled Note', mode, paperStyle, pageSize,
+      id, userId, folderId, notebookId, subjectId, title || 'Untitled Note', mode, paperStyle, pageSize,
       contentJson, contentHtml, plainText, cornellCues, cornellSummary,
       drawingData, tagsJson, wordCount, now, now
     );
@@ -281,8 +298,10 @@ export function createNotesRouter(
 
     const note = db
       .prepare(
-        `SELECT n.*, nb.title as notebook_title, s.code as subject_code, s.name as subject_name, s.color as subject_color
+        `SELECT n.*, f.name as folder_name, f.color as folder_color,
+                nb.title as notebook_title, s.code as subject_code, s.name as subject_name, s.color as subject_color
          FROM notes n
+         LEFT JOIN folders f ON f.id = n.folder_id
          LEFT JOIN notebooks nb ON nb.id = n.notebook_id
          LEFT JOIN subjects s ON s.id = n.subject_id
          WHERE n.id = ?`
@@ -312,12 +331,25 @@ export function createNotesRouter(
       ? String(req.body.page_size)
       : String(existing.page_size);
 
-    const notebookId = req.body?.notebook_id !== undefined
+    let folderId = req.body?.folder_id !== undefined
+      ? (req.body.folder_id ? String(req.body.folder_id) : null)
+      : (existing.folder_id as string | null);
+    let notebookId = req.body?.notebook_id !== undefined
       ? (req.body.notebook_id ? String(req.body.notebook_id) : null)
       : (existing.notebook_id as string | null);
-    const subjectId = req.body?.subject_id !== undefined
+    let subjectId = req.body?.subject_id !== undefined
       ? (req.body.subject_id ? String(req.body.subject_id) : null)
       : (existing.subject_id as string | null);
+
+    if (folderId && !db.prepare('SELECT id FROM folders WHERE id = ? AND user_id = ?').get(folderId, userId)) {
+      folderId = null;
+    }
+    if (notebookId && !db.prepare('SELECT id FROM notebooks WHERE id = ? AND user_id = ?').get(notebookId, userId)) {
+      notebookId = null;
+    }
+    if (subjectId && !db.prepare('SELECT id FROM subjects WHERE id = ? AND user_id = ?').get(subjectId, userId)) {
+      subjectId = null;
+    }
 
     const contentJson = req.body?.content_json !== undefined ? String(req.body.content_json) : String(existing.content_json);
     const contentHtml = req.body?.content_html !== undefined
@@ -339,13 +371,13 @@ export function createNotesRouter(
 
     db.prepare(
       `UPDATE notes
-       SET notebook_id = ?, subject_id = ?, title = ?, mode = ?, paper_style = ?, page_size = ?,
+       SET folder_id = ?, notebook_id = ?, subject_id = ?, title = ?, mode = ?, paper_style = ?, page_size = ?,
            content_json = ?, content_html = ?, plain_text = ?, cornell_cues = ?, cornell_summary = ?,
            drawing_data = ?, drawing_preview = ?, tags_json = ?, word_count = ?,
            is_pinned = ?, is_starred = ?, updated_at = ?
        WHERE id = ? AND user_id = ?`
     ).run(
-      notebookId, subjectId, title, mode, paperStyle, pageSize,
+      folderId, notebookId, subjectId, title, mode, paperStyle, pageSize,
       contentJson, contentHtml, plainText, cornellCues, cornellSummary,
       drawingData, drawingPreview, tagsJson, wordCount,
       isPinned, isStarred, now, req.params.id, userId
@@ -364,8 +396,10 @@ export function createNotesRouter(
 
     const note = db
       .prepare(
-        `SELECT n.*, nb.title as notebook_title, s.code as subject_code, s.name as subject_name, s.color as subject_color
+        `SELECT n.*, f.name as folder_name, f.color as folder_color,
+                nb.title as notebook_title, s.code as subject_code, s.name as subject_name, s.color as subject_color
          FROM notes n
+         LEFT JOIN folders f ON f.id = n.folder_id
          LEFT JOIN notebooks nb ON nb.id = n.notebook_id
          LEFT JOIN subjects s ON s.id = n.subject_id
          WHERE n.id = ?`
@@ -444,13 +478,14 @@ export function createNotesRouter(
 
     db.prepare(
       `INSERT INTO notes (
-        id, user_id, notebook_id, subject_id, title, mode, paper_style, page_size,
+        id, user_id, folder_id, notebook_id, subject_id, title, mode, paper_style, page_size,
         content_json, content_html, plain_text, cornell_cues, cornell_summary,
         drawing_data, drawing_preview, tags_json, word_count, is_pinned, is_starred, is_trashed, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?)`
     ).run(
       newId,
       req.user!.id,
+      src.folder_id as string | null,
       src.notebook_id as string | null,
       src.subject_id as string | null,
       newTitle,

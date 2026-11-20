@@ -1,7 +1,12 @@
 import {
+  AccountConcern,
   AccountOverview,
+  AccountStatus,
+  AdminStats,
+  AdminStudentRow,
   Attachment,
   Flashcard,
+  Folder,
   Notebook,
   Note,
   NoteVersion,
@@ -14,9 +19,13 @@ import {
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  accountStatus?: AccountStatus;
+  statusReason?: string;
+  constructor(message: string, status: number, extra?: { accountStatus?: AccountStatus; statusReason?: string }) {
     super(message);
     this.status = status;
+    this.accountStatus = extra?.accountStatus;
+    this.statusReason = extra?.statusReason;
   }
 }
 
@@ -37,13 +46,20 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
+    let extra: { accountStatus?: AccountStatus; statusReason?: string } | undefined;
     try {
       const data = await res.json();
       if (data?.error) message = String(data.error);
+      if (data?.accountStatus) {
+        extra = {
+          accountStatus: data.accountStatus,
+          statusReason: data.statusReason,
+        };
+      }
     } catch {
       // ignore non-json error body
     }
-    throw new ApiError(message, res.status);
+    throw new ApiError(message, res.status, extra);
   }
 
   if (res.status === 204) return undefined as T;
@@ -71,6 +87,12 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   demoLogin: () => request<{ user: User }>('/api/auth/demo', { method: 'POST' }),
+  demoAdminLogin: () => request<{ user: User }>('/api/auth/demo-admin', { method: 'POST' }),
+  submitAppeal: (payload: { email: string; password: string; subject: string; message: string }) =>
+    request<{ ok: boolean; id: string }>('/api/auth/appeal', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   logout: () => request<{ ok: boolean }>('/api/auth/logout', { method: 'POST' }),
   logoutAll: () => request<{ ok: boolean }>('/api/auth/logout-all', { method: 'POST' }),
 
@@ -93,10 +115,44 @@ export const api = {
     }),
   revokeSession: (sessionId: string) =>
     request<{ ok: boolean }>(`/api/account/sessions/${sessionId}`, { method: 'DELETE' }),
+  listAccountConcerns: () => request<{ concerns: AccountConcern[] }>('/api/account/concerns'),
+  createAccountConcern: (payload: { subject: string; category: string; message: string }) =>
+    request<{ concern: AccountConcern }>('/api/account/concerns', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   deleteAccount: (password: string) =>
     request<{ ok: boolean }>('/api/account', {
       method: 'DELETE',
       body: JSON.stringify({ password }),
+    }),
+
+  // Admin Console (Admin Role Only)
+  adminStats: () => request<{ stats: AdminStats }>('/api/admin/stats'),
+  adminListStudents: (params?: { q?: string; status?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.q) qs.set('q', params.q);
+    if (params?.status) qs.set('status', params.status);
+    const qStr = qs.toString();
+    return request<{ students: AdminStudentRow[] }>(
+      qStr ? `/api/admin/students?${qStr}` : '/api/admin/students'
+    );
+  },
+  adminUpdateStudentStatus: (studentId: string, status: AccountStatus, status_reason?: string) =>
+    request<{ student: AdminStudentRow }>(`/api/admin/students/${studentId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, status_reason }),
+    }),
+  adminDeleteStudent: (studentId: string) =>
+    request<{ ok: boolean }>(`/api/admin/students/${studentId}`, { method: 'DELETE' }),
+  adminListConcerns: (status?: string) =>
+    request<{ concerns: AccountConcern[] }>(
+      status ? `/api/admin/concerns?status=${encodeURIComponent(status)}` : '/api/admin/concerns'
+    ),
+  adminUpdateConcern: (concernId: string, payload: { status?: string; admin_note?: string }) =>
+    request<{ concern: AccountConcern }>(`/api/admin/concerns/${concernId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
     }),
 
   // Workspace & Search
@@ -104,10 +160,26 @@ export const api = {
   searchWorkspace: (q: string) =>
     request<{
       notes: Note[];
+      folders: Folder[];
       notebooks: Notebook[];
       subjects: Subject[];
       files: Attachment[];
     }>(`/api/workspace/search?q=${encodeURIComponent(q)}`),
+
+  // Folders
+  listFolders: () => request<{ folders: Folder[] }>('/api/folders'),
+  createFolder: (payload: Partial<Folder>) =>
+    request<{ folder: Folder }>('/api/folders', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateFolder: (id: string, payload: Partial<Folder>) =>
+    request<{ folder: Folder }>(`/api/folders/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deleteFolder: (id: string) =>
+    request<{ ok: boolean }>(`/api/folders/${id}`, { method: 'DELETE' }),
 
   // Subjects
   listSubjects: () => request<{ subjects: Subject[] }>('/api/workspace/subjects'),
@@ -144,6 +216,7 @@ export const api = {
 
   // Notes
   listNotes: (params?: {
+    folderId?: string;
     notebookId?: string;
     subjectId?: string;
     mode?: string;
@@ -151,6 +224,7 @@ export const api = {
     trashed?: boolean;
   }) => {
     const qs = new URLSearchParams();
+    if (params?.folderId) qs.set('folderId', params.folderId);
     if (params?.notebookId) qs.set('notebookId', params.notebookId);
     if (params?.subjectId) qs.set('subjectId', params.subjectId);
     if (params?.mode) qs.set('mode', params.mode);
@@ -166,6 +240,7 @@ export const api = {
     mode?: string;
     paper_style?: string;
     page_size?: string;
+    folder_id?: string | null;
     notebook_id?: string | null;
     subject_id?: string | null;
     template?: string;

@@ -5,6 +5,7 @@ import {
   HardDrive,
   KeyRound,
   LogOut,
+  MessageSquarePlus,
   MonitorSmartphone,
   ShieldAlert,
   Trash2,
@@ -13,7 +14,7 @@ import {
 import { api } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { AccountOverview } from '../../types';
+import { AccountConcern, AccountOverview } from '../../types';
 import { formatBytes, formatRelativeTime } from '../../utils/format';
 import { Modal } from '../common/Modal';
 
@@ -26,8 +27,9 @@ interface AccountModalProps {
 export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNotify }) => {
   const { user, setUser, logout } = useAuth();
   const { setMode } = useTheme();
-  const [tab, setTab] = useState<'profile' | 'security' | 'storage' | 'danger'>('profile');
+  const [tab, setTab] = useState<'profile' | 'security' | 'storage' | 'support' | 'danger'>('profile');
   const [overview, setOverview] = useState<AccountOverview | null>(null);
+  const [concerns, setConcerns] = useState<AccountConcern[]>([]);
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -36,6 +38,11 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
   const [academicYear, setAcademicYear] = useState('');
   const [bio, setBio] = useState('');
   const [themePref, setThemePref] = useState<'system' | 'light' | 'dark'>('light');
+  const [accentPref, setAccentPref] = useState<'purple' | 'lavender' | 'blue'>('purple');
+
+  const [concernSubject, setConcernSubject] = useState('');
+  const [concernCategory, setConcernCategory] = useState('account_access');
+  const [concernMessage, setConcernMessage] = useState('');
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -47,8 +54,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
 
   const loadOverview = async () => {
     try {
-      const res = await api.accountOverview();
-      setOverview(res);
+      const [ov, con] = await Promise.all([api.accountOverview(), api.listAccountConcerns()]);
+      setOverview(ov);
+      setConcerns(con.concerns);
     } catch {
       // ignore
     }
@@ -63,10 +71,14 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
     setAcademicYear(user.academic_year || '');
     setBio(user.bio || '');
     setThemePref(user.theme_preference || 'system');
+    setAccentPref((user.workspace_accent || 'purple') as 'purple' | 'lavender' | 'blue');
+    setTab('profile');
     loadOverview();
   }, [open, user]);
 
   if (!user) return null;
+
+  const isAdmin = user.role === 'admin';
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,10 +92,11 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
         academic_year: academicYear,
         bio,
         theme_preference: themePref,
+        workspace_accent: accentPref,
       });
       setUser(res.user);
       setMode(themePref);
-      onNotify('success', 'Account profile updated!');
+      onNotify('success', 'Account & workspace preferences updated!');
     } catch (err) {
       onNotify('error', err instanceof Error ? err.message : 'Update failed');
     } finally {
@@ -127,8 +140,28 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
     }
   };
 
+  const handleSubmitConcern = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await api.createAccountConcern({
+        subject: concernSubject,
+        category: concernCategory,
+        message: concernMessage,
+      });
+      setConcernSubject('');
+      setConcernMessage('');
+      onNotify('success', 'Submitted account concern to Admin support.');
+      await loadOverview();
+    } catch (err) {
+      onNotify('error', err instanceof Error ? err.message : 'Failed to submit concern');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDeleteAccount = async () => {
-    if (!window.confirm('Are you absolutely sure? All notebooks, notes, drawings, and uploaded files will be permanently erased.')) {
+    if (!window.confirm('Are you absolutely sure? All folders, notebooks, notes, drawings, and uploaded files will be permanently erased.')) {
       return;
     }
     try {
@@ -140,31 +173,37 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
     }
   };
 
+  const tabs = [
+    { id: 'profile', label: 'Profile & Workspace', icon: <UserIcon className="w-3.5 h-3.5" /> },
+    { id: 'security', label: 'Security & Sessions', icon: <KeyRound className="w-3.5 h-3.5" /> },
+    ...(!isAdmin
+      ? [
+          { id: 'storage', label: 'Storage & Backup', icon: <HardDrive className="w-3.5 h-3.5" /> },
+          { id: 'support', label: 'Account Concerns', icon: <MessageSquarePlus className="w-3.5 h-3.5" /> },
+          { id: 'danger', label: 'Delete Account', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
+        ]
+      : []),
+  ] as const;
+
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title="Student Account & Preferences"
-      subtitle="Manage your academic profile, security, active sessions, and storage"
+      title="Account & Workspace Preferences"
+      subtitle={`Signed in as ${user.role.toUpperCase()} · ${user.email}`}
       maxWidthClass="max-w-2xl"
     >
       <div className="space-y-5">
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-stone-100 dark:bg-slate-800">
-          {[
-            { id: 'profile', label: 'Profile', icon: <UserIcon className="w-3.5 h-3.5" /> },
-            { id: 'security', label: 'Security & Sessions', icon: <KeyRound className="w-3.5 h-3.5" /> },
-            { id: 'storage', label: 'Storage & Backup', icon: <HardDrive className="w-3.5 h-3.5" /> },
-            { id: 'danger', label: 'Delete Account', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
-          ].map((t) => (
+        <div className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-violet-50 dark:bg-slate-800">
+          {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTab(t.id as typeof tab)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 tab === t.id
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-900 text-violet-700 dark:text-violet-300 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-violet-900'
               }`}
             >
               {t.icon} {t.label}
@@ -174,24 +213,26 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
 
         {tab === 'profile' && (
           <form onSubmit={handleSaveProfile} className="space-y-4">
-            {/* Avatar */}
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-stone-50 dark:bg-slate-800/60 border border-stone-200 dark:border-slate-700">
+            <div className="flex items-center gap-4 p-4 rounded-2xl bg-violet-50/60 dark:bg-slate-800/60 border border-violet-200/70 dark:border-slate-700">
               <div className="relative">
                 {user.avatar_file ? (
                   <img
                     src={`/api/account/avatar/${user.id}/${user.avatar_file}`}
                     alt={user.full_name}
-                    className="w-16 h-16 rounded-2xl object-cover ring-2 ring-indigo-500/30"
+                    className="w-16 h-16 rounded-2xl object-cover ring-2 ring-violet-500/30"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-2xl bg-indigo-600 text-white font-display font-bold text-xl flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-700 to-blue-500 text-white font-display font-bold text-xl flex items-center justify-center">
                     {user.full_name.slice(0, 2).toUpperCase()}
                   </div>
                 )}
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-sm text-slate-900 dark:text-white">
+                <div className="font-semibold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                   {user.full_name}
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900/60 dark:text-violet-200">
+                    {user.role}
+                  </span>
                 </div>
                 <div className="text-xs text-slate-400">{user.email}</div>
                 <input
@@ -208,7 +249,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
                 <button
                   type="button"
                   onClick={() => avatarInputRef.current?.click()}
-                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 text-xs font-semibold hover:border-indigo-400 cursor-pointer"
+                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-violet-200 dark:border-slate-700 text-xs font-semibold hover:border-violet-400 cursor-pointer"
                 >
                   <Camera className="w-3.5 h-3.5" /> Change Photo
                 </button>
@@ -219,7 +260,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
                   await logout();
                   onClose();
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-stone-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-violet-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-white cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" /> Sign Out
               </button>
@@ -235,7 +276,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-slate-700 bg-violet-50/30 dark:bg-slate-800"
                 />
               </div>
               <div>
@@ -247,7 +288,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-slate-700 bg-violet-50/30 dark:bg-slate-800"
                 />
               </div>
               <div>
@@ -258,7 +299,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
                   type="text"
                   value={university}
                   onChange={(e) => setUniversity(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-slate-700 bg-violet-50/30 dark:bg-slate-800"
                 />
               </div>
               <div>
@@ -269,18 +310,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
                   type="text"
                   value={major}
                   onChange={(e) => setMajor(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                  Academic Year
-                </label>
-                <input
-                  type="text"
-                  value={academicYear}
-                  onChange={(e) => setAcademicYear(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-slate-700 bg-violet-50/30 dark:bg-slate-800"
                 />
               </div>
               <div>
@@ -290,13 +320,29 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
                 <select
                   value={themePref}
                   onChange={(e) => setThemePref(e.target.value as 'system' | 'light' | 'dark')}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-slate-700 bg-violet-50/30 dark:bg-slate-800"
                 >
-                  <option value="light">Light Academic Paper</option>
+                  <option value="light">Light Workspace</option>
                   <option value="dark">Midnight Study (Dark)</option>
                   <option value="system">Match System</option>
                 </select>
               </div>
+              {!isAdmin && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                    Workspace Accent Palette
+                  </label>
+                  <select
+                    value={accentPref}
+                    onChange={(e) => setAccentPref(e.target.value as 'purple' | 'lavender' | 'blue')}
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-slate-700 bg-violet-50/30 dark:bg-slate-800"
+                  >
+                    <option value="purple">Deep Purple & Blue (Default)</option>
+                    <option value="lavender">Soft Lavender Gradient</option>
+                    <option value="blue">Cobalt & Soft Blue</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div>
@@ -307,7 +353,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
                 rows={2}
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+                className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-slate-700 bg-violet-50/30 dark:bg-slate-800"
               />
             </div>
 
@@ -315,7 +361,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
               <button
                 type="submit"
                 disabled={saving}
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-800 to-blue-600 hover:brightness-110 text-white text-sm font-semibold cursor-pointer"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
@@ -325,7 +371,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
 
         {tab === 'security' && (
           <div className="space-y-6">
-            <form onSubmit={handleChangePassword} className="space-y-3 p-4 rounded-2xl border border-stone-200 dark:border-slate-800">
+            <form onSubmit={handleChangePassword} className="space-y-3 p-4 rounded-2xl border border-violet-200 dark:border-slate-800">
               <h4 className="font-display font-bold text-sm">Update Password</h4>
               <input
                 type="password"
@@ -333,7 +379,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Current password"
-                className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+                className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-slate-700 bg-violet-50/30 dark:bg-slate-800"
               />
               <input
                 type="password"
@@ -342,21 +388,21 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="New password (min 8 characters)"
-                className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800"
+                className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-slate-700 bg-violet-50/30 dark:bg-slate-800"
               />
               <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                 <input
                   type="checkbox"
                   checked={revokeOthers}
                   onChange={(e) => setRevokeOthers(e.target.checked)}
-                  className="accent-indigo-600"
+                  className="accent-violet-700"
                 />
                 Sign out all other active devices after changing password
               </label>
               <button
                 type="submit"
                 disabled={saving}
-                className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-violet-700 text-white text-xs font-semibold cursor-pointer"
               >
                 Update Password
               </button>
@@ -365,7 +411,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-display font-bold text-sm flex items-center gap-1.5">
-                  <MonitorSmartphone className="w-4 h-4 text-indigo-600" /> Active Sessions
+                  <MonitorSmartphone className="w-4 h-4 text-violet-600" /> Active Sessions
                 </h4>
                 <button
                   type="button"
@@ -383,7 +429,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
                 {overview?.sessions.map((s) => (
                   <div
                     key={s.id}
-                    className="p-3 rounded-xl border border-stone-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
+                    className="p-3 rounded-xl border border-violet-200/70 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
                   >
                     <div className="min-w-0">
                       <div className="font-semibold text-slate-800 dark:text-slate-100 truncate">
@@ -414,28 +460,32 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
           </div>
         )}
 
-        {tab === 'storage' && (
+        {tab === 'storage' && !isAdmin && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 rounded-xl bg-stone-50 dark:bg-slate-800/70">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+              <div className="p-3 rounded-xl bg-violet-50/70 dark:bg-slate-800/70">
+                <div className="text-[11px] text-slate-400">Folders</div>
+                <div className="font-display font-bold text-lg">{overview?.counts.folders ?? 0}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-violet-50/70 dark:bg-slate-800/70">
                 <div className="text-[11px] text-slate-400">Courses</div>
                 <div className="font-display font-bold text-lg">{overview?.counts.subjects ?? 0}</div>
               </div>
-              <div className="p-3 rounded-xl bg-stone-50 dark:bg-slate-800/70">
+              <div className="p-3 rounded-xl bg-violet-50/70 dark:bg-slate-800/70">
                 <div className="text-[11px] text-slate-400">Notebooks</div>
                 <div className="font-display font-bold text-lg">{overview?.counts.notebooks ?? 0}</div>
               </div>
-              <div className="p-3 rounded-xl bg-stone-50 dark:bg-slate-800/70">
+              <div className="p-3 rounded-xl bg-violet-50/70 dark:bg-slate-800/70">
                 <div className="text-[11px] text-slate-400">Notes</div>
                 <div className="font-display font-bold text-lg">{overview?.counts.notes ?? 0}</div>
               </div>
-              <div className="p-3 rounded-xl bg-stone-50 dark:bg-slate-800/70">
+              <div className="p-3 rounded-xl bg-violet-50/70 dark:bg-slate-800/70">
                 <div className="text-[11px] text-slate-400">Vault Files</div>
                 <div className="font-display font-bold text-lg">{overview?.counts.files ?? 0}</div>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl border border-stone-200 dark:border-slate-800 space-y-2">
+            <div className="p-4 rounded-2xl border border-violet-200 dark:border-slate-800 space-y-2">
               <div className="flex justify-between text-xs font-semibold">
                 <span>Storage Used</span>
                 <span>
@@ -443,9 +493,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
                   {formatBytes(overview?.storage.quotaBytes || user.storage_quota_bytes)}
                 </span>
               </div>
-              <div className="h-2 rounded-full bg-stone-200 dark:bg-slate-800 overflow-hidden">
+              <div className="h-2 rounded-full bg-violet-100 dark:bg-slate-800 overflow-hidden">
                 <div
-                  className="h-full bg-indigo-600 rounded-full"
+                  className="h-full bg-gradient-to-r from-violet-700 to-blue-500 rounded-full"
                   style={{
                     width: `${Math.max(
                       2,
@@ -463,18 +513,18 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60 flex items-center justify-between gap-4">
+            <div className="p-4 rounded-2xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800/60 flex items-center justify-between gap-4">
               <div>
                 <div className="font-semibold text-sm text-slate-900 dark:text-white">
                   Full Workspace Backup
                 </div>
                 <div className="text-xs text-slate-500 dark:text-slate-400">
-                  Download all your courses, notebooks, notes, drawings, and flashcards as JSON.
+                  Download all your folders, courses, notebooks, notes, drawings, and flashcards as JSON.
                 </div>
               </div>
               <a
                 href="/api/account/export"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-violet-700 text-white text-xs font-semibold shrink-0"
               >
                 <Download className="w-3.5 h-3.5" /> Export JSON
               </a>
@@ -482,14 +532,88 @@ export const AccountModal: React.FC<AccountModalProps> = ({ open, onClose, onNot
           </div>
         )}
 
-        {tab === 'danger' && (
+        {tab === 'support' && !isAdmin && (
+          <div className="space-y-5">
+            <form onSubmit={handleSubmitConcern} className="space-y-3 p-4 rounded-2xl border border-violet-200 dark:border-slate-800">
+              <h4 className="font-display font-bold text-sm">Submit an Account Concern</h4>
+              <p className="text-xs text-slate-500">
+                Contact an Administrator regarding account access, storage quotas, or profile updates.
+                Your private notes and files remain hidden.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <select
+                  value={concernCategory}
+                  onChange={(e) => setConcernCategory(e.target.value)}
+                  className="px-3 py-2 text-xs rounded-xl border border-violet-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                >
+                  <option value="account_access">Account Access</option>
+                  <option value="storage_quota">Storage Quota</option>
+                  <option value="billing_profile">Profile / Email</option>
+                  <option value="other">Other</option>
+                </select>
+                <input
+                  type="text"
+                  required
+                  value={concernSubject}
+                  onChange={(e) => setConcernSubject(e.target.value)}
+                  placeholder="Concern subject..."
+                  className="sm:col-span-2 px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-slate-700 bg-violet-50/30 dark:bg-slate-800"
+                />
+              </div>
+              <textarea
+                required
+                rows={3}
+                value={concernMessage}
+                onChange={(e) => setConcernMessage(e.target.value)}
+                placeholder="Describe your account concern..."
+                className="w-full px-3 py-2 text-sm rounded-xl border border-violet-200 dark:border-slate-700 bg-violet-50/30 dark:bg-slate-800"
+              />
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-4 py-2 rounded-xl bg-violet-700 text-white text-xs font-semibold cursor-pointer"
+              >
+                Send to Admin
+              </button>
+            </form>
+
+            {concerns.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-display font-bold text-xs uppercase tracking-wider text-slate-400">
+                  Your Recent Tickets
+                </h4>
+                {concerns.map((c) => (
+                  <div
+                    key={c.id}
+                    className="p-3 rounded-xl border border-violet-200/70 dark:border-slate-800 text-xs space-y-1"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold">{c.subject}</span>
+                      <span className="uppercase text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-800">
+                        {c.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <p className="text-slate-500">{c.message}</p>
+                    {c.admin_note && (
+                      <div className="text-violet-700 dark:text-violet-300 font-medium pt-1">
+                        Admin reply: {c.admin_note}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === 'danger' && !isAdmin && (
           <div className="p-5 rounded-2xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 space-y-4">
             <h4 className="font-display font-bold text-rose-700 dark:text-rose-300 flex items-center gap-2">
               <Trash2 className="w-4 h-4" /> Permanently Delete Account
             </h4>
             <p className="text-xs text-rose-700/80 dark:text-rose-200/80 leading-relaxed">
-              Deleting your account erases your profile, all notebooks, rich documents, vector drawings,
-              flashcards, and all uploaded files from server disk storage.
+              Deleting your account erases your profile, all folders, notebooks, rich documents, vector
+              drawings, flashcards, and all uploaded files from server storage.
             </p>
             {!user.is_demo && (
               <input

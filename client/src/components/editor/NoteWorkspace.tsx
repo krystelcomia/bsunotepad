@@ -40,7 +40,7 @@ import {
   X,
 } from 'lucide-react';
 import { api } from '../../api/client';
-import { Attachment, DrawingData, Notebook, Note, NoteMode, PageSize, PaperStyle, Subject } from '../../types';
+import { Attachment, DrawingData, Folder, Notebook, Note, NoteMode, PageSize, PaperStyle, Subject } from '../../types';
 import {
   downloadTextFile,
   exportNoteAsHtml,
@@ -57,6 +57,7 @@ import { VersionHistoryDrawer } from './VersionHistoryDrawer';
 
 interface NoteWorkspaceProps {
   noteId: string;
+  folders: Folder[];
   subjects: Subject[];
   notebooks: Notebook[];
   onBack: () => void;
@@ -69,6 +70,7 @@ type StudioView = 'document' | 'notebook' | 'drawing' | 'split';
 
 export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
   noteId,
+  folders,
   subjects,
   notebooks,
   onBack,
@@ -402,9 +404,23 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
           />
           <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
             <select
+              value={note.folder_id || ''}
+              onChange={(e) => queueSave({ folder_id: e.target.value || null })}
+              className="bg-transparent hover:bg-violet-50 dark:hover:bg-slate-800 rounded px-1 py-0.5 cursor-pointer"
+              title="Assign Folder"
+            >
+              <option value="">No Folder</option>
+              {folders.map((f) => (
+                <option key={f.id} value={f.id}>
+                  📁 {f.name}
+                </option>
+              ))}
+            </select>
+            <span>·</span>
+            <select
               value={note.subject_id || ''}
               onChange={(e) => queueSave({ subject_id: e.target.value || null })}
-              className="bg-transparent hover:bg-stone-100 dark:hover:bg-slate-800 rounded px-1 py-0.5 cursor-pointer"
+              className="bg-transparent hover:bg-violet-50 dark:hover:bg-slate-800 rounded px-1 py-0.5 cursor-pointer"
               title="Assign Course"
             >
               <option value="">No Course</option>
@@ -418,7 +434,7 @@ export const NoteWorkspace: React.FC<NoteWorkspaceProps> = ({
             <select
               value={note.notebook_id || ''}
               onChange={(e) => queueSave({ notebook_id: e.target.value || null })}
-              className="bg-transparent hover:bg-stone-100 dark:hover:bg-slate-800 rounded px-1 py-0.5 cursor-pointer"
+              className="bg-transparent hover:bg-violet-50 dark:hover:bg-slate-800 rounded px-1 py-0.5 cursor-pointer"
               title="Assign Notebook"
             >
               <option value="">Loose Page</option>
